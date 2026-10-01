@@ -214,6 +214,69 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
     print("✅ All algorithm entries strictly conform to the engineering contract standard.")
     return 0
 
+from src.features.search_engine.service.search_engine_service import SearchEngineService
+
+def handle_algo_command(args: argparse.Namespace) -> int:
+    svc = SearchEngineService()
+
+    if args.action == "scan":
+        patterns = [p.strip() for p in args.patterns.split(",") if p.strip()]
+        results = svc.scan_directory_multipattern(args.root, patterns)
+        if args.json:
+            print(json.dumps(results, indent=2))
+            return 0
+        print(f"\n{'='*75}")
+        print(f"🔎 MULTI-PATTERN ALGO SCAN: {len(results)} Files Matched")
+        print(f"{'='*75}\n")
+        for res in results:
+            print(f"📁 {res['file']} ({res['match_count']} matches)")
+            for m in res["matches"][:3]:
+                print(f"   Line {m['line']} [{m['pattern']}]: {m['context']}")
+        return 0
+
+    elif args.action == "outline":
+        res = svc.inspect_file_outline(args.file)
+        if args.json:
+            print(json.dumps(res, indent=2))
+            return 0
+        print(res["markdown"])
+        return 0
+
+    elif args.action == "lint-comments":
+        res = svc.lint_zero_inline_comments(args.file)
+        if args.json:
+            print(json.dumps(res, indent=2))
+            return 0 if res["is_compliant"] else 1
+        status = "✅ COMPLIANT" if res["is_compliant"] else "❌ VIOLATION"
+        print(f"\n{'='*75}")
+        print(f"🛡️ ZERO-INLINE-COMMENT DOCTRINE: {status}")
+        print(f"   File: {res['file']}")
+        print(f"   Banned Inline Comments: {res['banned_inline_count']}")
+        print(f"   TODOs/FIXMEs: {res['todos_count']}")
+        print(f"{'='*75}\n")
+        for c in res["banned_comments"]:
+            print(f"   Line {c['line']}: {c['text']}")
+        return 0 if res["is_compliant"] else 1
+
+    elif args.action == "dependencies":
+        res = svc.analyze_module_dependencies(args.directory)
+        if args.json:
+            print(json.dumps(res, indent=2))
+            return 0
+        print(f"\n{'='*75}")
+        print(f"🕸️ IMPORT DEPENDENCY GRAPH: {res['total_modules']} Modules, {res['total_edges']} Edges")
+        print(f"   Has Cycles: {'⚠️ YES' if res['has_cycles'] else '✅ NO'}")
+        print(f"{'='*75}\n")
+        if res["cycles"]:
+            print("Detected Cycles:")
+            for cycle in res["cycles"]:
+                print(f"  🔁 {' -> '.join(cycle)}")
+        print(f"\nTopological Build Order ({len(res['topological_order'])} modules):")
+        print(f"  {' -> '.join(res['topological_order'][:10])}{' ...' if len(res['topological_order']) > 10 else ''}")
+        return 0
+
+    return 0
+
 def handle_serve_command(args: argparse.Namespace) -> int:
     import uvicorn
     os.environ["POLICY_RULES_DIR"] = args.rules_dir
@@ -231,6 +294,14 @@ def main() -> None:
     audit_parser = subparsers.add_parser("audit", help="Run multi-vector invariant scan")
     audit_parser.add_argument("--root", default=".", help="Root directory")
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
+
+    algo_parser = subparsers.add_parser("algo", help="Execute 22 core algorithms & code analyzers")
+    algo_parser.add_argument("action", choices=["scan", "outline", "lint-comments", "dependencies"], help="Algorithm action")
+    algo_parser.add_argument("--root", default=".", help="Root directory")
+    algo_parser.add_argument("--patterns", default="TODO,FIXME,error,critical", help="Comma-separated patterns")
+    algo_parser.add_argument("--file", default="src/api/cli/main.py", help="File to inspect")
+    algo_parser.add_argument("--directory", default="src", help="Directory to analyze")
+    algo_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
     rag_parser = subparsers.add_parser("rag", help="Retrieve or index grounded policy rules")
     rag_parser.add_argument("action", choices=["search", "index"], help="RAG action")
@@ -273,6 +344,7 @@ def main() -> None:
 
     dispatch = {
         "audit": handle_audit_command,
+        "algo": handle_algo_command,
         "rag": handle_rag_command,
         "agent": handle_agent_command,
         "refactor": handle_refactor_command,

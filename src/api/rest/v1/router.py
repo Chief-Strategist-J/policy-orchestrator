@@ -347,6 +347,66 @@ def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, 
         trace_id=trace_id,
     )
 
+from src.features.search_engine.service.search_engine_service import SearchEngineService
+
+class AlgoScanDTO(BaseModel):
+    root_dir: str = Field(default=".", description="Root directory to scan")
+    patterns: List[str] = Field(..., description="Patterns to search for")
+    max_files: int = Field(default=1000, description="Max files to scan")
+
+class FilePathDTO(BaseModel):
+    file_path: str = Field(..., description="File path to analyze")
+
+class DirectoryPathDTO(BaseModel):
+    directory: str = Field(default=".", description="Directory path to analyze")
+
+_search_engine_service: Optional[SearchEngineService] = None
+
+def get_search_service() -> SearchEngineService:
+    global _search_engine_service
+    if _search_engine_service is None:
+        _search_engine_service = SearchEngineService()
+    return _search_engine_service
+
+@router.post("/algos/scan")
+def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    results = svc.scan_directory_multipattern(
+        root_dir=payload.root_dir,
+        patterns=payload.patterns,
+        max_files=payload.max_files,
+    )
+    return build_success_envelope(
+        data={"total_files_matched": len(results), "results": results},
+        trace_id=trace_id,
+    )
+
+@router.post("/algos/outline")
+def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    if not os.path.isfile(payload.file_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
+    outline = svc.inspect_file_outline(payload.file_path)
+    return build_success_envelope(data=outline, trace_id=trace_id)
+
+@router.post("/algos/dependencies")
+def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    report = svc.analyze_module_dependencies(payload.directory)
+    return build_success_envelope(data=report, trace_id=trace_id)
+
+@router.post("/algos/lint-comments")
+def lint_comments(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    if not os.path.isfile(payload.file_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
+    report = svc.lint_zero_inline_comments(payload.file_path)
+    return build_success_envelope(data=report, trace_id=trace_id)
+
 @router.post("/graph/build")
 def build_graph(request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
