@@ -23,7 +23,7 @@ import os
 import fnmatch
 from typing import List, Set, Optional
 
-from src.features.search_engine.algos.search_engine_algo_recursive_walk import (
+from src.features.search_engine.algos.search.search_algo_recursive_walk import (
     SearchEngineRecursiveWalkAlgo,
 )
 

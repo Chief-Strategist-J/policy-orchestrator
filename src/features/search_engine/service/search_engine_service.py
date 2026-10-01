@@ -3,8 +3,8 @@ Module: search_engine_service
 Architecture: Unified Search Engine Domain Service
 
 Blueprint:
-- Exposes access to all 22 core search and analysis algorithms.
-- Orchestrates recursive file walks, binary classification, Aho-Corasick multi-pattern scans, and AST extraction.
+- Exposes access to categorized Search, Observability, and Update algorithms.
+- Orchestrates recursive file walks, binary classification, Aho-Corasick scans, AST extraction, and atomic patching.
 - Follows Hexagonal Architecture and the Zero-Inline-Comment Doctrine.
 """
 
@@ -12,28 +12,52 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from src.features.search_engine.algos.search_engine_algo_recursive_walk import SearchEngineRecursiveWalkAlgo
-from src.features.search_engine.algos.search_engine_algo_work_stealing_walker import SearchEngineWorkStealingWalkerAlgo
-from src.features.search_engine.algos.search_engine_algo_git_aware_walker import SearchEngineGitAwareWalkerAlgo
-from src.features.search_engine.algos.search_engine_algo_glob_matcher import SearchEngineGlobMatcherAlgo
-from src.features.search_engine.algos.search_engine_algo_binary_classifier import SearchEngineBinaryClassifierAlgo
-from src.features.search_engine.algos.search_engine_algo_content_type_prober import SearchEngineContentTypeProberAlgo
-from src.features.search_engine.algos.search_engine_algo_size_line_bouncer import SearchEngineSizeLineBouncerAlgo
-from src.features.search_engine.algos.search_engine_algo_generated_code_classifier import SearchEngineGeneratedCodeClassifierAlgo
-from src.features.search_engine.algos.search_engine_algo_trigram_index import SearchEngineTrigramIndexAlgo
-from src.features.search_engine.algos.search_engine_algo_simd_memchr import SearchEngineSimdMemchrAlgo
-from src.features.search_engine.algos.search_engine_algo_aho_corasick import SearchEngineAhoCorasickAlgo
-from src.features.search_engine.algos.search_engine_algo_lazy_dfa import SearchEngineLazyDfaAlgo
-from src.features.search_engine.algos.search_engine_algo_streaming_chunk_scanner import SearchEngineStreamingChunkScannerAlgo
-from src.features.search_engine.algos.search_engine_algo_context_snippet_collector import SearchEngineContextSnippetCollectorAlgo
-from src.features.search_engine.algos.search_engine_algo_mmap_scanner import SearchEngineMmapScannerAlgo
-from src.features.search_engine.algos.search_engine_algo_position_span_tracker import PositionSpanTracker
-from src.features.search_engine.algos.search_engine_algo_tree_sitter_ast import AstExtractor
-from src.features.search_engine.algos.search_engine_algo_cst_matcher import CstMatcher
-from src.features.search_engine.algos.search_engine_algo_symbol_scope_resolver import SymbolScopeResolver
-from src.features.search_engine.algos.search_engine_algo_comment_extractor import CommentExtractor
-from src.features.search_engine.algos.search_engine_algo_import_dependency_grapher import ImportDependencyGrapher
-from src.features.search_engine.algos.search_engine_algo_code_outline_generator import CodeOutlineGenerator
+from src.features.search_engine.algos.search import (
+    SearchEngineRecursiveWalkAlgo,
+    SearchEngineWorkStealingWalkerAlgo,
+    SearchEngineGitAwareWalkerAlgo,
+    SearchEngineGlobMatcherAlgo,
+    SearchEngineBinaryClassifierAlgo,
+    SearchEngineContentTypeProberAlgo,
+    SearchEngineSizeLineBouncerAlgo,
+    SearchEngineGeneratedCodeClassifierAlgo,
+    SearchEngineTrigramIndexAlgo,
+    SearchEngineSimdMemchrAlgo,
+    SearchEngineAhoCorasickAlgo,
+    SearchEngineLazyDfaAlgo,
+    SearchEngineStreamingChunkScannerAlgo,
+    SearchEngineContextSnippetCollectorAlgo,
+    SearchEngineMmapScannerAlgo,
+)
+
+from src.features.search_engine.algos.observability import (
+    PositionSpanTracker,
+    PositionSpan,
+    AstExtractor,
+    AstNode,
+    SymbolScopeResolver,
+    Symbol,
+    LexicalScope,
+    CommentExtractor,
+    ExtractedComment,
+    CommentLintResult,
+    ImportDependencyGrapher,
+    ImportNode,
+    DependencyGraphReport,
+    CodeOutlineGenerator,
+    OutlineSymbol,
+    FileOutline,
+)
+
+from src.features.search_engine.algos.update import (
+    CstMatcher,
+    CstMatch,
+    UpdateBatchPatcherAlgo,
+    PatchOperation,
+    PatchResult,
+    UpdateDiffEngineAlgo,
+    UnifiedDiffResult,
+)
 
 
 class SearchEngineService:
@@ -45,6 +69,8 @@ class SearchEngineService:
         self.scope_resolver = SymbolScopeResolver()
         self.comment_extractor = CommentExtractor()
         self.outline_generator = CodeOutlineGenerator()
+        self.patcher = UpdateBatchPatcherAlgo
+        self.diff_engine = UpdateDiffEngineAlgo
 
     def scan_directory_multipattern(
         self,
@@ -62,21 +88,22 @@ class SearchEngineService:
             try:
                 with open(file_path, "rb") as f:
                     header = f.read(1024)
-                    if self.binary_classifier.is_binary(header):
+                    if self.binary_classifier.is_text_file(file_path) is False:
                         continue
                     f.seek(0)
                     content = f.read().decode("utf-8", errors="ignore")
 
-                matches = ac.search(content)
+                matches = ac.find_matches(content)
                 if matches:
-                    collector = SearchEngineContextSnippetCollectorAlgo(content)
+                    lines = content.splitlines()
                     snippets = []
                     for m in matches:
-                        line_num = content[:m.start_index].count("\n") + 1
+                        line_num = content[:m[0]].count("\n") + 1
+                        res = SearchEngineContextSnippetCollectorAlgo.collect_snippet(lines, line_num, 1, 1)
                         snippets.append({
-                            "pattern": m.pattern,
+                            "pattern": m[2],
                             "line": line_num,
-                            "context": collector.collect(line_num, 1, 1).snippet,
+                            "context": res["formatted_snippet"],
                         })
                     results.append({
                         "file": file_path,
@@ -135,4 +162,51 @@ class SearchEngineService:
                 for c in report.banned_inline_comments
             ],
             "todos_count": len(report.todos_and_fixmes),
+        }
+
+    def apply_batch_patch(
+        self,
+        operations: List[Dict[str, Any]],
+        dry_run: bool = False,
+    ) -> List[Dict[str, Any]]:
+        ops = [
+            PatchOperation(
+                file_path=op["file_path"],
+                find_pattern=op["find_pattern"],
+                replace_text=op["replace_text"],
+                expected_sha256=op.get("expected_sha256"),
+                is_regex=op.get("is_regex", False),
+            )
+            for op in operations
+        ]
+        results = self.patcher.apply_batch(ops, dry_run=dry_run)
+        return [
+            {
+                "file_path": r.file_path,
+                "success": r.success,
+                "occurrences": r.occurrences,
+                "before_sha256": r.before_sha256,
+                "after_sha256": r.after_sha256,
+                "error_message": r.error_message,
+            }
+            for r in results
+        ]
+
+    def generate_diff(
+        self,
+        original_content: str,
+        modified_content: str,
+        file_path: str = "file",
+    ) -> Dict[str, Any]:
+        res = self.diff_engine.generate_unified_diff(
+            original_content=original_content,
+            modified_content=modified_content,
+            file_path=file_path,
+        )
+        return {
+            "file_path": res.file_path,
+            "has_changes": res.has_changes,
+            "added_lines": res.added_lines,
+            "deleted_lines": res.deleted_lines,
+            "patch": res.patch,
         }

@@ -131,6 +131,159 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_AgentRunResponse'
 
+  /api/v1/algos/search/scan:
+    post:
+      summary: Multi-Pattern Fast Directory Scan (Search Algorithm Engine)
+      operationId: scanDirectoryMultipattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patterns]
+              properties:
+                root_dir:
+                  type: string
+                  default: "."
+                patterns:
+                  type: array
+                  items:
+                    type: string
+                max_files:
+                  type: integer
+                  default: 1000
+      responses:
+        '200':
+          description: Search algorithm match results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/observability/outline:
+    post:
+      summary: Hierarchical Symbol Outline Generation (Observability Algorithm Engine)
+      operationId: generateFileOutline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_path]
+              properties:
+                file_path:
+                  type: string
+      responses:
+        '200':
+          description: Code symbols hierarchy and markdown outline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/observability/dependencies:
+    post:
+      summary: Module Import Graph & Cycle Detection (Observability Algorithm Engine)
+      operationId: analyzeDependencies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                directory:
+                  type: string
+                  default: "."
+      responses:
+        '200':
+          description: Import DAG report and cycle detection findings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/observability/lint-comments:
+    post:
+      summary: Zero-Inline-Comment Doctrine Linter (Observability Algorithm Engine)
+      operationId: lintComments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_path]
+              properties:
+                file_path:
+                  type: string
+      responses:
+        '200':
+          description: Zero-inline comment doctrine compliance report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/update/patch:
+    post:
+      summary: Deterministic Atomic Multi-File Patching (Update Algorithm Engine)
+      operationId: applyBatchPatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operations]
+              properties:
+                operations:
+                  type: array
+                  items:
+                    type: object
+                    required: [file_path, find_pattern, replace_text]
+                    properties:
+                      file_path: { type: string }
+                      find_pattern: { type: string }
+                      replace_text: { type: string }
+                      expected_sha256: { type: string }
+                      is_regex: { type: boolean, default: false }
+                dry_run:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Batch patch execution and SHA-256 transitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/update/diff:
+    post:
+      summary: Unified GNU/Git Context Diff Engine (Update Algorithm Engine)
+      operationId: generateDiff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_content, modified_content]
+              properties:
+                original_content: { type: string }
+                modified_content: { type: string }
+                file_path: { type: string, default: "file" }
+      responses:
+        '200':
+          description: Unified diff text and added/deleted counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
   /api/v1/graph/build:
     post:
       summary: Build Semantic Knowledge Graph from Markdown Contracts
@@ -266,6 +419,19 @@ components:
           type: object
 
     Envelope_HealthResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AlgoResponse:
       type: object
       required: [meta, data]
       properties:

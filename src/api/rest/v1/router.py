@@ -368,6 +368,23 @@ def get_search_service() -> SearchEngineService:
         _search_engine_service = SearchEngineService()
     return _search_engine_service
 
+class PatchOperationDTO(BaseModel):
+    file_path: str = Field(..., description="File to patch")
+    find_pattern: str = Field(..., description="Target pattern")
+    replace_text: str = Field(..., description="Replacement text")
+    expected_sha256: Optional[str] = Field(default=None, description="Precondition SHA-256")
+    is_regex: bool = Field(default=False, description="Is regex pattern")
+
+class BatchPatchRequestDTO(BaseModel):
+    operations: List[PatchOperationDTO] = Field(..., description="List of patch operations")
+    dry_run: bool = Field(default=False, description="Simulate patch without disk write")
+
+class DiffRequestDTO(BaseModel):
+    original_content: str = Field(..., description="Original text")
+    modified_content: str = Field(..., description="Modified text")
+    file_path: str = Field(default="file", description="File path identifier")
+
+@router.post("/algos/search/scan")
 @router.post("/algos/scan")
 def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -382,6 +399,7 @@ def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
         trace_id=trace_id,
     )
 
+@router.post("/algos/observability/outline")
 @router.post("/algos/outline")
 def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -391,6 +409,7 @@ def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, A
     outline = svc.inspect_file_outline(payload.file_path)
     return build_success_envelope(data=outline, trace_id=trace_id)
 
+@router.post("/algos/observability/dependencies")
 @router.post("/algos/dependencies")
 def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -398,6 +417,7 @@ def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[st
     report = svc.analyze_module_dependencies(payload.directory)
     return build_success_envelope(data=report, trace_id=trace_id)
 
+@router.post("/algos/observability/lint-comments")
 @router.post("/algos/lint-comments")
 def lint_comments(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -406,6 +426,28 @@ def lint_comments(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
     report = svc.lint_zero_inline_comments(payload.file_path)
     return build_success_envelope(data=report, trace_id=trace_id)
+
+@router.post("/algos/update/patch")
+def apply_patch(payload: BatchPatchRequestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    raw_ops = [op.dict() for op in payload.operations]
+    results = svc.apply_batch_patch(raw_ops, dry_run=payload.dry_run)
+    return build_success_envelope(
+        data={"total_operations": len(results), "dry_run": payload.dry_run, "results": results},
+        trace_id=trace_id,
+    )
+
+@router.post("/algos/update/diff")
+def generate_diff(payload: DiffRequestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_search_service()
+    diff = svc.generate_diff(
+        original_content=payload.original_content,
+        modified_content=payload.modified_content,
+        file_path=payload.file_path,
+    )
+    return build_success_envelope(data=diff, trace_id=trace_id)
 
 @router.post("/graph/build")
 def build_graph(request: Request) -> Dict[str, Any]:

@@ -219,14 +219,14 @@ from src.features.search_engine.service.search_engine_service import SearchEngin
 def handle_algo_command(args: argparse.Namespace) -> int:
     svc = SearchEngineService()
 
-    if args.action == "scan":
+    if args.action in {"scan", "search"}:
         patterns = [p.strip() for p in args.patterns.split(",") if p.strip()]
         results = svc.scan_directory_multipattern(args.root, patterns)
         if args.json:
             print(json.dumps(results, indent=2))
             return 0
         print(f"\n{'='*75}")
-        print(f"🔎 MULTI-PATTERN ALGO SCAN: {len(results)} Files Matched")
+        print(f"🔎 [SEARCH ALGORITHM ENGINE] MULTI-PATTERN SCAN: {len(results)} Files Matched")
         print(f"{'='*75}\n")
         for res in results:
             print(f"📁 {res['file']} ({res['match_count']} matches)")
@@ -249,7 +249,7 @@ def handle_algo_command(args: argparse.Namespace) -> int:
             return 0 if res["is_compliant"] else 1
         status = "✅ COMPLIANT" if res["is_compliant"] else "❌ VIOLATION"
         print(f"\n{'='*75}")
-        print(f"🛡️ ZERO-INLINE-COMMENT DOCTRINE: {status}")
+        print(f"🛡️ [OBSERVABILITY ALGORITHM ENGINE] ZERO-INLINE-COMMENT DOCTRINE: {status}")
         print(f"   File: {res['file']}")
         print(f"   Banned Inline Comments: {res['banned_inline_count']}")
         print(f"   TODOs/FIXMEs: {res['todos_count']}")
@@ -264,7 +264,7 @@ def handle_algo_command(args: argparse.Namespace) -> int:
             print(json.dumps(res, indent=2))
             return 0
         print(f"\n{'='*75}")
-        print(f"🕸️ IMPORT DEPENDENCY GRAPH: {res['total_modules']} Modules, {res['total_edges']} Edges")
+        print(f"🕸️ [OBSERVABILITY ALGORITHM ENGINE] IMPORT DEPENDENCY GRAPH: {res['total_modules']} Modules, {res['total_edges']} Edges")
         print(f"   Has Cycles: {'⚠️ YES' if res['has_cycles'] else '✅ NO'}")
         print(f"{'='*75}\n")
         if res["cycles"]:
@@ -273,6 +273,44 @@ def handle_algo_command(args: argparse.Namespace) -> int:
                 print(f"  🔁 {' -> '.join(cycle)}")
         print(f"\nTopological Build Order ({len(res['topological_order'])} modules):")
         print(f"  {' -> '.join(res['topological_order'][:10])}{' ...' if len(res['topological_order']) > 10 else ''}")
+        return 0
+
+    elif args.action == "patch":
+        ops = [{
+            "file_path": args.file,
+            "find_pattern": args.find,
+            "replace_text": args.replace,
+            "is_regex": args.regex,
+        }]
+        res = svc.apply_batch_patch(ops, dry_run=not args.apply)
+        if args.json:
+            print(json.dumps(res, indent=2))
+            return 0 if res[0]["success"] else 1
+        status = "[APPLIED]" if args.apply else "[DRY-RUN]"
+        print(f"\n{'='*75}")
+        print(f"⚡ [UPDATE ALGORITHM ENGINE] ATOMIC PATCH {status}")
+        print(f"   File: {res[0]['file_path']}")
+        print(f"   Matches Modified: {res[0]['occurrences']}")
+        print(f"   Pre SHA-256 : {res[0]['before_sha256'][:12]}...")
+        print(f"   Post SHA-256: {res[0]['after_sha256'][:12]}...")
+        print(f"{'='*75}\n")
+        return 0 if res[0]["success"] else 1
+
+    elif args.action == "diff":
+        if not os.path.isfile(args.file):
+            print(f"File not found: {args.file}")
+            return 1
+        with open(args.file, "r") as f:
+            orig = f.read()
+        mod = orig.replace(args.find, args.replace) if not args.regex else re.sub(args.find, args.replace, orig)
+        diff_res = svc.generate_diff(orig, mod, file_path=args.file)
+        if args.json:
+            print(json.dumps(diff_res, indent=2))
+            return 0
+        print(f"\n{'='*75}")
+        print(f"📝 [UPDATE ALGORITHM ENGINE] UNIFIED DIFF (+{diff_res['added_lines']} / -{diff_res['deleted_lines']})")
+        print(f"{'='*75}\n")
+        print(diff_res["patch"] if diff_res["has_changes"] else "No differences found.")
         return 0
 
     return 0
@@ -295,12 +333,16 @@ def main() -> None:
     audit_parser.add_argument("--root", default=".", help="Root directory")
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
-    algo_parser = subparsers.add_parser("algo", help="Execute 22 core algorithms & code analyzers")
-    algo_parser.add_argument("action", choices=["scan", "outline", "lint-comments", "dependencies"], help="Algorithm action")
+    algo_parser = subparsers.add_parser("algo", help="Execute Categorized Search, Observability & Update Algorithms")
+    algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff"], help="Algorithm action")
     algo_parser.add_argument("--root", default=".", help="Root directory")
     algo_parser.add_argument("--patterns", default="TODO,FIXME,error,critical", help="Comma-separated patterns")
-    algo_parser.add_argument("--file", default="src/api/cli/main.py", help="File to inspect")
+    algo_parser.add_argument("--file", default="src/api/cli/main.py", help="File to inspect or patch")
     algo_parser.add_argument("--directory", default="src", help="Directory to analyze")
+    algo_parser.add_argument("--find", default="", help="Pattern to find for update/diff/patch")
+    algo_parser.add_argument("--replace", default="", help="Replacement string for update/diff/patch")
+    algo_parser.add_argument("--regex", action="store_true", help="Treat find pattern as regex")
+    algo_parser.add_argument("--apply", action="store_true", help="Apply patch modifications to disk")
     algo_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
     rag_parser = subparsers.add_parser("rag", help="Retrieve or index grounded policy rules")
