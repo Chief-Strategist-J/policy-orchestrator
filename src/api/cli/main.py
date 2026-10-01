@@ -214,10 +214,10 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
     print("✅ All algorithm entries strictly conform to the engineering contract standard.")
     return 0
 
-from src.features.search_engine.service.search_engine_service import SearchEngineService
+from src.features.code_engine.service.code_engine_service import CodeEngineService
 
 def handle_algo_command(args: argparse.Namespace) -> int:
-    svc = SearchEngineService()
+    svc = CodeEngineService()
 
     if args.action in {"scan", "search"}:
         patterns = [p.strip() for p in args.patterns.split(",") if p.strip()]

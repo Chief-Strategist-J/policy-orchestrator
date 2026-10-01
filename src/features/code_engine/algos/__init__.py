@@ -2,7 +2,7 @@
 Search Engine Algorithms Root Package
 """
 
-from src.features.search_engine.algos.search import (
+from src.features.code_engine.algos.search import (
     SearchEngineRecursiveWalkAlgo,
     SearchEngineWorkStealingWalkerAlgo,
     SearchEngineGitAwareWalkerAlgo,
@@ -20,7 +20,7 @@ from src.features.search_engine.algos.search import (
     SearchEngineMmapScannerAlgo,
 )
 
-from src.features.search_engine.algos.observability import (
+from src.features.code_engine.algos.observability import (
     PositionSpanTracker,
     PositionSpan,
     AstExtractor,
@@ -39,7 +39,7 @@ from src.features.search_engine.algos.observability import (
     FileOutline,
 )
 
-from src.features.search_engine.algos.update import (
+from src.features.code_engine.algos.update import (
     CstMatcher,
     CstMatch,
     UpdateBatchPatcherAlgo,

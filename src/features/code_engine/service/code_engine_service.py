@@ -1,5 +1,5 @@
 """
-Module: search_engine_service
+Module: code_engine_service
 Architecture: Unified Search Engine Domain Service
 
 Blueprint:
@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from src.features.search_engine.algos.search import (
+from src.features.code_engine.algos.search import (
     SearchEngineRecursiveWalkAlgo,
     SearchEngineWorkStealingWalkerAlgo,
     SearchEngineGitAwareWalkerAlgo,
@@ -30,7 +30,7 @@ from src.features.search_engine.algos.search import (
     SearchEngineMmapScannerAlgo,
 )
 
-from src.features.search_engine.algos.observability import (
+from src.features.code_engine.algos.observability import (
     PositionSpanTracker,
     PositionSpan,
     AstExtractor,
@@ -49,7 +49,7 @@ from src.features.search_engine.algos.observability import (
     FileOutline,
 )
 
-from src.features.search_engine.algos.update import (
+from src.features.code_engine.algos.update import (
     CstMatcher,
     CstMatch,
     UpdateBatchPatcherAlgo,
@@ -60,7 +60,7 @@ from src.features.search_engine.algos.update import (
 )
 
 
-class SearchEngineService:
+class CodeEngineService:
     def __init__(self) -> None:
         self.binary_classifier = SearchEngineBinaryClassifierAlgo
         self.content_type_prober = SearchEngineContentTypeProberAlgo

@@ -1,5 +1,5 @@
 """
-Module: test_search_engine_algos
+Module: test_code_engine_algos
 Unit Tests: Complete Coverage of Search, Observability, and Update Algorithms
 """
 
@@ -7,7 +7,7 @@ import os
 import tempfile
 import unittest
 
-from src.features.search_engine.algos.search import (
+from src.features.code_engine.algos.search import (
     SearchEngineRecursiveWalkAlgo,
     SearchEngineWorkStealingWalkerAlgo,
     SearchEngineGitAwareWalkerAlgo,
@@ -25,7 +25,7 @@ from src.features.search_engine.algos.search import (
     SearchEngineMmapScannerAlgo,
 )
 
-from src.features.search_engine.algos.observability import (
+from src.features.code_engine.algos.observability import (
     PositionSpanTracker,
     AstExtractor,
     SymbolScopeResolver,
@@ -34,7 +34,7 @@ from src.features.search_engine.algos.observability import (
     CodeOutlineGenerator,
 )
 
-from src.features.search_engine.algos.update import (
+from src.features.code_engine.algos.update import (
     CstMatcher,
     UpdateBatchPatcherAlgo,
     PatchOperation,
