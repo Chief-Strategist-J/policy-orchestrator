@@ -10,17 +10,22 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
    - POST /api/v1/rag/index: Trigger full re-indexing of policy knowledge base.
    - POST /api/v1/agent/run: Execute autonomous AI Agent policy reasoning workflow.
    - POST /api/v1/audit/scan: Execute deterministic invariant repository audit.
+   - POST /api/v1/graph/build: Extract & build semantic policy knowledge graph.
+   - POST /api/v1/graph/query: Execute declarative Cypher/pattern queries.
+   - GET  /api/v1/graph/impact/{rule_id}: Query topological rule dependencies.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Zero-Inline-Comment Doctrine: Route declarations, dependency injections,
      and payload wrapping procedures are articulated in this header.
    - Standard Envelope: All routes return data encapsulated in `{meta, data, errors}`.
-   - OpenTelemetry Trace Extraction: Extracts W3C `traceparent` or generates trace_id.
+   - Open Standards & Pluggable Adapters: Configurable backends for LLM (OpenAI,
+     Ollama, Mock), Vector (Qdrant, In-Memory), and Graph (Neo4j, In-Memory).
 ================================================================================
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Request, HTTPException
 
 from src.api.rest.envelope import build_success_envelope, build_error_envelope
@@ -36,20 +41,47 @@ from src.features.agent.types.agent_types import AgentExecutionRequest
 from src.features.audit.service.audit_service import AuditService
 from src.features.rag.service.rag_service import RAGService
 from src.features.agent.service.agent_service import AgentService
+from src.features.knowledge_graph.service.knowledge_graph_service import KnowledgeGraphService
 from src.infra.adapters.knowledge.policy_rules_loader import PolicyRulesMarkdownLoader
 from src.infra.adapters.vector.in_memory_vector_adapter import InMemoryCosineVectorAdapter
+from src.infra.adapters.vector.qdrant_vector_adapter import QdrantVectorAdapter
+from src.infra.adapters.graph.in_memory_graph_adapter import InMemoryGraphAdapter
+from src.infra.adapters.graph.neo4j_adapter import Neo4jGraphAdapter
 from src.infra.adapters.llm.openai_compatible_adapter import OpenAICompatibleAdapter
 from src.infra.adapters.llm.mock_llm_adapter import MockLLMAdapter
 
 router = APIRouter(prefix="/api/v1")
 
+class GraphQueryDTO(BaseModel):
+    query: str = Field(..., description="Cypher or pattern matching query")
+    parameters: Optional[Dict[str, Any]] = Field(default=None, description="Query parameters")
+
 def get_orchestrator_services() -> Dict[str, Any]:
     rules_dir = os.environ.get("POLICY_RULES_DIR", "../rules")
     llm_backend = os.environ.get("LLM_BACKEND", "mock")
+    vector_backend = os.environ.get("VECTOR_BACKEND", "inmemory")
+    graph_backend = os.environ.get("GRAPH_BACKEND", "inmemory")
     
     knowledge_source = PolicyRulesMarkdownLoader(base_rules_dir=rules_dir)
-    vector_store = InMemoryCosineVectorAdapter()
     
+    if vector_backend == "qdrant":
+        vector_store = QdrantVectorAdapter(
+            url=os.environ.get("QDRANT_URL", "http://localhost:6333"),
+            collection_name=os.environ.get("QDRANT_COLLECTION", "policy_rules"),
+            vector_size=int(os.environ.get("VECTOR_SIZE", "64")),
+        )
+    else:
+        vector_store = InMemoryCosineVectorAdapter()
+    
+    if graph_backend == "neo4j":
+        graph_store = Neo4jGraphAdapter(
+            uri=os.environ.get("NEO4J_URI", "http://localhost:7474"),
+            user=os.environ.get("NEO4J_USER", "neo4j"),
+            password=os.environ.get("NEO4J_PASSWORD", "password"),
+        )
+    else:
+        graph_store = InMemoryGraphAdapter()
+
     if llm_backend == "openai":
         llm_provider = OpenAICompatibleAdapter(
             base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
@@ -76,11 +108,16 @@ def get_orchestrator_services() -> Dict[str, Any]:
         rag_service=rag_svc,
         audit_service=audit_svc,
     )
+    graph_svc = KnowledgeGraphService(
+        graph_store=graph_store,
+        knowledge_source=knowledge_source,
+    )
 
     return {
         "rag": rag_svc,
         "audit": audit_svc,
         "agent": agent_svc,
+        "graph": graph_svc,
     }
 
 _SERVICES = None
@@ -212,3 +249,31 @@ def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, 
         data={"total_findings": len(findings), "findings": findings_data},
         trace_id=trace_id,
     )
+
+@router.post("/graph/build")
+def build_graph(request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    summary = svcs["graph"].build_graph_from_rules()
+    return build_success_envelope(data=summary, trace_id=trace_id)
+
+@router.post("/graph/query")
+def query_graph(payload: GraphQueryDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    res = svcs["graph"].query_graph(payload.query, payload.parameters)
+    return build_success_envelope(
+        data={
+            "records": res.records,
+            "nodes_count": len(res.nodes),
+            "relationships_count": len(res.relationships),
+        },
+        trace_id=trace_id,
+    )
+
+@router.get("/graph/impact/{rule_id}")
+def get_rule_impact(rule_id: str, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    impact = svcs["graph"].get_rule_impact(rule_id)
+    return build_success_envelope(data={"rule_id": rule_id, "impact": impact}, trace_id=trace_id)
