@@ -5,36 +5,79 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: POLICY ORCHESTRATOR CLI ENTRYPOINT
 ================================================================================
 
 1. OVERVIEW & OBJECTIVE:
-   This module provides the primary command-line interface for the
-   policy-orchestrator package. It orchestrates subcommands for repository
-   invariant auditing (`audit`), batch code refactoring (`refactor`), and
-   continuous policy validation & synchronization (`policy-check`).
+   This module provides the unified command-line interface for the
+   policy-orchestrator system. It dispatches commands for:
+   - `audit`: Scans repository invariants and architecture rules.
+   - `rag`: Grounded semantic retrieval over policy markdown rules.
+   - `agent`: Autonomous AI agent execution for analysis and safe refactoring.
+   - `refactor`: Batch AST / regex code refactoring.
+   - `policy-check`: Engineering contract verification.
+   - `serve`: Launches Uvicorn REST API server.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
-   - Zero-Inline-Comment Doctrine: All CLI argument specifications, dispatching
-     logic, and presentation workflows are documented solely in this top-side header.
-     Main functions and handler blocks remain 100% comment-free and pure.
-   - Subcommand Dispatching: Routes clean command payloads to corresponding
-     domain services (`AuditService`, `RefactorService`, `PolicySyncService`).
-   - Standardized POSIX Exit Codes: 0 on success; 1 on violation detection or error.
-
-3. COMMAND SUITE:
-   - `audit`: Scans repository files for edge cases and invariant violations.
-   - `refactor`: Executes safe, dry-run-capable batch code modifications.
-   - `policy-check`: Validates the structure and completeness of markdown policies.
+   - Zero-Inline-Comment Doctrine: All subcommand dispatch logic, arguments,
+     and terminal formatting routines are documented solely in this top-side header.
+     Functions and loops remain 100% comment-free and pure.
+   - Posix Exit Codes: 0 for success, 1 for violations/errors.
 ================================================================================
 """
 
 import sys
+import os
+from pathlib import Path
+
+REPO_ROOT = str(Path(__file__).resolve().parent.parent.parent.parent)
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 import json
 import argparse
-from pathlib import Path
 from dataclasses import asdict
 from typing import List
 
 from src.features.audit.service.audit_service import AuditService
 from src.features.refactor.service.refactor_service import RefactorService
 from src.features.policy_sync.service.policy_sync_service import PolicySyncService
+from src.features.rag.service.rag_service import RAGService
+from src.features.rag.types.rag_types import RAGQueryRequest
+from src.features.agent.service.agent_service import AgentService
+from src.features.agent.types.agent_types import AgentExecutionRequest
+from src.infra.adapters.knowledge.policy_rules_loader import PolicyRulesMarkdownLoader
+from src.infra.adapters.vector.in_memory_vector_adapter import InMemoryCosineVectorAdapter
+from src.infra.adapters.llm.openai_compatible_adapter import OpenAICompatibleAdapter
+from src.infra.adapters.llm.mock_llm_adapter import MockLLMAdapter
+
+def _init_rag_and_agent(rules_dir: str, backend: str):
+    knowledge_source = PolicyRulesMarkdownLoader(base_rules_dir=rules_dir)
+    vector_store = InMemoryCosineVectorAdapter()
+
+    if backend == "openai":
+        llm_provider = OpenAICompatibleAdapter(
+            base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            api_key=os.environ.get("OPENAI_API_KEY", ""),
+            model_name=os.environ.get("OPENAI_MODEL", "gpt-4o"),
+        )
+    elif backend == "ollama":
+        llm_provider = OpenAICompatibleAdapter(
+            base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+            api_key="EMPTY",
+            model_name=os.environ.get("OLLAMA_MODEL", "llama3.2"),
+        )
+    else:
+        llm_provider = MockLLMAdapter()
+
+    rag_svc = RAGService(
+        knowledge_source=knowledge_source,
+        vector_store=vector_store,
+        llm_provider=llm_provider,
+    )
+    audit_svc = AuditService()
+    agent_svc = AgentService(
+        llm_provider=llm_provider,
+        rag_service=rag_svc,
+        audit_service=audit_svc,
+    )
+    return rag_svc, agent_svc
 
 def handle_audit_command(args: argparse.Namespace) -> int:
     service = AuditService()
@@ -64,17 +107,71 @@ def handle_audit_command(args: argparse.Namespace) -> int:
 
     return 1 if any(f.severity in {"CRITICAL", "HIGH"} for f in findings) else 0
 
+def handle_rag_command(args: argparse.Namespace) -> int:
+    rag_svc, _ = _init_rag_and_agent(args.rules_dir, args.backend)
+    
+    if args.action == "index":
+        count = rag_svc.index_all_rules()
+        print(f"✅ Indexed {count} policy chunks into vector index.")
+        return 0
+
+    res = rag_svc.retrieve_context(
+        RAGQueryRequest(
+            query=args.query,
+            top_k=args.top_k,
+            category_filter=args.category,
+        )
+    )
+
+    if args.json:
+        print(json.dumps(asdict(res), indent=2))
+        return 0
+
+    print(f"\n{'='*75}")
+    print(f"📚 GROUNDED POLICY RETRIEVAL: {res.total_found} Matches ({res.latency_ms} ms)")
+    print(f"{'='*75}\n")
+    print(res.formatted_context_block)
+    return 0
+
+def handle_agent_command(args: argparse.Namespace) -> int:
+    _, agent_svc = _init_rag_and_agent(args.rules_dir, args.backend)
+    req = AgentExecutionRequest(
+        prompt=args.prompt,
+        target_directory=args.target_dir,
+        max_steps=args.max_steps,
+    )
+    result = agent_svc.execute_agent_loop(req)
+
+    if args.json:
+        print(json.dumps(asdict(result), indent=2))
+        return 0
+
+    print(f"\n{'='*75}")
+    print(f"🤖 AI POLICY AGENT EXECUTION: {result.status} ({result.duration_ms} ms)")
+    print(f"{'='*75}\n")
+    print(f"Session ID : {result.session_id}")
+    print(f"Steps Taken: {result.total_steps}")
+    print(f"Sources    : {', '.join(result.grounded_sources) if result.grounded_sources else 'None'}\n")
+
+    for step in result.steps:
+        print(f"Step {step.step_number}: {step.thought}")
+        if step.tool_calls:
+            for tc in step.tool_calls:
+                print(f"  🔧 Tool: {tc.tool_name} -> {tc.status}")
+
+    print(f"\n--- Final Answer ---\n{result.final_response}\n")
+    return 0
+
 def handle_refactor_command(args: argparse.Namespace) -> int:
     service = RefactorService()
     exts = set(e.strip().lower() for e in args.ext.split(","))
-    
     result = service.execute_batch_replace(
         root_dir=args.root,
         find_pattern=args.find,
         replace_text=args.replace,
         extensions=exts,
         is_regex=args.regex,
-        dry_run=not args.apply
+        dry_run=not args.apply,
     )
 
     if args.json:
@@ -117,41 +214,75 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
     print("✅ All algorithm entries strictly conform to the engineering contract standard.")
     return 0
 
+def handle_serve_command(args: argparse.Namespace) -> int:
+    import uvicorn
+    os.environ["POLICY_RULES_DIR"] = args.rules_dir
+    os.environ["LLM_BACKEND"] = args.backend
+    uvicorn.run("src.api.rest.app:app", host=args.host, port=args.port, reload=args.reload)
+    return 0
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="policy-orchestrator",
-        description="Repository Invariant Auditor, Policy Synchronizer & Refactor Orchestrator"
+        description="Repository Invariant Auditor, AI Agent & Policy Orchestrator",
     )
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
-    # Subcommand: audit
-    audit_parser = subparsers.add_parser("audit", help="Run multi-vector invariant scan across repository")
-    audit_parser.add_argument("--root", default=".", help="Root directory to scan (default: current directory)")
+    audit_parser = subparsers.add_parser("audit", help="Run multi-vector invariant scan")
+    audit_parser.add_argument("--root", default=".", help="Root directory")
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
-    # Subcommand: refactor
+    rag_parser = subparsers.add_parser("rag", help="Retrieve or index grounded policy rules")
+    rag_parser.add_argument("action", choices=["search", "index"], help="RAG action")
+    rag_parser.add_argument("--query", default="", help="Search query")
+    rag_parser.add_argument("--category", default=None, help="Policy category filter")
+    rag_parser.add_argument("--top-k", type=int, default=5, help="Number of documents to retrieve")
+    rag_parser.add_argument("--rules-dir", default="../rules", help="Path to rules folder")
+    rag_parser.add_argument("--backend", default="mock", choices=["mock", "openai", "ollama"], help="LLM backend")
+    rag_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
+    agent_parser = subparsers.add_parser("agent", help="Run autonomous AI policy agent")
+    agent_parser.add_argument("prompt", help="Task prompt for the agent")
+    agent_parser.add_argument("--target-dir", default=".", help="Directory to analyze")
+    agent_parser.add_argument("--max-steps", type=int, default=8, help="Maximum reasoning steps")
+    agent_parser.add_argument("--rules-dir", default="../rules", help="Path to rules folder")
+    agent_parser.add_argument("--backend", default="mock", choices=["mock", "openai", "ollama"], help="LLM backend")
+    agent_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
     refactor_parser = subparsers.add_parser("refactor", help="Execute safe batch search-and-replace")
     refactor_parser.add_argument("--root", default=".", help="Root directory")
-    refactor_parser.add_argument("--find", required=True, help="Pattern or literal string to find")
+    refactor_parser.add_argument("--find", required=True, help="Pattern to find")
     refactor_parser.add_argument("--replace", required=True, help="Replacement string")
-    refactor_parser.add_argument("--ext", default=".go,.ts,.js,.py,.sql", help="Comma-separated extensions")
-    refactor_parser.add_argument("--regex", action="store_true", help="Treat find pattern as regex")
-    refactor_parser.add_argument("--apply", action="store_true", help="Apply mutations (default is dry-run)")
+    refactor_parser.add_argument("--ext", default=".go,.ts,.js,.py,.sql", help="Extensions")
+    refactor_parser.add_argument("--regex", action="store_true", help="Treat pattern as regex")
+    refactor_parser.add_argument("--apply", action="store_true", help="Apply mutations")
     refactor_parser.add_argument("--json", action="store_true", help="Output summary as JSON")
 
-    # Subcommand: policy-check
-    policy_parser = subparsers.add_parser("policy-check", help="Audit policy contract markdown for compliance")
+    policy_parser = subparsers.add_parser("policy-check", help="Audit markdown contracts")
     policy_parser.add_argument("--path", default="policies/rules/edgeCases/algos/agent-operating-contract.md", help="Contract path")
-    policy_parser.add_argument("--json", action="store_true", help="Output audit report as JSON")
+    policy_parser.add_argument("--json", action="store_true", help="Output report as JSON")
+
+    serve_parser = subparsers.add_parser("serve", help="Launch FastAPI REST server")
+    serve_parser.add_argument("--host", default="0.0.0.0", help="Bind host")
+    serve_parser.add_argument("--port", type=int, default=8000, help="Bind port")
+    serve_parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
+    serve_parser.add_argument("--rules-dir", default="../rules", help="Path to rules folder")
+    serve_parser.add_argument("--backend", default="mock", choices=["mock", "openai", "ollama"], help="LLM backend")
 
     args = parser.parse_args()
 
-    if args.subcommand == "audit":
-        sys.exit(handle_audit_command(args))
-    elif args.subcommand == "refactor":
-        sys.exit(handle_refactor_command(args))
-    elif args.subcommand == "policy-check":
-        sys.exit(handle_policy_check_command(args))
+    dispatch = {
+        "audit": handle_audit_command,
+        "rag": handle_rag_command,
+        "agent": handle_agent_command,
+        "refactor": handle_refactor_command,
+        "policy-check": handle_policy_check_command,
+        "serve": handle_serve_command,
+    }
+
+    handler = dispatch.get(args.subcommand)
+    if handler:
+        sys.exit(handler(args))
 
 if __name__ == "__main__":
     main()

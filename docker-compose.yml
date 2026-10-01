@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  policy-orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chief-strategist/policy-orchestrator:latest
+    container_name: policy-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - POLICY_RULES_DIR=/app/policies/rules
+      - LLM_BACKEND=mock # Options: mock, openai, ollama
+      - OPENAI_BASE_URL=https://api.openai.com/v1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-EMPTY}
+      - OPENAI_MODEL=gpt-4o
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
+      - OLLAMA_MODEL=llama3.2
+    volumes:
+      - ../rules:/app/policies/rules:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
