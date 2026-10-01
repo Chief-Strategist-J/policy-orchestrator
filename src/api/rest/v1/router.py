@@ -9,6 +9,8 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
    - POST /api/v1/rag/search: Grounded semantic search over policy markdown rules.
    - POST /api/v1/rag/index: Trigger full re-indexing of policy knowledge base.
    - POST /api/v1/agent/run: Execute autonomous AI Agent policy reasoning workflow.
+   - GET  /api/v1/agents: List all 1000+ declarative specialized agent manifests.
+   - POST /api/v1/agents/{agent_id}/run: Execute a specific declarative specialized agent.
    - POST /api/v1/audit/scan: Execute deterministic invariant repository audit.
    - POST /api/v1/graph/build: Extract & build semantic policy knowledge graph.
    - POST /api/v1/graph/query: Execute declarative Cypher/pattern queries.
@@ -19,7 +21,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
      and payload wrapping procedures are articulated in this header.
    - Standard Envelope: All routes return data encapsulated in `{meta, data, errors}`.
    - Open Standards & Pluggable Adapters: Configurable backends for LLM (OpenAI,
-     Ollama, Mock), Vector (Qdrant, In-Memory), and Graph (Neo4j, In-Memory).
+     Ollama, Mock), Vector (Qdrant, In-Memory), Graph (Neo4j, In-Memory), and Search.
 ================================================================================
 """
 
@@ -38,6 +40,7 @@ from src.features.agent.schema.agent_schema import (
     AgentRunRequestDTO,
 )
 from src.features.agent.types.agent_types import AgentExecutionRequest
+from src.domain.ports.agent_manifest_port import AgentRole
 from src.features.audit.service.audit_service import AuditService
 from src.features.rag.service.rag_service import RAGService
 from src.features.agent.service.agent_service import AgentService
@@ -47,6 +50,10 @@ from src.infra.adapters.vector.in_memory_vector_adapter import InMemoryCosineVec
 from src.infra.adapters.vector.qdrant_vector_adapter import QdrantVectorAdapter
 from src.infra.adapters.graph.in_memory_graph_adapter import InMemoryGraphAdapter
 from src.infra.adapters.graph.neo4j_adapter import Neo4jGraphAdapter
+from src.infra.adapters.search.duckduckgo_search_adapter import DuckDuckGoSearchAdapter
+from src.infra.adapters.search.mock_search_adapter import MockWebSearchAdapter
+from src.infra.adapters.tools.in_memory_tool_registry_adapter import InMemoryToolRegistryAdapter
+from src.infra.adapters.agent.in_memory_agent_registry_adapter import InMemoryAgentManifestRegistryAdapter
 from src.infra.adapters.llm.openai_compatible_adapter import OpenAICompatibleAdapter
 from src.infra.adapters.llm.mock_llm_adapter import MockLLMAdapter
 
@@ -61,6 +68,7 @@ def get_orchestrator_services() -> Dict[str, Any]:
     llm_backend = os.environ.get("LLM_BACKEND", "mock")
     vector_backend = os.environ.get("VECTOR_BACKEND", "inmemory")
     graph_backend = os.environ.get("GRAPH_BACKEND", "inmemory")
+    search_backend = os.environ.get("SEARCH_BACKEND", "mock")
     
     knowledge_source = PolicyRulesMarkdownLoader(base_rules_dir=rules_dir)
     
@@ -81,6 +89,14 @@ def get_orchestrator_services() -> Dict[str, Any]:
         )
     else:
         graph_store = InMemoryGraphAdapter()
+
+    if search_backend == "duckduckgo":
+        search_provider = DuckDuckGoSearchAdapter()
+    else:
+        search_provider = MockWebSearchAdapter()
+
+    tool_registry = InMemoryToolRegistryAdapter()
+    agent_registry = InMemoryAgentManifestRegistryAdapter(load_builtins=True)
 
     if llm_backend == "openai":
         llm_provider = OpenAICompatibleAdapter(
@@ -107,6 +123,8 @@ def get_orchestrator_services() -> Dict[str, Any]:
         llm_provider=llm_provider,
         rag_service=rag_svc,
         audit_service=audit_svc,
+        search_provider=search_provider,
+        tool_registry=tool_registry,
     )
     graph_svc = KnowledgeGraphService(
         graph_store=graph_store,
@@ -118,6 +136,8 @@ def get_orchestrator_services() -> Dict[str, Any]:
         "audit": audit_svc,
         "agent": agent_svc,
         "graph": graph_svc,
+        "agent_registry": agent_registry,
+        "tool_registry": tool_registry,
     }
 
 _SERVICES = None
@@ -227,6 +247,83 @@ def run_agent(payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
         trace_id=trace_id,
     )
 
+@router.get("/agents")
+def list_declarative_agents(request: Request, category: Optional[str] = None) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    manifests = svcs["agent_registry"].list_manifests(category=category)
+    return build_success_envelope(
+        data={
+            "total_agents": len(manifests),
+            "agents": [
+                {
+                    "agent_id": m.agent_id,
+                    "name": m.name,
+                    "role": m.role.value,
+                    "category": m.category,
+                    "description": m.description,
+                    "algorithms": m.algorithms,
+                    "allowed_tools": m.allowed_tools,
+                    "tags": m.tags,
+                }
+                for m in manifests
+            ],
+        },
+        trace_id=trace_id,
+    )
+
+@router.post("/agents/{agent_id}/run")
+def run_specialized_agent(agent_id: str, payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    manifest = svcs["agent_registry"].get_manifest(agent_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail=f"Specialized Agent '{agent_id}' not found.")
+
+    agent_req = AgentExecutionRequest(
+        prompt=payload.prompt,
+        target_directory=payload.target_directory,
+        max_steps=payload.max_steps,
+        temperature=payload.temperature,
+        session_id=payload.session_id,
+    )
+    result = svcs["agent"].execute_agent_loop(agent_req, manifest=manifest)
+    
+    steps_data = [
+        {
+            "step_number": s.step_number,
+            "thought": s.thought,
+            "action": s.action,
+            "observation": s.observation,
+            "tool_calls": [
+                {
+                    "tool_name": tc.tool_name,
+                    "arguments": tc.arguments,
+                    "output": tc.output,
+                    "duration_ms": tc.duration_ms,
+                    "status": tc.status,
+                }
+                for tc in s.tool_calls
+            ],
+        }
+        for s in result.steps
+    ]
+    return build_success_envelope(
+        data={
+            "agent_id": agent_id,
+            "agent_name": manifest.name,
+            "session_id": result.session_id,
+            "status": result.status,
+            "final_response": result.final_response,
+            "steps": steps_data,
+            "total_steps": result.total_steps,
+            "total_tokens": result.total_tokens,
+            "grounded_sources": result.grounded_sources,
+            "duration_ms": result.duration_ms,
+        },
+        trace_id=trace_id,
+    )
+
 @router.post("/audit/scan")
 def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -261,7 +358,7 @@ def build_graph(request: Request) -> Dict[str, Any]:
 def query_graph(payload: GraphQueryDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svcs = get_services()
-    res = svcs["graph"].query_graph(payload.query, payload.parameters)
+    res = svcs["graph"].query_cypher(payload.query, payload.parameters)
     return build_success_envelope(
         data={
             "records": res.records,

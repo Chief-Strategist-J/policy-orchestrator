@@ -1,124 +1,383 @@
 openapi: 3.1.0
 info:
-  title: Policy & Invariant Orchestration API
+  title: Policy Orchestrator & AI Meta-Agent API
   version: 1.0.0
-  description: REST API for repository invariant auditing, policy synchronization, and batch refactor execution.
+  description: >-
+    Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
+    grounded hybrid GraphRAG, autonomous AI Agent orchestration, and safe AST refactoring.
+servers:
+  - url: http://localhost:8000
+    description: Local development orchestrator
+
 paths:
-  /api/v1/audit:
+  /api/v1/health:
+    get:
+      summary: Service Health & Liveness Probe
+      operationId: getHealth
+      responses:
+        '200':
+          description: Health check envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_HealthResponse'
+
+  /api/v1/audit/scan:
     post:
-      summary: Execute multi-vector repository invariant audit
-      operationId: executeAudit
+      summary: Execute Multi-Vector Invariant Repository Scan
+      operationId: executeAuditScan
+      parameters:
+        - name: target_directory
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "."
+      responses:
+        '200':
+          description: Audit scan findings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AuditResponse'
+
+  /api/v1/rag/index:
+    post:
+      summary: Re-index Grounded Markdown Policy Contracts
+      operationId: indexPolicies
+      responses:
+        '200':
+          description: Indexing completion status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_IndexingResponse'
+
+  /api/v1/rag/search:
+    post:
+      summary: Grounded Hybrid Semantic & Lexical Policy Retrieval (RRF)
+      operationId: searchPolicies
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuditRequest'
+              $ref: '#/components/schemas/RAGSearchRequest'
       responses:
         '200':
-          description: Audit completed successfully
+          description: Grounded policy chunks with Reciprocal Rank Fusion scores
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuditResponse'
-  /api/v1/refactor:
+                $ref: '#/components/schemas/Envelope_RAGSearchResponse'
+
+  /api/v1/agent/run:
     post:
-      summary: Execute dry-run or applied batch code refactoring
-      operationId: executeRefactor
+      summary: Run Autonomous AI Meta-Agent Reasoning Loop
+      operationId: runMetaAgent
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefactorRequest'
+              $ref: '#/components/schemas/AgentRunRequest'
       responses:
         '200':
-          description: Refactor operation result
+          description: Complete execution trajectory and final policy response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefactorResponse'
+                $ref: '#/components/schemas/Envelope_AgentRunResponse'
+
+  /api/v1/agents:
+    get:
+      summary: List All 1000+ Declarative Specialized Policy Agents
+      operationId: listDeclarativeAgents
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of registered specialized agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AgentListResponse'
+
+  /api/v1/agents/{agent_id}/run:
+    post:
+      summary: Execute Specific Declarative Specialized Agent
+      operationId: runSpecializedAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRunRequest'
+      responses:
+        '200':
+          description: Agent execution trajectory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AgentRunResponse'
+
+  /api/v1/graph/build:
+    post:
+      summary: Build Semantic Knowledge Graph from Markdown Contracts
+      operationId: buildKnowledgeGraph
+      responses:
+        '200':
+          description: Knowledge graph summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_GraphBuildResponse'
+
+  /api/v1/graph/query:
+    post:
+      summary: Execute Declarative Cypher Query on Knowledge Graph
+      operationId: queryKnowledgeGraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphQueryRequest'
+      responses:
+        '200':
+          description: Cypher query result records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_GraphQueryResponse'
+
+  /api/v1/graph/impact/{rule_id}:
+    get:
+      summary: Query Topological Invariant Dependencies and Failure Impact
+      operationId: getRuleImpact
+      parameters:
+        - name: rule_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Connected architecture patterns and failure modes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_RuleImpactResponse'
 
 components:
   schemas:
-    AuditRequest:
+    ResponseMeta:
       type: object
       required:
-        - target_path
+        - trace_id
+        - timestamp
+        - version
+        - status
       properties:
-        target_path:
+        trace_id:
           type: string
-        categories:
+          example: "0af7651916cd43dd8448eb211c80319c"
+        timestamp:
+          type: string
+          example: "2026-10-01T12:00:00Z"
+        version:
+          type: string
+          example: "v1"
+        status:
+          type: string
+          enum: [success, error]
+
+    ErrorItem:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "Field 'prompt' is required."
+        details:
+          type: object
+
+    RAGSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          example: "transactional outbox dual write prevention"
+        top_k:
+          type: integer
+          default: 5
+        category_filter:
+          type: string
+        min_score:
+          type: number
+          default: 0.05
+
+    AgentRunRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          example: "Audit codebase and check for naked sleeps and dual write traps"
+        target_directory:
+          type: string
+          default: "."
+        max_steps:
+          type: integer
+          default: 8
+        temperature:
+          type: number
+          default: 0.2
+        session_id:
+          type: string
+
+    GraphQueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          example: "MATCH (r:Rule)-[:ENFORCES]->(p:ArchitecturePattern) RETURN r, p"
+        parameters:
+          type: object
+
+    Envelope_HealthResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
           type: array
           items:
-            type: string
-        severity_threshold:
-          type: string
-          enum: [CRITICAL, HIGH, MEDIUM, LOW]
-    AuditResponse:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AuditResponse:
       type: object
-      required:
-        - total_findings
-        - findings
+      required: [meta, data]
       properties:
-        total_findings:
-          type: integer
-        findings:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
           type: array
           items:
-            $ref: '#/components/schemas/AuditFinding'
-    AuditFinding:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_IndexingResponse:
       type: object
-      required:
-        - rule_id
-        - category
-        - severity
-        - file
-        - line
-        - snippet
-        - recommendation
+      required: [meta, data]
       properties:
-        rule_id:
-          type: string
-        category:
-          type: string
-        severity:
-          type: string
-        file:
-          type: string
-        line:
-          type: integer
-        snippet:
-          type: string
-        recommendation:
-          type: string
-    RefactorRequest:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_RAGSearchResponse:
       type: object
-      required:
-        - target_path
-        - find_pattern
-        - replace_text
+      required: [meta, data]
       properties:
-        target_path:
-          type: string
-        find_pattern:
-          type: string
-        replace_text:
-          type: string
-        is_regex:
-          type: boolean
-        dry_run:
-          type: boolean
-    RefactorResponse:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AgentRunResponse:
       type: object
-      required:
-        - total_occurrences
-        - modified_files
-        - dry_run
+      required: [meta, data]
       properties:
-        total_occurrences:
-          type: integer
-        modified_files:
-          type: integer
-        dry_run:
-          type: boolean
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AgentListResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_GraphBuildResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_GraphQueryResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_RuleImpactResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'

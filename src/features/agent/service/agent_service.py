@@ -293,7 +293,11 @@ class AgentService:
 
         return {"error": f"Unknown tool: {name}"}
 
-    def execute_agent_loop(self, request: AgentExecutionRequest) -> AgentExecutionResult:
+    def execute_agent_loop(
+        self,
+        request: AgentExecutionRequest,
+        manifest: Optional[Any] = None,
+    ) -> AgentExecutionResult:
         start_time = time.perf_counter()
         session_id = request.session_id or f"sess_{uuid.uuid4().hex[:12]}"
         
@@ -307,8 +311,14 @@ class AgentService:
         for doc in initial_rag.documents:
             grounded_sources.append(doc.source_file)
 
+        active_system_prompt = manifest.system_prompt if manifest and hasattr(manifest, "system_prompt") else SYSTEM_POLICY_PROMPT
+        active_tools = [
+            t for t in self._tools
+            if not manifest or not hasattr(manifest, "allowed_tools") or not manifest.allowed_tools or t.name in manifest.allowed_tools
+        ]
+
         messages = [
-            ChatMessage(role="system", content=SYSTEM_POLICY_PROMPT),
+            ChatMessage(role="system", content=active_system_prompt),
             ChatMessage(
                 role="user",
                 content=(
@@ -326,7 +336,7 @@ class AgentService:
             gen_res = self.llm_provider.generate(
                 messages=messages,
                 temperature=request.temperature,
-                tools=self._tools,
+                tools=active_tools,
             )
             total_tokens += gen_res.prompt_tokens + gen_res.completion_tokens
 

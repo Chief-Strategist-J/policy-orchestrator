@@ -1,6 +1,6 @@
-# Policy Orchestrator & AI Meta-Agent: Master Roadmap & TODO
+# Policy Orchestrator & AI Meta-Agent: Master Roadmap & Algorithm Engine
 
-This document tracks the comprehensive architecture, completed capabilities, and prioritized roadmap for the **Policy Orchestrator, Advanced GraphRAG, and AI Meta-Agent Engine** (`policies/policy-orchestrator`).
+This document tracks the comprehensive architecture, completed capabilities, the **1000+ Declarative Agent Catalog**, and the prioritized roadmap for the **Policy Orchestrator, Advanced GraphRAG, and AI Meta-Agent Engine** (`policies/policy-orchestrator`).
 
 ---
 
@@ -8,17 +8,17 @@ This document tracks the comprehensive architecture, completed capabilities, and
 
 1. **Hexagonal Architecture (Ports & Adapters)**:
    - Domain business logic is 100% decoupled from concrete external SDKs, vector engines, and databases.
-   - External dependencies (LLMs, Vector Stores, Graph Stores, Web Search, Tool Registries) implement abstract domain ports.
+   - External dependencies (LLMs, Vector Stores, Graph Stores, Web Search, Tool Registries, Agent Registries) implement abstract domain ports.
 2. **Zero-Inline-Comment Doctrine**:
    - Zero comments permitted inside function bodies, loop blocks, or conditional handlers.
    - All documentation, algorithmic blueprints, complexity metrics, and safety contracts live in top-side standardized module headers.
 3. **Open Standards**:
    - W3C Distributed Trace Context (`traceparent` header propagation).
    - CloudEvents 1.0 event model alignment.
-   - OpenAPI v3 contract conformance with uniform `{meta, data, errors}` response envelopes.
-4. **Agent of Agents (Meta-Agent Orchestrator)**:
-   - Designed to maintain consistency across large multi-project workspaces and accelerate feature delivery by 1000%.
-   - Reusable tool and scraper registry prevents repeating tool creation work.
+   - OpenAPI v3.1 contract conformance with uniform `{meta, data, errors}` response envelopes.
+4. **Declarative Agent Scaling (Template for 1000+ Specialized Agents)**:
+   - Agents are declared as frozen `AgentManifest` data structures (specifying `agent_id`, `role`, `system_prompt`, `allowed_tools`, and `algorithms`).
+   - Zero boilerplate code duplication: 1000+ agents can be loaded from YAML manifests or dynamic registries instantly.
 
 ---
 
@@ -31,14 +31,56 @@ This document tracks the comprehensive architecture, completed capabilities, and
 | **Domain** | Graph Database | ✅ Completed | `GraphStorePort` | `InMemoryGraphAdapter`, `Neo4jGraphAdapter` (openCypher/Memgraph) |
 | **Domain** | Live Search & Scraper | ✅ Completed | `WebSearchPort` | `DuckDuckGoSearchAdapter`, `MockWebSearchAdapter` |
 | **Domain** | Tool Registry & Cache| ✅ Completed | `ToolRegistryPort` | `InMemoryToolRegistryAdapter` (Dynamic AST & Scraper Store) |
+| **Domain** | Declarative Agent Manifests | ✅ Completed | `AgentManifestRegistryPort` | `InMemoryAgentManifestRegistryAdapter` (27+ Builtin Agents, scalable to 1000+) |
 | **Domain** | Knowledge Source | ✅ Completed | `KnowledgeSourcePort`| `PolicyRulesMarkdownLoader` (Parses `policies/rules/`) |
 | **Feature** | Invariant Audit | ✅ Completed | `AuditService` | Multi-vector pattern rules, severity triage |
 | **Feature** | Hybrid RAG | ✅ Completed | `RAGService` | BM25 lexical search + dense vector + Reciprocal Rank Fusion (RRF) |
 | **Feature** | Knowledge Graph | ✅ Completed | `KnowledgeGraphService`| Automatic entity & dependency extraction, BFS shortest path |
-| **Feature** | AI Policy Meta-Agent | ✅ Completed | `AgentService` | ReAct reasoning loop, dynamic tool execution, safety guardrails |
-| **Delivery**| REST API | ✅ Completed | FastAPI v1 Router | Envelope `{meta, data, errors}`, trace context middleware |
+| **Feature** | AI Policy Meta-Agent | ✅ Completed | `AgentService` | ReAct reasoning loop, specialized agent execution, safety guardrails |
+| **Delivery**| REST API | ✅ Completed | FastAPI v1 Router | Envelope `{meta, data, errors}`, trace context middleware, OpenAPI 3.1 |
 | **Delivery**| CLI Utility | ✅ Completed | `python -m src.api.cli` | `audit`, `rag`, `agent`, `refactor`, `policy-check`, `serve` |
 | **DevOps**  | Dockerization | ✅ Completed | Dockerfile + Compose | Multi-stage non-root runtime, Qdrant & Neo4j integration |
+
+---
+
+## 🤖 Declarative Agent Engine & Algorithm Registry (22 Algos + 5 Pipeline Roles)
+
+All agents are declaratively defined in [`src/features/agent/registry/builtin_agents.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/features/agent/registry/builtin_agents.py) and managed via [`AgentManifestRegistryPort`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/domain/ports/agent_manifest_port.py).
+
+### Core Pipeline Agents (5 Roles)
+| Agent ID | Name | Role | Category | Primary Responsibility |
+| :--- | :--- | :--- | :--- | :--- |
+| `agent_scout` | Scout Agent | `SCOUT` | `core_pipeline` | File enumeration, ignore-list pruning, path filtering, and fast regex scanning. |
+| `agent_planner` | Planner Agent | `PLANNER` | `core_pipeline` | Dependency analysis, SHA-256 precondition hashing, match count declaration, DAG creation. |
+| `agent_editor` | Editor Agent | `EDITOR` | `core_pipeline` | AST-safe code transformations, Zero-Inline-Comment extraction, envelope wrapping. |
+| `agent_verifier`| Verifier Agent | `VERIFIER` | `core_pipeline` | Invariant audits, pytest test suites, live RFC/CVE verification, zero-regression proof. |
+| `agent_reporter`| Reporter Agent | `REPORTER` | `core_pipeline` | Structured diff summaries, OpenAPI changelogs, metric telemetry. |
+
+### 22 Algorithm Specialized Agents (From `agent-operating-contract.md`)
+| Algo # | Agent ID | Specialized Agent Name | Category | Algorithm & Data Structure |
+| :---: | :--- | :--- | :--- | :--- |
+| **1** | `algo_01_recursive_walk` | Recursive Walk Agent | `file_discovery` | DFS subtree walk with $O(\text{depth})$ path arena and early pruning |
+| **2** | `algo_02_work_stealing_walker` | Work-Stealing Walker Agent | `file_discovery` | Lock-free Chase-Lev deques and thread-pinned I/O for monorepos |
+| **3** | `algo_03_git_aware_walker` | Git-Aware Walker Agent | `file_discovery` | Git index reader parsing tracked tree and ignoring dirty worktrees |
+| **4** | `algo_04_glob_matcher` | Glob Matcher Agent | `file_discovery` | Double-star glob trie matching path allowlists and denylists |
+| **5** | `algo_05_binary_classifier` | Binary/Text Classifier Agent | `file_discovery` | Null-byte ($0x00$) and UTF-8 validity scanner guarding against binary writes |
+| **6** | `algo_06_content_type_prober` | Content-Type Prober Agent | `file_discovery` | Magic byte header signatures and shebang interpreter detector |
+| **7** | `algo_07_size_line_bouncer` | Size & Line Bouncer Agent | `file_discovery` | Hard file size ($\le 10\text{MB}$) and line count limiter preventing OOMs |
+| **8** | `algo_08_generated_code_classifier` | Generated Code Classifier Agent | `file_discovery` | Token scanner identifying generated files (protobuf, openapi, mocks) |
+| **9** | `algo_09_trigram_index` | Trigram Index Agent | `pattern_search` | N-gram inverted index for sub-millisecond candidate filtering |
+| **10** | `algo_10_simd_memchr` | SIMD Literal Scanner Agent | `pattern_search` | Vectorized AVX-512/NEON byte matcher for exact string scanning |
+| **11** | `algo_11_aho_corasick` | Aho-Corasick Multi-Pattern Agent | `pattern_search` | Finite state machine trie searching hundreds of keyword rules in $O(N)$ |
+| **12** | `algo_12_lazy_dfa` | Lazy DFA Regex Agent | `pattern_search` | On-demand state transition regex engine with zero exponential backtracking |
+| **13** | `algo_13_streaming_chunk_scanner` | Streaming Chunk Scanner Agent | `pattern_search` | Sliding window boundary scanner handling multi-line cross-chunk matches |
+| **14** | `algo_14_context_snippet_collector` | Context Snippet Collector Agent | `pattern_search` | Surrounding line collector formatting syntax-highlighted issue snippets |
+| **15** | `algo_15_mmap_scanner` | Memory-Mapped IO Scanner Agent | `pattern_search` | Zero-copy virtual memory scanner for extreme search throughput |
+| **16** | `algo_16_position_span_tracker` | Position & Span Tracker Agent | `pattern_search` | Byte offset to line/column indexer computing exact replacement spans |
+| **17** | `algo_17_tree_sitter_ast` | Tree-Sitter AST Scanner Agent | `structural_ast` | Grammar-based parser building concrete syntax trees across languages |
+| **18** | `algo_18_cst_matcher` | Concrete Syntax Tree Matcher Agent | `structural_ast` | Lossless CST matcher preserving comments, whitespace, and formatting |
+| **19** | `algo_19_symbol_scope_resolver` | Symbol Scope Resolver Agent | `structural_ast` | Lexical environment and symbol shadow resolver preventing scope conflicts |
+| **20** | `algo_20_comment_extractor` | Comment & Docstring Extractor Agent | `structural_ast` | Inline comment classifier extracting mid-function comments into top docblocks |
+| **21** | `algo_21_import_dependency_grapher` | Import & Dependency Grapher Agent | `structural_ast` | Module import resolver detecting cyclic dependencies and computing DAG orders |
+| **22** | `algo_22_code_outline_generator` | Code Outline Generator Agent | `structural_ast` | Hierarchical symbol and class outline generator for high-level codebase maps |
 
 ---
 
@@ -85,11 +127,7 @@ This document tracks the comprehensive architecture, completed capabilities, and
 
 9. **Multi-Agent Swarm Delegation Pipeline**
    - **Impact:** Medium | **Category:** Agent Orchestration
-   - Meta-Agent delegates tasks to specialized sub-agents:
-     - `LinterAgent`: Verifies comment doctrines and naming conventions.
-     - `SecurityAgent`: Scans for tenant leaks and authorization gaps.
-     - `RefactorAgent`: Executes safe AST transformations.
-     - `DocsAgent`: Keeps OpenAPI, AsyncAPI, and markdown synced.
+   - Meta-Agent delegates tasks to specialized sub-agents (`agent_scout`, `agent_planner`, `agent_editor`, `agent_verifier`, `agent_reporter`).
 10. **Temporal / Durable Workflow Orchestration Worker**
     - **Impact:** Medium | **Category:** Resilience
     - Enables durable, checkpointed execution of large-scale repository refactoring sagas that survive process restarts.
@@ -111,36 +149,6 @@ This document tracks the comprehensive architecture, completed capabilities, and
 
 ---
 
-## 📋 Historical & Completed Milestones
-
-### Phase 1: Core Foundation & Hexagonal Scaffolding (✅ Completed)
-- [x] Establish Hexagonal folder structure conforming to `api-structure.md`.
-- [x] Create `LLMProviderPort` with streaming, function calling, and dense vector embeddings.
-- [x] Create `VectorStorePort` with batch upsert, metadata filtering, and cosine distance queries.
-- [x] Create `GraphStorePort` with node/edge upsert, Cypher queries, and topological path search.
-- [x] Create `WebSearchPort` for live internet RFC/CVE lookups and clean page scraping.
-- [x] Create `ToolRegistryPort` for caching and reusing dynamically generated AST searchers.
-- [x] Create `KnowledgeSourcePort` with Markdown heading-aware chunking and taxonomy classification.
-- [x] Implement `MockLLMAdapter` with deterministic feature hashing for offline CI execution.
-- [x] Implement `OpenAICompatibleAdapter` for Ollama, vLLM, DeepSeek, and OpenAI endpoints.
-- [x] Implement `InMemoryCosineVectorAdapter` for zero-dependency local runs.
-- [x] Implement `QdrantVectorAdapter` for open-source scalable vector search.
-- [x] Implement `InMemoryGraphAdapter` with BFS shortest-path and pattern queries.
-- [x] Implement `Neo4jGraphAdapter` for open-standard Cypher graph querying.
-
-### Phase 2: Core RAG & Meta-Agent Delivery (✅ Completed)
-- [x] Implement `RAGService` with BM25 inverted index tokenization and Reciprocal Rank Fusion (RRF).
-- [x] Ground RAG directly against `policies/rules/` markdown contracts.
-- [x] Implement `KnowledgeGraphService` extracting `(:Rule)-[:BELONGS_TO]->(:Category)` and `(:Rule)-[:ENFORCES]->(:ArchitecturePattern)` relationships.
-- [x] Implement `AgentService` autonomous ReAct reasoning loop with dynamic tool dispatching (`search_policy_rules`, `search_internet_knowledge`, `search_codebase_ast`, `register_reusable_tool`, `run_repo_audit`, `generate_refactoring_plan`).
-- [x] Create `AGENTS.md` defining strict operating contracts for self-improvement and consistency enforcement.
-- [x] Standardized response envelope (`{meta, data, errors}`) per `api-request-response-structure.md`.
-- [x] FastAPI REST API v1 endpoints (`/health`, `/rag/search`, `/rag/index`, `/agent/run`, `/audit/scan`, `/graph/build`, `/graph/query`, `/graph/impact/{rule_id}`).
-- [x] Unified CLI entrypoint (`src/api/cli/main.py`) with all subcommands.
-- [x] Multi-stage `Dockerfile` and `docker-compose.yml` with `policy-orchestrator`, `qdrant`, and `neo4j`.
-
----
-
 ## 🔧 Environment Configuration Reference
 
 | Environment Variable | Default Value | Description |
@@ -149,6 +157,7 @@ This document tracks the comprehensive architecture, completed capabilities, and
 | `LLM_BACKEND` | `mock` | LLM backend: `mock`, `openai`, `ollama` |
 | `VECTOR_BACKEND` | `inmemory` | Vector database: `inmemory`, `qdrant` |
 | `GRAPH_BACKEND` | `inmemory` | Graph database: `inmemory`, `neo4j` |
+| `SEARCH_BACKEND` | `mock` | Search provider: `mock`, `duckduckgo` |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant HTTP REST endpoint |
 | `QDRANT_COLLECTION`| `policy_rules` | Qdrant collection name |
 | `NEO4J_URI` | `http://localhost:7474` | Neo4j HTTP API endpoint |
