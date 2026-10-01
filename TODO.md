@@ -1,6 +1,6 @@
 # Policy Orchestrator & AI Meta-Agent: Master Roadmap & TODO
 
-This document tracks the comprehensive architecture, completed capabilities, and high-impact daily features for the **Policy Orchestrator, Advanced GraphRAG, and AI Meta-Agent Engine** (`policies/policy-orchestrator`).
+This document tracks the comprehensive architecture, completed capabilities, and prioritized roadmap for the **Policy Orchestrator, Advanced GraphRAG, and AI Meta-Agent Engine** (`policies/policy-orchestrator`).
 
 ---
 
@@ -42,7 +42,76 @@ This document tracks the comprehensive architecture, completed capabilities, and
 
 ---
 
-## 📋 Comprehensive Daily Features & Roadmap Tracker
+## 🚀 Prioritized Upcoming Feature Roadmap
+
+### 🔴 Priority P0: Critical / Immediate Value (Next Sprint)
+*Features delivering direct 1000% speedup, automated refactoring, and real-time developer productivity.*
+
+1. **AST-Safe Automated Zero-Inline-Comment Migrator**
+   - **Impact:** High | **Category:** Automation / Compliance
+   - Uses `libcst` (Python) and `tree-sitter` (Go, TypeScript) to extract inline comments from function bodies and generate standardized top-side docblock blueprints automatically.
+2. **Real-Time Streaming Telemetry & SSE (`/api/v1/agent/stream`)**
+   - **Impact:** High | **Category:** UX & Observability
+   - Server-Sent Events (SSE) endpoint emitting token-by-token generation, ReAct thoughts, tool execution progress, and latency counters in real time.
+3. **Multi-Project Workspace Batch Synchronizer**
+   - **Impact:** High | **Category:** Multi-Repo Consistency
+   - Single command (`policy-orchestrator sync --workspace-root ...`) to simultaneously audit and enforce uniform API envelopes, error codes, and lint boundaries across all submodules.
+4. **GraphRAG Hybrid Fusion (Neo4j Community Walk + Qdrant Embeddings)**
+   - **Impact:** High | **Category:** Advanced RAG
+   - Traverses Neo4j subgraphs (`(:Rule)-[:ENFORCES]->(:Pattern)`) to collect topological neighbor context, combining it with Qdrant cosine similarity for multi-hop reasoning.
+
+---
+
+### 🟠 Priority P1: High Priority (Quality, Recall & Safety)
+*Features enhancing search precision, automated tool creation, and observability telemetry.*
+
+5. **Hypothetical Document Embeddings (HyDE) & Cross-Encoder Reranker**
+   - **Impact:** High | **Category:** Advanced RAG
+   - Generates zero-shot hypothetical answer candidates before embedding, followed by a local cross-encoder scoring stage to eliminate irrelevant context chunks.
+6. **Auto-Generated Scraper & AST Tool Self-Registration**
+   - **Impact:** Medium-High | **Category:** Meta-Agent Tooling
+   - When the agent encounters an unknown library or documentation source, it generates a scraper, validates its parameters schema, and registers it to `ToolRegistryPort` for permanent workspace reuse.
+7. **Self-Updating Policy Proposal Engine (Automated PR Generator)**
+   - **Impact:** Medium-High | **Category:** Policy Evolution
+   - Analyzes newly discovered production traps or anti-patterns and generates formatted markdown rule proposals directly into `policies/rules/edgeCases/`.
+8. **OpenTelemetry Span Exporter to OTLP / Grafana Tempo**
+   - **Impact:** Medium-High | **Category:** Observability
+   - Native export of internal agent spans (Thought duration, Tool execution time, LLM inference latency) directly to OTLP collector endpoints.
+
+---
+
+### 🟡 Priority P2: Medium Priority (Scale & Distributed Workflows)
+*Features for distributed coordination, sub-agent swarms, and CI/CD bot integrations.*
+
+9. **Multi-Agent Swarm Delegation Pipeline**
+   - **Impact:** Medium | **Category:** Agent Orchestration
+   - Meta-Agent delegates tasks to specialized sub-agents:
+     - `LinterAgent`: Verifies comment doctrines and naming conventions.
+     - `SecurityAgent`: Scans for tenant leaks and authorization gaps.
+     - `RefactorAgent`: Executes safe AST transformations.
+     - `DocsAgent`: Keeps OpenAPI, AsyncAPI, and markdown synced.
+10. **Temporal / Durable Workflow Orchestration Worker**
+    - **Impact:** Medium | **Category:** Resilience
+    - Enables durable, checkpointed execution of large-scale repository refactoring sagas that survive process restarts.
+11. **CloudEvents Git PR Webhook Consumer**
+    - **Impact:** Medium | **Category:** CI/CD Integration
+    - Listens to GitHub/GitLab webhook events and runs automated policy compliance checks on open Pull Requests.
+
+---
+
+### 🟢 Priority P3: Future Optimizations & Multi-Modal
+*Long-term performance and multi-modal intelligence capabilities.*
+
+12. **Local Model Distillation & Fine-Tuning Pipeline**
+    - **Impact:** Low-Medium | **Category:** AI Optimization
+    - Fine-tunes small local quantized models (e.g. Qwen2.5-Coder-7B / Llama-3.2-3B) specifically on company policy invariants for sub-second offline checks.
+13. **Multi-Modal Architecture Diagram Extractor**
+    - **Impact:** Low-Medium | **Category:** Multi-Modal
+    - Parses PNG/SVG/Mermaid architecture diagrams and validates them against the active knowledge graph and OpenAPI specs.
+
+---
+
+## 📋 Historical & Completed Milestones
 
 ### Phase 1: Core Foundation & Hexagonal Scaffolding (✅ Completed)
 - [x] Establish Hexagonal folder structure conforming to `api-structure.md`.
@@ -59,38 +128,16 @@ This document tracks the comprehensive architecture, completed capabilities, and
 - [x] Implement `InMemoryGraphAdapter` with BFS shortest-path and pattern queries.
 - [x] Implement `Neo4jGraphAdapter` for open-standard Cypher graph querying.
 
-### Phase 2: Advanced RAG & GraphRAG Retrieval (✅ Core Built / ⏳ Daily Enhancements)
+### Phase 2: Core RAG & Meta-Agent Delivery (✅ Completed)
 - [x] Implement `RAGService` with BM25 inverted index tokenization and Reciprocal Rank Fusion (RRF).
 - [x] Ground RAG directly against `policies/rules/` markdown contracts.
 - [x] Implement `KnowledgeGraphService` extracting `(:Rule)-[:BELONGS_TO]->(:Category)` and `(:Rule)-[:ENFORCES]->(:ArchitecturePattern)` relationships.
-- [ ] **GraphRAG Hybrid Fusion**: Combine graph community traversal with dense vector context for multi-hop reasoning.
-- [ ] **Hypothetical Document Embeddings (HyDE)**: Generate zero-shot hypothetical policy responses to boost dense similarity recall on complex queries.
-- [ ] **Self-Correction & Cross-Encoder Reranker**: Add light cross-encoder scoring stage to filter out low-confidence chunks.
-- [ ] **Hierarchical Context Summarizer**: Automatic multi-level summary generation for large policy catalogs.
-
-### Phase 3: Meta-Agent ("Agent of Agents") & Tool Reuse Engine (✅ Core Built / ⏳ Advanced Extensions)
 - [x] Implement `AgentService` autonomous ReAct reasoning loop with dynamic tool dispatching (`search_policy_rules`, `search_internet_knowledge`, `search_codebase_ast`, `register_reusable_tool`, `run_repo_audit`, `generate_refactoring_plan`).
 - [x] Create `AGENTS.md` defining strict operating contracts for self-improvement and consistency enforcement.
-- [x] Integrate `ToolRegistryPort` to store and discover custom scrapers and AST code searchers without code duplication.
-- [ ] **Multi-Agent Swarm Orchestration**: Sub-agent delegation for specialized tasks (Linter Agent, Security Agent, Refactor Agent, Docs Agent).
-- [ ] **Auto-Generated Scraper Catalog**: Automatic creation and persistence of website/API documentation scrapers for upstream libraries.
-- [ ] **Self-Updating Policy Engine**: Meta-Agent evaluates codebase anomalies and proposes automated pull requests to update `policies/rules/`.
-
-### Phase 4: Project-Wide Bulk Consistency & Safe Refactoring (⏳ In Progress)
-- [x] Implement batch search-and-replace in `RefactorService` with regex and file extension filtering.
-- [ ] **AST-Safe Automated Code Refactoring**: Deepen refactoring using `libcst` (Python) and `tree-sitter` (Go, TypeScript).
-- [ ] **Zero-Inline-Comment Auto-Migrator**: AST tool to extract inline comments from function bodies and format them into top-side blueprint docblocks automatically.
-- [ ] **Multi-Project Workspace Synchronizer**: Single CLI command to synchronize architecture invariants, envelopes, and lint rules across all submodules simultaneously.
-- [ ] **Atomic Rollback & Dry-Run Diff Engine**: Generates visual side-by-side patch previews before executing mutations.
-
-### Phase 5: Delivery Interfaces, Streaming & Open Standards (✅ Core Built / ⏳ Telemetry)
-- [x] Implement standardized API envelope (`{meta, data, errors}`) per `api-request-response-structure.md`.
-- [x] Implement FastAPI REST API v1 endpoints (`/health`, `/rag/search`, `/rag/index`, `/agent/run`, `/audit/scan`, `/graph/build`, `/graph/query`, `/graph/impact/{rule_id}`).
-- [x] Implement unified CLI entrypoint (`src/api/cli/main.py`) with `audit`, `rag`, `agent`, `refactor`, `policy-check`, `serve` commands.
-- [x] Multi-stage `Dockerfile` with non-root security (`appuser:appgroup` UID 10001).
-- [x] `docker-compose.yml` stack with `policy-orchestrator`, `qdrant`, and `neo4j`.
-- [ ] **Server-Sent Events (SSE) Stream Endpoint**: `/api/v1/agent/stream` for real-time agent token and reasoning telemetry.
-- [ ] **OpenTelemetry Span Export**: Export trace spans directly to OTLP collector / Jaeger.
+- [x] Standardized response envelope (`{meta, data, errors}`) per `api-request-response-structure.md`.
+- [x] FastAPI REST API v1 endpoints (`/health`, `/rag/search`, `/rag/index`, `/agent/run`, `/audit/scan`, `/graph/build`, `/graph/query`, `/graph/impact/{rule_id}`).
+- [x] Unified CLI entrypoint (`src/api/cli/main.py`) with all subcommands.
+- [x] Multi-stage `Dockerfile` and `docker-compose.yml` with `policy-orchestrator`, `qdrant`, and `neo4j`.
 
 ---
 
