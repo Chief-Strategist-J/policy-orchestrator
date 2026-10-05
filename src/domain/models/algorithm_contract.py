@@ -29,6 +29,7 @@ class AlgorithmCategory(str, Enum):
     SEARCH = "search"
     OBSERVABILITY = "observability"
     UPDATE = "update"
+    VECTOR = "vector"
     GRAPH = "graph"
     REASONING = "reasoning"
 
