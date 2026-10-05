@@ -104,6 +104,16 @@ class AlgorithmContract(BaseModel):
     compatible_adapters: List[str] = Field(default_factory=list, description="G4 Adapter identifiers for input/output conversions")
     is_active: bool = Field(default=True, description="Active status in registry")
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AlgorithmContract":
+        d = dict(data)
+        if "complexity" not in d and ("time_complexity" in d or "space_complexity" in d):
+            d["complexity"] = ComplexityCost(
+                time=d.pop("time_complexity", "O(1)"),
+                space=d.pop("space_complexity", "O(1)"),
+            )
+        return cls(**d)
+
 
 class TypeAdapterContract(BaseModel):
     id: str = Field(..., description="Adapter canonical identifier e.g. ADAPTER-OFFSET-TO-SPAN")
