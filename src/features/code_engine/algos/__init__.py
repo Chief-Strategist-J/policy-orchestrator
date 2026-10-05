@@ -1,5 +1,5 @@
 """
-Search Engine Algorithms Root Package
+Code Engine Algorithms Root Package
 """
 
 from src.features.code_engine.algos.search import (
@@ -49,6 +49,32 @@ from src.features.code_engine.algos.update import (
     UnifiedDiffResult,
 )
 
+from src.features.code_engine.algos.vector import (
+    VectorAlgoL2Normalization,
+    VectorAlgoMeanCentering,
+    VectorAlgoLayerNorm,
+    VectorAlgoMinMaxZScore,
+    VectorAlgoMatryoshkaSlicing,
+    VectorAlgoScalarQuantization,
+    QuantizedVector,
+    VectorAlgoBinaryQuantization,
+    VectorAlgoTokenPooling,
+    VectorAlgoSemanticChunker,
+    TextChunk,
+)
+
+from src.features.code_engine.algos.graph import (
+    GraphAlgoBfsTraversal,
+    GraphAlgoDfsTraversal,
+    GraphAlgoDijkstraShortestPath,
+    GraphAlgoAstarSearch,
+    GraphAlgoPageRankCentrality,
+    GraphAlgoDegreeCentrality,
+    GraphAlgoConnectedComponents,
+    GraphAlgoTarjanScc,
+    GraphAlgoSubgraphIsomorphism,
+)
+
 __all__ = [
     "SearchEngineRecursiveWalkAlgo",
     "SearchEngineWorkStealingWalkerAlgo",
@@ -88,4 +114,24 @@ __all__ = [
     "PatchResult",
     "UpdateDiffEngineAlgo",
     "UnifiedDiffResult",
+    "VectorAlgoL2Normalization",
+    "VectorAlgoMeanCentering",
+    "VectorAlgoLayerNorm",
+    "VectorAlgoMinMaxZScore",
+    "VectorAlgoMatryoshkaSlicing",
+    "VectorAlgoScalarQuantization",
+    "QuantizedVector",
+    "VectorAlgoBinaryQuantization",
+    "VectorAlgoTokenPooling",
+    "VectorAlgoSemanticChunker",
+    "TextChunk",
+    "GraphAlgoBfsTraversal",
+    "GraphAlgoDfsTraversal",
+    "GraphAlgoDijkstraShortestPath",
+    "GraphAlgoAstarSearch",
+    "GraphAlgoPageRankCentrality",
+    "GraphAlgoDegreeCentrality",
+    "GraphAlgoConnectedComponents",
+    "GraphAlgoTarjanScc",
+    "GraphAlgoSubgraphIsomorphism",
 ]

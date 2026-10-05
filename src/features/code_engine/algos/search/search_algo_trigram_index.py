@@ -72,6 +72,13 @@ class SearchEngineTrigramIndexAlgo:
         self._index: Dict[str, Set[str]] = defaultdict(set)
         self._indexed_files: Set[str] = set()
 
+    @staticmethod
+    def generate_trigrams(text: str) -> List[str]:
+        cleaned = text.lower()
+        if len(cleaned) < 3:
+            return []
+        return [cleaned[i : i + 3] for i in range(len(cleaned) - 2)]
+
     def index_file(self, file_path: str, content: str) -> None:
         content_clean = content.lower()
         if len(content_clean) < 3:

@@ -62,7 +62,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: UNIFIED CODE & VECTOR ENGINE SERVICE
 
 from __future__ import annotations
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from src.features.code_engine.algos.search import (
     SearchEngineRecursiveWalkAlgo,
@@ -125,6 +125,18 @@ from src.features.code_engine.algos.vector import (
     TextChunk,
 )
 
+from src.features.code_engine.algos.graph import (
+    GraphAlgoBfsTraversal,
+    GraphAlgoDfsTraversal,
+    GraphAlgoDijkstraShortestPath,
+    GraphAlgoAstarSearch,
+    GraphAlgoPageRankCentrality,
+    GraphAlgoDegreeCentrality,
+    GraphAlgoConnectedComponents,
+    GraphAlgoTarjanScc,
+    GraphAlgoSubgraphIsomorphism,
+)
+
 
 class CodeEngineService:
     def __init__(self) -> None:
@@ -153,7 +165,7 @@ class CodeEngineService:
                 continue
             try:
                 with open(file_path, "rb") as f:
-                    if self.binary_classifier.is_binary_file(file_path):
+                    if not self.binary_classifier.is_text_file(file_path):
                         continue
                     f.seek(0)
                     content = f.read().decode("utf-8", errors="ignore")
@@ -375,51 +387,53 @@ class CodeEngineService:
 
         if algo_id == "ALGO-SRCH-01":
             root = merged.get("root_dir", ".")
-            depth = merged.get("max_depth")
+            depth = merged.get("max_depth") or 16
             exts = set(merged.get("allowed_extensions", [])) if merged.get("allowed_extensions") else None
             files = SearchEngineRecursiveWalkAlgo.execute(root, max_depth=depth, allowed_extensions=exts)
             return {"files": files, "count": len(files)}
 
         elif algo_id == "ALGO-SRCH-02":
             root = merged.get("root_dir", ".")
-            workers = merged.get("workers", 4)
-            files = SearchEngineWorkStealingWalkerAlgo.execute(root, workers=workers)
+            workers = merged.get("max_workers") or merged.get("workers") or 4
+            files = SearchEngineWorkStealingWalkerAlgo.execute(root, max_workers=workers)
             return {"files": files, "count": len(files)}
 
         elif algo_id == "ALGO-SRCH-03":
             root = merged.get("root_dir", ".")
-            ignore_files = merged.get("ignore_files")
-            files = SearchEngineGitAwareWalkerAlgo.execute(root, ignore_files=ignore_files)
+            files = SearchEngineGitAwareWalkerAlgo.execute(root)
             return {"files": files, "count": len(files)}
 
         elif algo_id == "ALGO-SRCH-04":
             pattern = merged.get("pattern", "*")
-            path = merged.get("path", "")
-            matcher = SearchEngineGlobMatcherAlgo(pattern)
-            is_match = matcher.matches(path)
-            return {"pattern": pattern, "path": path, "matches": is_match}
+            path = merged.get("path")
+            paths = merged.get("file_paths", [path] if path else [])
+            matched_paths = SearchEngineGlobMatcherAlgo.execute(pattern, paths)
+            return {
+                "pattern": pattern,
+                "matches": bool(matched_paths),
+                "matched_paths": matched_paths,
+            }
 
         elif algo_id == "ALGO-SRCH-05":
             file_path = merged.get("file_path", "")
-            is_bin = self.binary_classifier.is_binary_file(file_path) if file_path and os.path.isfile(file_path) else False
-            return {"file_path": file_path, "is_binary": is_bin}
+            is_text = self.binary_classifier.is_text_file(file_path) if file_path and os.path.isfile(file_path) else False
+            return {"file_path": file_path, "is_binary": not is_text}
 
         elif algo_id == "ALGO-SRCH-06":
             file_path = merged.get("file_path", "")
-            mime = self.content_type_prober.probe_content_type(file_path) if file_path else "application/octet-stream"
+            mime = self.content_type_prober.probe(file_path) if file_path else "unknown"
             return {"file_path": file_path, "mime_type": mime}
 
         elif algo_id == "ALGO-SRCH-07":
             file_path = merged.get("file_path", "")
-            max_bytes = merged.get("max_bytes", 10 * 1024 * 1024)
-            max_lines = merged.get("max_lines", 50000)
-            ok = SearchEngineSizeLineBouncerAlgo.is_acceptable_file(file_path, max_bytes=max_bytes, max_lines=max_lines) if file_path and os.path.isfile(file_path) else True
-            return {"file_path": file_path, "is_acceptable": ok}
+            max_bytes = merged.get("max_bytes") or 10 * 1024 * 1024
+            max_lines = merged.get("max_lines") or 50000
+            ok, reason = SearchEngineSizeLineBouncerAlgo.check_limits(file_path, max_bytes=max_bytes, max_lines=max_lines) if file_path and os.path.isfile(file_path) else (False, "file not found")
+            return {"file_path": file_path, "is_acceptable": ok, "reason": reason}
 
         elif algo_id == "ALGO-SRCH-08":
             file_path = merged.get("file_path", "")
-            content = merged.get("content", "")
-            is_gen = self.generated_code_classifier.is_generated_code(file_path, content_sample=content)
+            is_gen = self.generated_code_classifier.is_generated(file_path) if file_path and os.path.isfile(file_path) else False
             return {"file_path": file_path, "is_generated": is_gen}
 
         elif algo_id == "ALGO-SRCH-09":
@@ -446,54 +460,65 @@ class CodeEngineService:
         elif algo_id == "ALGO-SRCH-12":
             pattern = merged.get("pattern", "")
             text = merged.get("text", "")
-            dfa = SearchEngineLazyDfaAlgo(pattern)
-            is_match = dfa.matches(text)
-            return {"pattern": pattern, "matches": is_match}
+            raw_matches = SearchEngineLazyDfaAlgo.match_all(text, pattern)
+            return {
+                "pattern": pattern,
+                "matches": bool(raw_matches),
+                "total_matches": len(raw_matches),
+                "results": [{"start": m[0], "end": m[1], "matched_text": m[2]} for m in raw_matches],
+            }
 
         elif algo_id == "ALGO-SRCH-13":
             file_path = merged.get("file_path", "")
-            chunk_size = merged.get("chunk_size", 65536)
-            chunks = SearchEngineStreamingChunkScannerAlgo.read_chunks(file_path, chunk_size=chunk_size) if file_path and os.path.isfile(file_path) else []
-            return {"file_path": file_path, "total_chunks": len(chunks)}
+            needle = merged.get("needle", "")
+            chunk_size = merged.get("chunk_size") or 65536
+            matches = SearchEngineStreamingChunkScannerAlgo.scan_file_chunks(file_path, needle=needle, chunk_size=chunk_size)
+            return {"file_path": file_path, "total_matches": len(matches), "matches": matches}
 
         elif algo_id == "ALGO-SRCH-14":
-            lines = merged.get("lines", [])
-            line_num = merged.get("line_number", 1)
-            before = merged.get("lines_before", 2)
-            after = merged.get("lines_after", 2)
-            snip = SearchEngineContextSnippetCollectorAlgo.collect_snippet(lines, line_num, before=before, after=after)
+            lines = merged.get("lines") or (merged.get("text", "").splitlines() if merged.get("text") else [])
+            line_num = merged.get("target_line") or merged.get("line_number") or 1
+            before = merged.get("lines_before") or merged.get("before") or 2
+            after = merged.get("lines_after") or merged.get("after") or 2
+            snip = SearchEngineContextSnippetCollectorAlgo.collect_snippet(lines, line_num, lines_before=before, lines_after=after)
             return snip
 
         elif algo_id == "ALGO-SRCH-15":
             file_path = merged.get("file_path", "")
-            pattern = merged.get("pattern", "")
-            matches = SearchEngineMmapScannerAlgo.scan(file_path, pattern) if file_path and os.path.isfile(file_path) else []
+            needle = merged.get("pattern", merged.get("needle", ""))
+            matches = SearchEngineMmapScannerAlgo.scan_file(file_path, needle=needle)
             return {"file_path": file_path, "matches_count": len(matches), "matches": matches}
 
         elif algo_id == "ALGO-OBS-16":
             content = merged.get("content", "")
             tracker = PositionSpanTracker(content)
             offset = merged.get("offset", 0)
-            line, col = tracker.offset_to_line_column(offset)
+            line, col = tracker.offset_to_line_col(offset)
             return {"offset": offset, "line": line, "column": col, "total_lines": tracker.total_lines}
 
         elif algo_id == "ALGO-OBS-17":
             code = merged.get("code", "")
             lang = merged.get("language", "python")
-            nodes = self.ast_extractor.extract_ast_nodes(code, language=lang)
+            if lang == "python":
+                root = self.ast_extractor.parse_python(code)
+            else:
+                root = self.ast_extractor.parse_generic(code, language=lang)
             return {
                 "language": lang,
-                "total_nodes": len(nodes),
-                "nodes": [{"kind": n.kind, "name": n.name, "start_line": n.start_line, "end_line": n.end_line} for n in nodes],
+                "node_type": root.node_type,
+                "name": root.name,
+                "children_count": len(root.children),
+                "total_nodes": len(root.children) + 1,
             }
 
         elif algo_id == "ALGO-OBS-18":
             code = merged.get("code", "")
-            ast_nodes = self.ast_extractor.extract_ast_nodes(code, language="python")
-            symbols = self.scope_resolver.resolve_symbols(ast_nodes)
+            root_scope = self.scope_resolver.resolve_python_scopes(code)
             return {
-                "total_symbols": len(symbols),
-                "symbols": [{"name": s.name, "kind": s.kind, "scope": s.scope_name, "line": s.line} for s in symbols],
+                "scope_id": root_scope.scope_id,
+                "kind": root_scope.kind,
+                "total_symbols": len(root_scope.symbols),
+                "children_scopes": len(root_scope.children),
             }
 
         elif algo_id == "ALGO-OBS-19":
@@ -523,9 +548,17 @@ class CodeEngineService:
 
         elif algo_id == "ALGO-UPD-22":
             code = merged.get("code", "")
-            node_type = merged.get("node_type", "function")
-            matches = CstMatcher.find_nodes(code, node_type=node_type)
-            return {"node_type": node_type, "matches_count": len(matches), "matches": matches}
+            pattern = merged.get("pattern", "$_")
+            matcher = CstMatcher(pattern)
+            matches = matcher.find_matches(code)
+            return {
+                "pattern": pattern,
+                "matches_count": len(matches),
+                "matches": [
+                    {"matched_text": m.matched_text, "start_line": m.start_line, "end_line": m.end_line}
+                    for m in matches
+                ],
+            }
 
         elif algo_id == "ALGO-UPD-23":
             operations = merged.get("operations", [])
@@ -594,6 +627,58 @@ class CodeEngineService:
             overlap = merged.get("overlap", 40)
             chunks = self.chunk_text(text, max_chunk_size=max_size, overlap=overlap)
             return {"total_chunks": len(chunks), "chunks": chunks}
+
+        elif algo_id == "ALGO-GRAPH-01":
+            adj = merged.get("adjacency_list", {})
+            start = merged.get("start_node", "")
+            depth = merged.get("max_depth", -1)
+            return GraphAlgoBfsTraversal.traverse(adj, start_node=start, max_depth=depth)
+
+        elif algo_id == "ALGO-GRAPH-02":
+            adj = merged.get("adjacency_list", {})
+            start = merged.get("start_node", "")
+            depth = merged.get("max_depth", -1)
+            return GraphAlgoDfsTraversal.traverse(adj, start_node=start, max_depth=depth)
+
+        elif algo_id == "ALGO-GRAPH-03":
+            edges = merged.get("weighted_edges", [])
+            start = merged.get("start_node", "")
+            target = merged.get("target_node")
+            return GraphAlgoDijkstraShortestPath.compute(edges, start_node=start, target_node=target)
+
+        elif algo_id == "ALGO-GRAPH-04":
+            edges = merged.get("weighted_edges", [])
+            start = merged.get("start_node", "")
+            target = merged.get("target_node", "")
+            heuristics = merged.get("heuristics")
+            return GraphAlgoAstarSearch.search(edges, start_node=start, target_node=target, heuristics=heuristics)
+
+        elif algo_id == "ALGO-GRAPH-05":
+            adj = merged.get("adjacency_list", {})
+            damping = merged.get("damping_factor", 0.85)
+            max_iter = merged.get("max_iterations", 100)
+            tol = merged.get("tolerance", 1e-6)
+            return GraphAlgoPageRankCentrality.compute(adj, damping_factor=damping, max_iterations=max_iter, tolerance=tol)
+
+        elif algo_id == "ALGO-GRAPH-06":
+            adj = merged.get("adjacency_list", {})
+            norm = merged.get("normalized", True)
+            return GraphAlgoDegreeCentrality.compute(adj, normalized=norm)
+
+        elif algo_id == "ALGO-GRAPH-07":
+            edges = merged.get("edges", [])
+            nodes = merged.get("nodes")
+            return GraphAlgoConnectedComponents.find_components(edges, nodes=nodes)
+
+        elif algo_id == "ALGO-GRAPH-08":
+            adj = merged.get("adjacency_list", {})
+            return GraphAlgoTarjanScc.find_sccs(adj)
+
+        elif algo_id == "ALGO-GRAPH-09":
+            tg = merged.get("target_graph", {})
+            pg = merged.get("pattern_graph", {})
+            max_m = merged.get("max_matches", 100)
+            return GraphAlgoSubgraphIsomorphism.match(tg, pattern_graph=pg, max_matches=max_m)
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

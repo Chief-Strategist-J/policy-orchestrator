@@ -651,6 +651,263 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'
 
+  /api/v1/algos/graph/bfs:
+    post:
+      summary: Breadth-First Search Traversal (ALGO-GRAPH-01)
+      operationId: graphBfs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjacency_list, start_node]
+              properties:
+                adjacency_list:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                start_node: { type: string }
+                max_depth: { type: integer, default: -1 }
+      responses:
+        '200':
+          description: Visited order and distances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dfs:
+    post:
+      summary: Depth-First Search Traversal (ALGO-GRAPH-02)
+      operationId: graphDfs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjacency_list, start_node]
+              properties:
+                adjacency_list:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                start_node: { type: string }
+                max_depth: { type: integer, default: -1 }
+      responses:
+        '200':
+          description: Visited order and cycle detection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dijkstra:
+    post:
+      summary: Dijkstra Shortest Path (ALGO-GRAPH-03)
+      operationId: graphDijkstra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weighted_edges, start_node]
+              properties:
+                weighted_edges:
+                  type: array
+                  items:
+                    type: object
+                    required: [source, target, weight]
+                    properties:
+                      source: { type: string }
+                      target: { type: string }
+                      weight: { type: number }
+                start_node: { type: string }
+                target_node: { type: string }
+      responses:
+        '200':
+          description: Shortest path distances and reconstructed paths
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/astar:
+    post:
+      summary: A* Heuristic Search (ALGO-GRAPH-04)
+      operationId: graphAstar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weighted_edges, start_node, target_node]
+              properties:
+                weighted_edges:
+                  type: array
+                  items:
+                    type: object
+                    required: [source, target, weight]
+                    properties:
+                      source: { type: string }
+                      target: { type: string }
+                      weight: { type: number }
+                start_node: { type: string }
+                target_node: { type: string }
+                heuristics:
+                  type: object
+                  additionalProperties: { type: number }
+      responses:
+        '200':
+          description: Optimal path and search cost
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/pagerank:
+    post:
+      summary: PageRank Centrality (ALGO-GRAPH-05)
+      operationId: graphPageRank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjacency_list]
+              properties:
+                adjacency_list:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                damping_factor: { type: number, default: 0.85 }
+                max_iterations: { type: integer, default: 100 }
+                tolerance: { type: number, default: 1e-6 }
+      responses:
+        '200':
+          description: PageRank centrality scores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/degree-centrality:
+    post:
+      summary: Degree Centrality (ALGO-GRAPH-06)
+      operationId: graphDegreeCentrality
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjacency_list]
+              properties:
+                adjacency_list:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                normalized: { type: boolean, default: true }
+      responses:
+        '200':
+          description: In-degree, out-degree and total degree centrality
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/connected-components:
+    post:
+      summary: Connected Components Union-Find (ALGO-GRAPH-07)
+      operationId: graphConnectedComponents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [edges]
+              properties:
+                edges:
+                  type: array
+                  items:
+                    type: array
+                    items: { type: string }
+                nodes:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: Partitioned connected components
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/tarjan-scc:
+    post:
+      summary: Tarjan Strongly Connected Components (ALGO-GRAPH-08)
+      operationId: graphTarjanScc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjacency_list]
+              properties:
+                adjacency_list:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+      responses:
+        '200':
+          description: List of strongly connected components
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/subgraph-match:
+    post:
+      summary: Subgraph Pattern Matching VF2 (ALGO-GRAPH-09)
+      operationId: graphSubgraphMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_graph, pattern_graph]
+              properties:
+                target_graph:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                pattern_graph:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+                max_matches: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Subgraph pattern matching solutions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
 components:
   schemas:
     ResponseMeta:

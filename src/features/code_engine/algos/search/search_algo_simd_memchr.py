@@ -73,7 +73,6 @@ class SearchEngineSimdMemchrAlgo:
         matches: List[int] = []
         target_bytes = pattern.encode("utf-8")
         src_bytes = content.encode("utf-8")
-        p_len = len(target_bytes)
         
         start = 0
         while True:
@@ -84,3 +83,19 @@ class SearchEngineSimdMemchrAlgo:
             start = idx + 1
 
         return matches
+
+    @staticmethod
+    def find_byte_offsets(data: bytes, target_byte: int) -> List[int]:
+        if not data:
+            return []
+        offsets: List[int] = []
+        start = 0
+        target = bytes([target_byte]) if isinstance(target_byte, int) else target_byte
+        while True:
+            idx = data.find(target, start)
+            if idx == -1:
+                break
+            offsets.append(idx)
+            start = idx + 1
+        return offsets
+

@@ -5,36 +5,61 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
 
 1. OVERVIEW & OBJECTIVE:
    This module provides HTTP REST endpoints for the Policy Orchestrator:
-   - GET  /api/v1/health: Readiness and liveness probing.
-   - POST /api/v1/rag/search: Grounded semantic search over policy markdown rules.
-   - POST /api/v1/rag/index: Trigger full re-indexing of policy knowledge base.
-   - POST /api/v1/agent/run: Execute autonomous AI Agent policy reasoning workflow.
-   - GET  /api/v1/agents: List all declarative specialized agent manifests.
-   - POST /api/v1/agents/{agent_id}/run: Execute a specific declarative agent.
-   - POST /api/v1/audit/scan: Execute deterministic invariant repository audit.
-   - POST /api/v1/graph/build: Extract & build semantic policy knowledge graph.
-   - POST /api/v1/graph/query: Execute declarative Cypher/pattern queries.
-   - GET  /api/v1/graph/impact/{rule_id}: Query topological rule dependencies.
-   - GET  /api/v1/algos/contracts: List and filter all 33 Layer 1 algorithm contracts.
-   - GET  /api/v1/algos/contracts/{algo_id}: Get specific algorithm contract by ID.
-   - GET  /api/v1/algos/adapters: List all 11 G4 Type Conversion Adapters.
-   - POST /api/v1/algos/compose: Validate and compose dynamic multi-algorithm pipeline.
-   - POST /api/v1/algos/execute/{algo_id}: Execute any of the 33 algorithms directly.
-   - POST /api/v1/algos/search/scan: Multi-pattern fast directory scan.
-   - POST /api/v1/algos/observability/outline: Hierarchical symbol outline generation.
-   - POST /api/v1/algos/observability/dependencies: Module import dependency grapher.
-   - POST /api/v1/algos/observability/lint-comments: Zero-inline-comment doctrine linter.
-   - POST /api/v1/algos/update/patch: Deterministic atomic multi-file patching.
-   - POST /api/v1/algos/update/diff: Unified GNU/Git context diff engine.
-   - POST /api/v1/algos/vector/normalize: Vector L2 Normalization.
-   - POST /api/v1/algos/vector/center: Corpus Mean Centering.
-   - POST /api/v1/algos/vector/layer-norm: Layer Normalization & Standardization.
-   - POST /api/v1/algos/vector/scale: Min-Max and Z-Score Scaling.
-   - POST /api/v1/algos/vector/slice: Matryoshka Representation Learning (MRL) Slicing.
-   - POST /api/v1/algos/vector/quantize/scalar: Uniform Scalar Quantization (SQ8/SQ4).
-   - POST /api/v1/algos/vector/quantize/binary: 1-Bit Binary Quantization.
-   - POST /api/v1/algos/vector/pool: Token Pooling Engine.
-   - POST /api/v1/algos/vector/chunk: Text Chunking and Semantic Breakpoints.
+   - System Core:
+     • GET  /api/v1/health: Readiness and liveness probing.
+     • POST /api/v1/rag/search: Grounded semantic search over policy markdown rules.
+     • POST /api/v1/rag/index: Trigger full re-indexing of policy knowledge base.
+     • POST /api/v1/agent/run: Execute autonomous AI Agent policy reasoning workflow.
+     • GET  /api/v1/agents: List all declarative specialized agent manifests.
+     • POST /api/v1/agents/{agent_id}/run: Execute a specific declarative agent.
+     • POST /api/v1/audit/scan: Execute deterministic invariant repository audit.
+     • POST /api/v1/graph/build: Extract & build semantic policy knowledge graph.
+     • POST /api/v1/graph/query: Execute declarative Cypher/pattern queries.
+     • GET  /api/v1/graph/impact/{rule_id}: Query topological rule dependencies.
+   - Algorithm Catalog & Composition:
+     • GET  /api/v1/algos/contracts: List and filter all 33 Layer 1 algorithm contracts.
+     • GET  /api/v1/algos/contracts/{algo_id}: Get specific algorithm contract by ID.
+     • GET  /api/v1/algos/adapters: List all 11 G4 Type Conversion Adapters.
+     • POST /api/v1/algos/compose: Validate and compose dynamic multi-algorithm pipeline.
+     • POST /api/v1/algos/execute/{algo_id}: Universal direct algorithm execution.
+   - Search Algorithms (ALGO-SRCH-01..15):
+     • POST /api/v1/algos/search/walk: Recursive file walker.
+     • POST /api/v1/algos/search/work-stealing-walk: Parallel work-stealing walker.
+     • POST /api/v1/algos/search/git-aware-walk: Git-aware ignore walker.
+     • POST /api/v1/algos/search/glob-match: Fast glob pattern matcher.
+     • POST /api/v1/algos/search/binary-check: Binary file classifier.
+     • POST /api/v1/algos/search/content-type: MIME/Content-type prober.
+     • POST /api/v1/algos/search/size-line-check: File size and line bouncer.
+     • POST /api/v1/algos/search/generated-code-check: Generated code classifier.
+     • POST /api/v1/algos/search/trigram-index: Trigram inverted index generator.
+     • POST /api/v1/algos/search/simd-memchr: SIMD-Memchr vectorized byte scanner.
+     • POST /api/v1/algos/search/aho-corasick: Aho-Corasick multi-pattern scanner.
+     • POST /api/v1/algos/search/lazy-dfa: Lazy DFA regex matcher.
+     • POST /api/v1/algos/search/streaming-chunk-scan: Streaming chunk scanner.
+     • POST /api/v1/algos/search/context-snippet: Context snippet collector.
+     • POST /api/v1/algos/search/mmap-scan: Memory-mapped file scanner.
+     • POST /api/v1/algos/search/scan: Multi-pattern fast directory scan.
+   - Observability Algorithms (ALGO-OBS-16..21):
+     • POST /api/v1/algos/observability/span-track: Fast line-column span tracker.
+     • POST /api/v1/algos/observability/ast: Language-agnostic AST extractor.
+     • POST /api/v1/algos/observability/symbols: Lexical and global scope symbol resolver.
+     • POST /api/v1/algos/observability/lint-comments: Zero-inline-comment doctrine linter.
+     • POST /api/v1/algos/observability/dependencies: Module import dependency grapher.
+     • POST /api/v1/algos/observability/outline: Hierarchical symbol outline generator.
+   - Update Algorithms (ALGO-UPD-22..24):
+     • POST /api/v1/algos/update/cst-match: CST matcher and syntax replacer.
+     • POST /api/v1/algos/update/patch: Deterministic atomic multi-file patcher.
+     • POST /api/v1/algos/update/diff: Unified GNU/Git context diff engine.
+   - Vector Algorithms (ALGO-VEC-01..09):
+     • POST /api/v1/algos/vector/normalize: Vector L2 Normalization.
+     • POST /api/v1/algos/vector/center: Corpus Mean Centering.
+     • POST /api/v1/algos/vector/layer-norm: Layer Normalization & Standardization.
+     • POST /api/v1/algos/vector/scale: Min-Max and Z-Score Scaling.
+     • POST /api/v1/algos/vector/slice: Matryoshka Representation Learning (MRL) Slicing.
+     • POST /api/v1/algos/vector/quantize/scalar: Uniform Scalar Quantization (SQ8/SQ4).
+     • POST /api/v1/algos/vector/quantize/binary: 1-Bit Binary Quantization.
+     • POST /api/v1/algos/vector/pool: Token Pooling Engine.
+     • POST /api/v1/algos/vector/chunk: Text Chunking and Semantic Breakpoints.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
@@ -146,6 +171,83 @@ class AlgoExecuteRequestDTO(BaseModel):
     parameters: Optional[Dict[str, Any]] = Field(default=None, description="Optional algorithm execution parameters")
 
 
+class SearchWalkDTO(BaseModel):
+    root_dir: str = Field(default=".", description="Root directory to walk")
+    max_depth: Optional[int] = Field(default=None, description="Maximum directory traversal depth")
+    allowed_extensions: Optional[List[str]] = Field(default=None, description="Allowed file extensions")
+
+
+class SearchWorkStealingDTO(BaseModel):
+    root_dir: str = Field(default=".", description="Root directory to walk")
+    workers: int = Field(default=4, description="Parallel worker threads")
+
+
+class SearchGitAwareDTO(BaseModel):
+    root_dir: str = Field(default=".", description="Root directory to walk")
+    ignore_files: Optional[List[str]] = Field(default=None, description="Custom ignore patterns")
+
+
+class SearchGlobDTO(BaseModel):
+    pattern: str = Field(..., description="Glob pattern")
+    path: str = Field(..., description="File path to test")
+
+
+class SearchSizeLineDTO(BaseModel):
+    file_path: str = Field(..., description="Target file path")
+    max_bytes: int = Field(default=10485760, description="Max allowed bytes")
+    max_lines: int = Field(default=50000, description="Max allowed lines")
+
+
+class SearchTrigramDTO(BaseModel):
+    text: str = Field(..., description="Input text to index into trigrams")
+
+
+class SearchSimdMemchrDTO(BaseModel):
+    data: str = Field(..., description="Input text/data")
+    byte: str = Field(default="\n", description="Target character/byte to search")
+
+
+class SearchAhoCorasickDTO(BaseModel):
+    text: str = Field(..., description="Haystack text")
+    patterns: List[str] = Field(..., description="Needle patterns to match simultaneously")
+
+
+class SearchLazyDfaDTO(BaseModel):
+    pattern: str = Field(..., description="Regex pattern")
+    text: str = Field(..., description="Text to match against")
+
+
+class SearchContextSnippetDTO(BaseModel):
+    lines: List[str] = Field(..., description="File lines")
+    line_number: int = Field(..., description="1-based match line number")
+    lines_before: int = Field(default=2, description="Leading context lines")
+    lines_after: int = Field(default=2, description="Trailing context lines")
+
+
+class SearchMmapDTO(BaseModel):
+    file_path: str = Field(..., description="Path to file")
+    pattern: str = Field(..., description="Byte/text pattern to find")
+
+
+class ObsSpanTrackDTO(BaseModel):
+    content: str = Field(..., description="Source code content")
+    offset: int = Field(default=0, description="Byte or character offset")
+
+
+class ObsAstDTO(BaseModel):
+    code: str = Field(..., description="Source code")
+    language: str = Field(default="python", description="Programming language")
+
+
+class ObsSymbolsDTO(BaseModel):
+    code: str = Field(..., description="Source code")
+
+
+class UpdateCstMatchDTO(BaseModel):
+    code: str = Field(..., description="Source code")
+    node_type: str = Field(default="function", description="Target CST node type")
+
+
 class VectorNormalizeDTO(BaseModel):
     vector: List[float] = Field(..., description="Dense float vector to normalize")
     eps: float = Field(default=1e-12, description="Zero-division guard epsilon")
@@ -194,6 +296,58 @@ class VectorChunkDTO(BaseModel):
     text: str = Field(..., description="Document text to chunk")
     max_chunk_size: int = Field(default=200, description="Maximum characters/tokens per chunk")
     overlap: int = Field(default=40, description="Overlap between consecutive chunks")
+
+
+class GraphBfsDTO(BaseModel):
+    adjacency_list: Dict[str, List[str]] = Field(..., description="Graph adjacency list")
+    start_node: str = Field(..., description="Starting traversal node")
+    max_depth: int = Field(default=-1, description="Maximum traversal depth (-1 for unlimited)")
+
+
+class GraphDfsDTO(BaseModel):
+    adjacency_list: Dict[str, List[str]] = Field(..., description="Graph adjacency list")
+    start_node: str = Field(..., description="Starting traversal node")
+    max_depth: int = Field(default=-1, description="Maximum traversal depth (-1 for unlimited)")
+
+
+class GraphDijkstraDTO(BaseModel):
+    weighted_edges: List[Dict[str, Any]] = Field(..., description="List of {source, target, weight} objects")
+    start_node: str = Field(..., description="Starting node")
+    target_node: Optional[str] = Field(default=None, description="Optional target destination node")
+
+
+class GraphAstarDTO(BaseModel):
+    weighted_edges: List[Dict[str, Any]] = Field(..., description="List of {source, target, weight} objects")
+    start_node: str = Field(..., description="Starting node")
+    target_node: str = Field(..., description="Destination target node")
+    heuristics: Optional[Dict[str, float]] = Field(default=None, description="Node heuristic estimates to target")
+
+
+class GraphPageRankDTO(BaseModel):
+    adjacency_list: Dict[str, List[str]] = Field(..., description="Graph adjacency list")
+    damping_factor: float = Field(default=0.85, description="Random teleport damping factor")
+    max_iterations: int = Field(default=100, description="Maximum power iterations")
+    tolerance: float = Field(default=1e-6, description="Convergence threshold")
+
+
+class GraphDegreeCentralityDTO(BaseModel):
+    adjacency_list: Dict[str, List[str]] = Field(..., description="Graph adjacency list")
+    normalized: bool = Field(default=True, description="Normalize scores by (N-1)")
+
+
+class GraphConnectedComponentsDTO(BaseModel):
+    edges: List[List[str]] = Field(..., description="List of [u, v] undirected edge pairs")
+    nodes: Optional[List[str]] = Field(default=None, description="Optional full node list including isolated nodes")
+
+
+class GraphTarjanSccDTO(BaseModel):
+    adjacency_list: Dict[str, List[str]] = Field(..., description="Directed graph adjacency list")
+
+
+class GraphSubgraphMatchDTO(BaseModel):
+    target_graph: Dict[str, List[str]] = Field(..., description="Target host graph adjacency list")
+    pattern_graph: Dict[str, List[str]] = Field(..., description="Pattern query graph adjacency list")
+    max_matches: int = Field(default=100, description="Maximum matching mappings to return")
 
 
 def get_orchestrator_services() -> Dict[str, Any]:
@@ -529,6 +683,126 @@ def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, 
     )
 
 
+@router.post("/algos/search/walk")
+def search_recursive_walk(payload: SearchWalkDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-01", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/work-stealing-walk")
+def search_work_stealing_walk(payload: SearchWorkStealingDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-02", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/git-aware-walk")
+def search_git_aware_walk(payload: SearchGitAwareDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-03", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/glob-match")
+def search_glob_match(payload: SearchGlobDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-04", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/binary-check")
+def search_binary_check(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-05", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/content-type")
+def search_content_type(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-06", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/size-line-check")
+def search_size_line_check(payload: SearchSizeLineDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-07", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/generated-code-check")
+def search_generated_code_check(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-08", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/trigram-index")
+def search_trigram_index(payload: SearchTrigramDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-09", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/simd-memchr")
+def search_simd_memchr(payload: SearchSimdMemchrDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-10", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/aho-corasick")
+def search_aho_corasick(payload: SearchAhoCorasickDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-11", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/lazy-dfa")
+def search_lazy_dfa(payload: SearchLazyDfaDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-12", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/streaming-chunk-scan")
+def search_streaming_chunk_scan(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-13", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/context-snippet")
+def search_context_snippet(payload: SearchContextSnippetDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-14", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/search/mmap-scan")
+def search_mmap_scan(payload: SearchMmapDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-SRCH-15", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
 @router.post("/algos/search/scan")
 @router.post("/algos/scan")
 def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
@@ -545,24 +819,28 @@ def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
     )
 
 
-@router.post("/algos/observability/outline")
-@router.post("/algos/outline")
-def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+@router.post("/algos/observability/span-track")
+def obs_span_track(payload: ObsSpanTrackDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
-    if not os.path.isfile(payload.file_path):
-        raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
-    outline = svc.inspect_file_outline(payload.file_path)
-    return build_success_envelope(data=outline, trace_id=trace_id)
+    res = svc.execute_algorithm("ALGO-OBS-16", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
 
 
-@router.post("/algos/observability/dependencies")
-@router.post("/algos/dependencies")
-def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[str, Any]:
+@router.post("/algos/observability/ast")
+def obs_ast_extract(payload: ObsAstDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
-    report = svc.analyze_module_dependencies(payload.directory)
-    return build_success_envelope(data=report, trace_id=trace_id)
+    res = svc.execute_algorithm("ALGO-OBS-17", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/observability/symbols")
+def obs_symbols_resolve(payload: ObsSymbolsDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-OBS-18", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
 
 
 @router.post("/algos/observability/lint-comments")
@@ -574,6 +852,34 @@ def lint_comments(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
     report = svc.lint_zero_inline_comments(payload.file_path)
     return build_success_envelope(data=report, trace_id=trace_id)
+
+
+@router.post("/algos/observability/dependencies")
+@router.post("/algos/dependencies")
+def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    report = svc.analyze_module_dependencies(payload.directory)
+    return build_success_envelope(data=report, trace_id=trace_id)
+
+
+@router.post("/algos/observability/outline")
+@router.post("/algos/outline")
+def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    if not os.path.isfile(payload.file_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {payload.file_path}")
+    outline = svc.inspect_file_outline(payload.file_path)
+    return build_success_envelope(data=outline, trace_id=trace_id)
+
+
+@router.post("/algos/update/cst-match")
+def update_cst_match(payload: UpdateCstMatchDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-UPD-22", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
 
 
 @router.post("/algos/update/patch")
@@ -695,6 +1001,79 @@ def chunk_text_endpoint(payload: VectorChunkDTO, request: Request) -> Dict[str, 
         data={"total_chunks": len(chunks), "chunks": chunks},
         trace_id=trace_id,
     )
+
+
+@router.post("/algos/graph/bfs")
+def graph_bfs_endpoint(payload: GraphBfsDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-01", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/dfs")
+def graph_dfs_endpoint(payload: GraphDfsDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-02", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/dijkstra")
+def graph_dijkstra_endpoint(payload: GraphDijkstraDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-03", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/astar")
+def graph_astar_endpoint(payload: GraphAstarDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-04", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/pagerank")
+def graph_pagerank_endpoint(payload: GraphPageRankDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-05", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/degree-centrality")
+def graph_degree_centrality_endpoint(payload: GraphDegreeCentralityDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-06", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/connected-components")
+def graph_connected_components_endpoint(payload: GraphConnectedComponentsDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-07", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/tarjan-scc")
+def graph_tarjan_scc_endpoint(payload: GraphTarjanSccDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-08", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/graph/subgraph-match")
+def graph_subgraph_match_endpoint(payload: GraphSubgraphMatchDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-GRAPH-09", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
 
 
 @router.post("/algos/execute/{algo_id}")

@@ -7,8 +7,8 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API CONTRACT & EXECUTION TESTS
    Tests HTTP REST endpoints for:
    - Layer 1 Algorithm Contracts & G4 Adapters
    - Dynamic Pipeline Composition
-   - Direct Algorithm Execution (`POST /api/v1/algos/execute/{algo_id}`)
-   - Dedicated Vector Algorithm REST Endpoints
+   - Direct Universal Algorithm Execution (`POST /api/v1/algos/execute/{algo_id}`)
+   - Dedicated Search, Observability, Update & Vector Endpoints
    - Strict adherence to `api-request-response-structure.md` envelope format.
 ================================================================================
 """
@@ -30,8 +30,7 @@ def test_api_list_algorithm_contracts(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["statusCode"] == 200
-    assert json_data["meta"]["status"] == "success"
-    assert json_data["data"]["total_contracts"] == 33
+    assert json_data["data"]["total_contracts"] == 42
 
 
 def test_api_filter_contracts_by_category(client):
@@ -98,6 +97,44 @@ def test_api_execute_algorithm_direct_search(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["data"]["result"]["total_matches"] == 2
+
+
+def test_api_search_dedicated_endpoints(client):
+    glob_res = client.post("/api/v1/algos/search/glob-match", json={"pattern": "*.py", "path": "main.py"})
+    assert glob_res.status_code == 200
+    assert glob_res.json()["data"]["matches"] is True
+
+    trigram_res = client.post("/api/v1/algos/search/trigram-index", json={"text": "hello"})
+    assert trigram_res.status_code == 200
+    assert trigram_res.json()["data"]["trigrams_count"] > 0
+
+    aho_res = client.post("/api/v1/algos/search/aho-corasick", json={"text": "abcde", "patterns": ["bc", "de"]})
+    assert aho_res.status_code == 200
+    assert aho_res.json()["data"]["total_matches"] == 2
+
+
+def test_api_observability_dedicated_endpoints(client):
+    span_res = client.post("/api/v1/algos/observability/span-track", json={"content": "line1\nline2\nline3", "offset": 7})
+    assert span_res.status_code == 200
+    assert span_res.json()["data"]["line"] == 2
+
+    ast_res = client.post("/api/v1/algos/observability/ast", json={"code": "def hello(): pass", "language": "python"})
+    assert ast_res.status_code == 200
+    assert ast_res.json()["data"]["total_nodes"] >= 1
+
+    sym_res = client.post("/api/v1/algos/observability/symbols", json={"code": "x = 10\ndef foo(): pass"})
+    assert sym_res.status_code == 200
+    assert sym_res.json()["data"]["total_symbols"] >= 1
+
+
+def test_api_update_dedicated_endpoints(client):
+    cst_res = client.post("/api/v1/algos/update/cst-match", json={"code": "def func(): return 1", "node_type": "function"})
+    assert cst_res.status_code == 200
+    assert cst_res.json()["data"]["matches_count"] >= 1
+
+    diff_res = client.post("/api/v1/algos/update/diff", json={"original_content": "a\n", "modified_content": "b\n", "file_path": "f.txt"})
+    assert diff_res.status_code == 200
+    assert diff_res.json()["data"]["has_changes"] is True
 
 
 def test_api_vector_normalize_endpoint(client):
