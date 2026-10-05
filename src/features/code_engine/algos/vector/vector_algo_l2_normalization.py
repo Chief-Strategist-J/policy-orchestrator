@@ -96,3 +96,8 @@ class VectorAlgoL2Normalization:
             VectorAlgoL2Normalization.normalize_single(v, epsilon=epsilon, raise_on_zero=raise_on_zero)
             for v in vectors
         ]
+
+    @staticmethod
+    def to_qdrant_distance_metric() -> str:
+        return "Dot"
+

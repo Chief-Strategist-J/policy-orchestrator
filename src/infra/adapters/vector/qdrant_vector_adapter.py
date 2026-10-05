@@ -143,6 +143,112 @@ class QdrantVectorAdapter(VectorStorePort):
 
         return results
 
+    def query_with_quantization(
+        self,
+        vector: List[float],
+        top_k: int = 5,
+        rescore: bool = True,
+        oversampling: float = 2.0,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[VectorQueryResult]:
+        body: Dict[str, Any] = {
+            "vector": vector,
+            "limit": top_k,
+            "with_payload": True,
+            "with_vector": True,
+            "params": {
+                "quantization": {
+                    "ignore": False,
+                    "rescore": rescore,
+                    "oversampling": oversampling,
+                }
+            },
+        }
+        if filter_metadata:
+            must_conditions = [{"key": k, "match": {"value": v}} for k, v in filter_metadata.items()]
+            body["filter"] = {"must": must_conditions}
+
+        res = self._request(f"/collections/{self.collection_name}/points/search", method="POST", payload=body)
+        points = res.get("result", [])
+        results: List[VectorQueryResult] = []
+
+        for p in points:
+            payload = p.get("payload", {})
+            orig_id = payload.pop("_original_id", str(p.get("id")))
+            content = payload.pop("_raw_content", "")
+            doc = VectorDocument(
+                id=orig_id,
+                content=content,
+                embedding=p.get("vector") or [],
+                metadata=payload,
+            )
+            results.append(VectorQueryResult(document=doc, score=float(p.get("score", 0.0))))
+
+        return results
+
+    def batch_query(
+        self,
+        vectors: List[List[float]],
+        top_k: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[List[VectorQueryResult]]:
+        searches = []
+        for vec in vectors:
+            search_item: Dict[str, Any] = {
+                "vector": vec,
+                "limit": top_k,
+                "with_payload": True,
+                "with_vector": True,
+            }
+            if filter_metadata:
+                search_item["filter"] = {
+                    "must": [{"key": k, "match": {"value": v}} for k, v in filter_metadata.items()]
+                }
+            searches.append(search_item)
+
+        res = self._request(f"/collections/{self.collection_name}/points/search/batch", method="POST", payload={"searches": searches})
+        batch_points = res.get("result", [])
+        all_results: List[List[VectorQueryResult]] = []
+
+        for points in batch_points:
+            item_results: List[VectorQueryResult] = []
+            for p in points:
+                payload = p.get("payload", {})
+                orig_id = payload.pop("_original_id", str(p.get("id")))
+                content = payload.pop("_raw_content", "")
+                doc = VectorDocument(
+                    id=orig_id,
+                    content=content,
+                    embedding=p.get("vector") or [],
+                    metadata=payload,
+                )
+                item_results.append(VectorQueryResult(document=doc, score=float(p.get("score", 0.0))))
+            all_results.append(item_results)
+
+        return all_results
+
+    def create_collection(
+        self,
+        collection_name: str,
+        vector_size: int,
+        distance: str = "Cosine",
+        quantization: Optional[Any] = None,
+    ) -> bool:
+        self.collection_name = collection_name
+        self.vector_size = vector_size
+        self.distance = distance
+        payload: Dict[str, Any] = {"vectors": {"size": vector_size, "distance": distance}}
+        if quantization:
+            if hasattr(quantization, "quantization_type") and quantization.quantization_type == "binary":
+                payload["quantization_config"] = {"binary": {"always_ram": getattr(quantization, "always_ram", True)}}
+            elif hasattr(quantization, "quantization_type") and quantization.quantization_type == "scalar":
+                payload["quantization_config"] = {"scalar": {"type": "int8", "always_ram": getattr(quantization, "always_ram", True)}}
+            elif isinstance(quantization, dict):
+                payload["quantization_config"] = quantization
+
+        self._request(f"/collections/{collection_name}", method="PUT", payload=payload)
+        return True
+
     def delete(self, ids: List[str]) -> int:
         uuid_ids = [self._to_uuid(i) for i in ids]
         self._request(f"/collections/{self.collection_name}/points/delete", method="POST", payload={"points": uuid_ids})

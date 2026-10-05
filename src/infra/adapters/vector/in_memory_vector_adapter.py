@@ -78,6 +78,34 @@ class InMemoryCosineVectorAdapter(VectorStorePort):
         scored_results.sort(key=lambda r: r.score, reverse=True)
         return scored_results[:top_k]
 
+    def query_with_quantization(
+        self,
+        vector: List[float],
+        top_k: int = 5,
+        rescore: bool = True,
+        oversampling: float = 2.0,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[VectorQueryResult]:
+        return self.query_by_vector(vector=vector, top_k=top_k, filter_metadata=filter_metadata)
+
+    def batch_query(
+        self,
+        vectors: List[List[float]],
+        top_k: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[List[VectorQueryResult]]:
+        return [self.query_by_vector(v, top_k=top_k, filter_metadata=filter_metadata) for v in vectors]
+
+    def create_collection(
+        self,
+        collection_name: str,
+        vector_size: int,
+        distance: str = "Cosine",
+        quantization: Optional[Any] = None,
+    ) -> bool:
+        self.clear()
+        return True
+
     def delete(self, ids: List[str]) -> int:
         removed = 0
         for doc_id in ids:

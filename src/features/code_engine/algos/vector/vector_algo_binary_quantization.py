@@ -7,6 +7,8 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: 1-BIT BINARY QUANTIZATION (ALGO-VEC-07)
    Converts float32 embedding vectors into compact bit vectors (1 bit per dimension,
    32x memory reduction). Distance comparison between binary vectors is computed
    via fast bitwise XOR + POPCNT (Hamming Distance), delivering 10x-50x speedups.
+   Provides direct Qdrant database payload, collection quantization configuration,
+   and rescoring search parameter builders.
 
 2. MATHEMATICAL FORMULA:
    Given centered/zero-mean vector v in R^D:
@@ -17,12 +19,13 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: 1-BIT BINARY QUANTIZATION (ALGO-VEC-07)
 3. ARCHITECTURAL INVARIANTS & ZERO-INLINE-COMMENT DOCTRINE:
    - Method bodies are 100% comment-free and pure.
    - Converts vectors to packed integer bit-arrays (bytes).
+   - Generates Qdrant-compliant quantization configurations and point payloads.
 ================================================================================
 """
 
 from __future__ import annotations
 import math
-from typing import List, Tuple
+from typing import List, Dict, Any, Optional
 
 
 class VectorAlgoBinaryQuantization:
@@ -33,7 +36,7 @@ class VectorAlgoBinaryQuantization:
       name: VectorAlgoBinaryQuantization
       version: 1.0.0
       category: vector
-      capability_tags: [vector, quantization, 1bit, binary_quantization, hamming_distance]
+      capability_tags: [vector, quantization, 1bit, binary_quantization, hamming_distance, qdrant]
       inputs:
         type: object
         required: [vector]
@@ -98,3 +101,33 @@ class VectorAlgoBinaryQuantization:
             return 0.0
         ratio = min(1.0, max(0.0, hamming_distance / total_bits))
         return math.cos(math.pi * ratio)
+
+    @staticmethod
+    def to_qdrant_quantization_config(always_ram: bool = True) -> Dict[str, Any]:
+        return {
+            "binary": {
+                "always_ram": always_ram,
+            }
+        }
+
+    @staticmethod
+    def to_qdrant_search_params(rescore: bool = True, oversampling: float = 2.0) -> Dict[str, Any]:
+        return {
+            "quantization": {
+                "ignore": False,
+                "rescore": rescore,
+                "oversampling": oversampling,
+            }
+        }
+
+    @staticmethod
+    def to_qdrant_point(
+        point_id: Any,
+        vector: List[float],
+        payload: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return {
+            "id": point_id,
+            "vector": vector,
+            "payload": payload or {},
+        }

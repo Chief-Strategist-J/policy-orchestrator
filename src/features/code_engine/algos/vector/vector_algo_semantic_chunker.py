@@ -157,3 +157,26 @@ class VectorAlgoSemanticChunker:
             chunks.append(" ".join(current_group))
 
         return chunks
+
+    @staticmethod
+    def to_qdrant_points(
+        document_id: str,
+        chunks: List[str],
+        chunk_embeddings: List[List[float]],
+        base_metadata: Optional[dict] = None,
+    ) -> List[dict]:
+        if len(chunks) != len(chunk_embeddings):
+            raise ValueError("chunks and chunk_embeddings must have identical lengths")
+        points = []
+        for idx, (text, emb) in enumerate(zip(chunks, chunk_embeddings)):
+            meta = dict(base_metadata or {})
+            meta["document_id"] = document_id
+            meta["chunk_index"] = idx
+            meta["text"] = text
+            points.append({
+                "id": f"{document_id}_{idx}",
+                "vector": emb,
+                "payload": meta,
+            })
+        return points
+

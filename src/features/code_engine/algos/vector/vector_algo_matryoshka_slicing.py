@@ -96,3 +96,21 @@ class VectorAlgoMatryoshkaSlicing:
             )
             for v in vectors
         ]
+
+    @staticmethod
+    def to_qdrant_multivector_point(
+        point_id: Any,
+        full_vector: List[float],
+        coarse_dim: int = 256,
+        payload: Optional[dict] = None,
+    ) -> dict:
+        coarse_vector = VectorAlgoMatryoshkaSlicing.slice_and_normalize(full_vector, target_dim=coarse_dim)
+        return {
+            "id": point_id,
+            "vector": {
+                "dense_coarse": coarse_vector,
+                "dense_full": full_vector,
+            },
+            "payload": payload or {},
+        }
+

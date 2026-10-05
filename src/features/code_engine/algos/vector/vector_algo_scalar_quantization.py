@@ -131,3 +131,40 @@ class VectorAlgoScalarQuantization:
 
         scale = span / max_level
         return [q_vec.min_val + q * scale for q in q_vec.quantized_values]
+
+    @staticmethod
+    def to_qdrant_quantization_config(
+        quantile: Optional[float] = 0.99,
+        always_ram: bool = True,
+    ) -> dict:
+        config: dict = {
+            "scalar": {
+                "type": "int8",
+                "always_ram": always_ram,
+            }
+        }
+        if quantile is not None:
+            config["scalar"]["quantile"] = quantile
+        return config
+
+    @staticmethod
+    def to_qdrant_search_params(rescore: bool = True, oversampling: float = 2.0) -> dict:
+        return {
+            "quantization": {
+                "ignore": False,
+                "rescore": rescore,
+                "oversampling": oversampling,
+            }
+        }
+
+    @staticmethod
+    def to_qdrant_point(
+        point_id: Any,
+        vector: List[float],
+        payload: Optional[dict] = None,
+    ) -> dict:
+        return {
+            "id": point_id,
+            "vector": vector,
+            "payload": payload or {},
+        }
