@@ -27,9 +27,9 @@ from src.features.code_engine.registry.algorithm_catalog import (
 
 
 def test_builtin_algorithms_count_and_uniqueness():
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 102
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 152
     ids = [algo.id for algo in BUILTIN_ALGORITHM_CONTRACTS]
-    assert len(set(ids)) == 102, "All algorithm IDs must be unique"
+    assert len(set(ids)) == 152, "All algorithm IDs must be unique"
 
 
 def test_all_algorithms_have_all_16_properties():

@@ -33,19 +33,19 @@ def test_sqlite_migration_and_seeding(tmp_path):
 
     # Seed algorithms
     count = runner.seed_algorithm_catalog(conn)
-    assert count == 102
+    assert count == 152
 
     cursor.execute("SELECT COUNT(*) FROM algorithm_registry")
-    assert cursor.fetchone()[0] == 102
+    assert cursor.fetchone()[0] == 152
 
     cursor.execute("SELECT COUNT(*) FROM type_adapters")
     assert cursor.fetchone()[0] == 11
 
     # Idempotent re-seeding
     count2 = runner.seed_algorithm_catalog(conn)
-    assert count2 == 102
+    assert count2 == 152
     cursor.execute("SELECT COUNT(*) FROM algorithm_registry")
-    assert cursor.fetchone()[0] == 102
+    assert cursor.fetchone()[0] == 152
 
     conn.close()
 

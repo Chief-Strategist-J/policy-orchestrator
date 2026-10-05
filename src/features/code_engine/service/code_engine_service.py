@@ -203,6 +203,62 @@ from src.features.code_engine.algos.vector_filter import (
     VectorFilterAlgoPartitionedIndex,
 )
 
+from src.features.code_engine.algos.vector_transform import (
+    VectorTransformAlgoSubwordTokenization,
+    VectorTransformAlgoBiEncoderForwardPass,
+    VectorTransformAlgoMeanPooling,
+    VectorTransformAlgoCLSPooling,
+    VectorTransformAlgoLastTokenPooling,
+    VectorTransformAlgoInstructionPrefixes,
+    VectorTransformAlgoContrastiveInfoNCE,
+    VectorTransformAlgoHardNegativeMining,
+    VectorTransformAlgoMatryoshkaLearning,
+    VectorTransformAlgoLateChunking,
+    VectorTransformAlgoSlidingWindow,
+    VectorTransformAlgoSemanticChunking,
+    VectorTransformAlgoRecursiveChunking,
+    VectorTransformAlgoDynamicPaddingBatching,
+    VectorTransformAlgoL2Norm,
+    VectorTransformAlgoMeanCentering,
+    VectorTransformAlgoWhitening,
+    VectorTransformAlgoRemoveDominantDirections,
+    VectorTransformAlgoMIPSToNNS,
+    VectorTransformAlgoScoreCalibration,
+    VectorTransformAlgoCSLSHubnessReduction,
+    VectorTransformAlgoProcrustesAlignment,
+    VectorTransformAlgoPCA,
+    VectorTransformAlgoTruncatedSVD,
+    VectorTransformAlgoRandomProjection,
+    VectorTransformAlgoAutoencoderCompression,
+    VectorTransformAlgoUMAP,
+    VectorTransformAlgoTSNE,
+    VectorTransformAlgoProjectionHead,
+    VectorTransformAlgoIncrementalPCA,
+    VectorTransformAlgoSimHash,
+    VectorTransformAlgoLearnedSparseExpansion,
+    VectorTransformAlgoScalarQuantization,
+    VectorTransformAlgoBinaryQuantization,
+    VectorTransformAlgoProductQuantization,
+    VectorTransformAlgoOptimizedProductQuantization,
+    VectorTransformAlgoResidualQuantization,
+    VectorTransformAlgoAnisotropicQuantization,
+    VectorTransformAlgoKMeansClustering,
+    VectorTransformAlgoKMeansPlusPlus,
+    VectorTransformAlgoMinibatchKMeans,
+    VectorTransformAlgoMiniBatchKMeans,
+    VectorTransformAlgoHierarchicalKMeans,
+    VectorTransformAlgoADCLookup,
+    VectorTransformAlgoFastScanPQ,
+    VectorTransformAlgoRaBiTQ,
+    VectorTransformAlgoRaBitQ,
+    VectorTransformAlgoHalfPrecision,
+    VectorTransformAlgoMultiVectorRepresentation,
+    VectorTransformAlgoMultiVectorCompression,
+    VectorTransformAlgoSparseVectorRepresentation,
+    VectorTransformAlgoEmbeddingCache,
+)
+
+
 
 class CodeEngineService:
     def __init__(self) -> None:
@@ -1219,6 +1275,156 @@ class CodeEngineService:
             evals = merged.get("parameter_evaluations", [])
             target = merged.get("target_recall", 0.95)
             return VectorSearchAlgoSearchAutotune.autotune_parameters(gt, evals, target_recall=target)
+
+        elif algo_id == "ALGO-VEC-TRFM-01":
+            return VectorTransformAlgoSubwordTokenization.tokenize(merged.get("text"), vocab=merged.get("vocab", None), max_tokens=merged.get("max_tokens", 512), lowercase=merged.get("lowercase", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-02":
+            return VectorTransformAlgoBiEncoderForwardPass.forward(merged.get("token_ids"), hidden_dim=merged.get("hidden_dim", 64), model_version=merged.get("model_version", 'v1.0.0'), is_query=merged.get("is_query", False))
+
+        elif algo_id == "ALGO-VEC-TRFM-03":
+            return VectorTransformAlgoMeanPooling.pool(merged.get("token_embeddings"), attention_mask=merged.get("attention_mask", None), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-04":
+            return VectorTransformAlgoCLSPooling.pool(merged.get("token_embeddings"), projection_weights=merged.get("projection_weights", None), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-05":
+            return VectorTransformAlgoLastTokenPooling.pool(merged.get("token_embeddings"), attention_mask=merged.get("attention_mask", None), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-06":
+            return VectorTransformAlgoInstructionPrefixes.apply_prefix(merged.get("text"), task_type=merged.get("task_type", 'query'), model_family=merged.get("model_family", 'e5'), custom_instruction=merged.get("custom_instruction", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-07":
+            return VectorTransformAlgoContrastiveInfoNCE.compute_loss(merged.get("query_vectors"), merged.get("document_vectors"), temperature=merged.get("temperature", 0.05))
+
+        elif algo_id == "ALGO-VEC-TRFM-08":
+            return VectorTransformAlgoHardNegativeMining.mine(merged.get("candidates"), merged.get("positive_ids"), max_negatives=merged.get("max_negatives", 5), min_rank=merged.get("min_rank", 1), max_similarity_ceiling=merged.get("max_similarity_ceiling", 0.95))
+
+        elif algo_id == "ALGO-VEC-TRFM-09":
+            return VectorTransformAlgoMatryoshkaLearning.slice_nested(merged.get("vector"), nested_dims=merged.get("nested_dims", None), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-10":
+            return VectorTransformAlgoLateChunking.chunk_late(merged.get("token_embeddings"), merged.get("chunk_spans"), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-11":
+            return VectorTransformAlgoSlidingWindow.chunk(merged.get("tokens"), window_size=merged.get("window_size", 128), overlap=merged.get("overlap", 32), document_id=merged.get("document_id", 'doc_default'))
+
+        elif algo_id == "ALGO-VEC-TRFM-12":
+            return VectorTransformAlgoSemanticChunking.chunk_semantic(merged.get("sentences"), merged.get("sentence_embeddings"), similarity_threshold=merged.get("similarity_threshold", 0.75), max_sentences_per_chunk=merged.get("max_sentences_per_chunk", 8))
+
+        elif algo_id == "ALGO-VEC-TRFM-13":
+            return VectorTransformAlgoRecursiveChunking.chunk_structured(merged.get("text"), chunk_size=merged.get("chunk_size", 500), chunk_overlap=merged.get("chunk_overlap", 50), separators=merged.get("separators", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-14":
+            return VectorTransformAlgoDynamicPaddingBatching.batch_and_pad(merged.get("token_sequences"), batch_size=merged.get("batch_size", 16), pad_token_id=merged.get("pad_token_id", 0))
+
+        elif algo_id == "ALGO-VEC-TRFM-15":
+            return VectorTransformAlgoL2Norm.normalize(merged.get("vector"), epsilon=merged.get("epsilon", 1e-12))
+
+        elif algo_id == "ALGO-VEC-TRFM-16":
+            return VectorTransformAlgoMeanCentering.center(merged.get("vectors"), corpus_mean=merged.get("corpus_mean", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-17":
+            return VectorTransformAlgoWhitening.whiten(merged.get("vectors"), method=merged.get("method", 'pca'), regularization=merged.get("regularization", 1e-05))
+
+        elif algo_id == "ALGO-VEC-TRFM-18":
+            return VectorTransformAlgoRemoveDominantDirections.remove_dominant(merged.get("vectors"), num_components_to_remove=merged.get("num_components_to_remove", 3))
+
+        elif algo_id == "ALGO-VEC-TRFM-19":
+            return VectorTransformAlgoMIPSToNNS.reduce_mips_to_nns(merged.get("database_vectors"), query_vector=merged.get("query_vector", None), max_norm_bound=merged.get("max_norm_bound", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-20":
+            return VectorTransformAlgoScoreCalibration.calibrate(merged.get("scores"), method=merged.get("method", 'sigmoid'), temperature=merged.get("temperature", 1.0), sigmoid_slope=merged.get("sigmoid_slope", 1.0), sigmoid_bias=merged.get("sigmoid_bias", 0.0))
+
+        elif algo_id == "ALGO-VEC-TRFM-21":
+            return VectorTransformAlgoCSLSHubnessReduction.compute_csls(merged.get("query_vectors"), merged.get("candidate_vectors"), candidate_ids=merged.get("candidate_ids", None), k_neighbors=merged.get("k_neighbors", 4))
+
+        elif algo_id == "ALGO-VEC-TRFM-22":
+            return VectorTransformAlgoProcrustesAlignment.align(merged.get("source_anchors"), merged.get("target_anchors"), vectors_to_align=merged.get("vectors_to_align", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-23":
+            return VectorTransformAlgoPCA.fit_transform(merged.get("vectors"), target_dim=merged.get("target_dim", 16))
+
+        elif algo_id == "ALGO-VEC-TRFM-24":
+            return VectorTransformAlgoTruncatedSVD.transform(merged.get("vectors"), n_components=merged.get("n_components", 8))
+
+        elif algo_id == "ALGO-VEC-TRFM-25":
+            return VectorTransformAlgoRandomProjection.project(merged.get("vectors"), target_dim=merged.get("target_dim", 16), seed=merged.get("seed", 42), density=merged.get("density", 'gaussian'))
+
+        elif algo_id == "ALGO-VEC-TRFM-26":
+            return VectorTransformAlgoAutoencoderCompression.encode_decode(merged.get("vectors"), bottleneck_dim=merged.get("bottleneck_dim", 8), encoder_weights=merged.get("encoder_weights", None), decoder_weights=merged.get("decoder_weights", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-27":
+            return VectorTransformAlgoUMAP.project(merged.get("vectors"), n_components=merged.get("n_components", 2), n_neighbors=merged.get("n_neighbors", 5), min_dist=merged.get("min_dist", 0.1), n_epochs=merged.get("n_epochs", 30))
+
+        elif algo_id == "ALGO-VEC-TRFM-28":
+            return VectorTransformAlgoTSNE.project(merged.get("vectors"), n_components=merged.get("n_components", 2), perplexity=merged.get("perplexity", 30.0), n_iter=merged.get("n_iter", 40))
+
+        elif algo_id == "ALGO-VEC-TRFM-29":
+            return VectorTransformAlgoProjectionHead.project(merged.get("vector"), w1=merged.get("w1", None), b1=merged.get("b1", None), w2=merged.get("w2", None), b2=merged.get("b2", None), use_residual=merged.get("use_residual", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-30":
+            return VectorTransformAlgoIncrementalPCA.partial_fit_transform(merged.get("batch_vectors"), existing_components=merged.get("existing_components", None), existing_mean=merged.get("existing_mean", None), sample_count=merged.get("sample_count", 0), target_dim=merged.get("target_dim", 8))
+
+        elif algo_id == "ALGO-VEC-TRFM-31":
+            return VectorTransformAlgoSimHash.hash_vector(merged.get("vector"), num_bits=merged.get("num_bits", 64), seed=merged.get("seed", 42))
+
+        elif algo_id == "ALGO-VEC-TRFM-32":
+            return VectorTransformAlgoLearnedSparseExpansion.expand_sparse(merged.get("token_embeddings"), vocab_tokens=merged.get("vocab_tokens", None), projection_matrix=merged.get("projection_matrix", None), min_weight_threshold=merged.get("min_weight_threshold", 0.05))
+
+        elif algo_id == "ALGO-VEC-TRFM-33":
+            return VectorTransformAlgoScalarQuantization.quantize(merged.get("vector"), bits=merged.get("bits", 8), symmetric=merged.get("symmetric", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-34":
+            return VectorTransformAlgoBinaryQuantization.binarize(merged.get("vector"), threshold=merged.get("threshold", 0.0))
+
+        elif algo_id == "ALGO-VEC-TRFM-35":
+            return VectorTransformAlgoProductQuantization.encode(merged.get("vector"), m_subspaces=merged.get("m_subspaces", 4), codebooks=merged.get("codebooks", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-36":
+            return VectorTransformAlgoOptimizedProductQuantization.encode_opq(merged.get("vector"), rotation_matrix=merged.get("rotation_matrix", None), m_subspaces=merged.get("m_subspaces", 4), codebooks=merged.get("codebooks", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-37":
+            return VectorTransformAlgoResidualQuantization.quantize_residual(merged.get("vector"), num_stages=merged.get("num_stages", 3), stage_codebooks=merged.get("stage_codebooks", None))
+
+        elif algo_id == "ALGO-VEC-TRFM-38":
+            return VectorTransformAlgoAnisotropicQuantization.quantize_anisotropic(merged.get("vector"), centroids=merged.get("centroids", None), parallel_weight=merged.get("parallel_weight", 0.2))
+
+        elif algo_id == "ALGO-VEC-TRFM-39":
+            return VectorTransformAlgoKMeansClustering.cluster(merged.get("vectors"), k_clusters=merged.get("k_clusters", 4), max_iter=merged.get("max_iter", 25), tol=merged.get("tol", 0.0001), seed=merged.get("seed", 42))
+
+        elif algo_id == "ALGO-VEC-TRFM-40":
+            return VectorTransformAlgoKMeansPlusPlus.initialize_centroids(merged.get("vectors"), k_clusters=merged.get("k_clusters", 4), seed=merged.get("seed", 42))
+
+        elif algo_id == "ALGO-VEC-TRFM-41":
+            return VectorTransformAlgoMiniBatchKMeans.train(merged.get("vectors"), k_clusters=merged.get("k_clusters", 4), batch_size=merged.get("batch_size", 32), n_batches=merged.get("n_batches", 20), seed=merged.get("seed", 42))
+
+        elif algo_id == "ALGO-VEC-TRFM-42":
+            return VectorTransformAlgoHierarchicalKMeans.build_hierarchy(merged.get("vectors"), branching_factor=merged.get("branching_factor", 2), max_depth=merged.get("max_depth", 2))
+
+        elif algo_id == "ALGO-VEC-TRFM-43":
+            return VectorTransformAlgoADCLookup.compute_adc(merged.get("query_vector"), merged.get("codebooks"), merged.get("candidate_pq_codes"))
+
+        elif algo_id == "ALGO-VEC-TRFM-44":
+            return VectorTransformAlgoFastScanPQ.scan_fast(merged.get("query_vector"), merged.get("candidate_codes"), subspace_dim=merged.get("subspace_dim", 4))
+
+        elif algo_id == "ALGO-VEC-TRFM-45":
+            return VectorTransformAlgoRaBitQ.quantize(merged.get("vector"), seed=merged.get("seed", 42))
+
+        elif algo_id == "ALGO-VEC-TRFM-46":
+            return VectorTransformAlgoHalfPrecision.convert(merged.get("vector"), dtype_target=merged.get("dtype_target", 'float16'))
+
+        elif algo_id == "ALGO-VEC-TRFM-47":
+            return VectorTransformAlgoMultiVectorRepresentation.construct_representation(merged.get("tokens"), merged.get("token_embeddings"), filter_punctuation=merged.get("filter_punctuation", True), normalize_tokens=merged.get("normalize_tokens", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-48":
+            return VectorTransformAlgoMultiVectorCompression.compress_multi_vector(merged.get("token_vectors"), centroids=merged.get("centroids", None), bits_per_dim=merged.get("bits_per_dim", 1))
+
+        elif algo_id == "ALGO-VEC-TRFM-49":
+            return VectorTransformAlgoSparseVectorRepresentation.pack_sparse(merged.get("term_weights"), min_weight=merged.get("min_weight", 0.01), normalize_l2=merged.get("normalize_l2", True))
+
+        elif algo_id == "ALGO-VEC-TRFM-50":
+            return VectorTransformAlgoEmbeddingCache.get_or_set(merged.get("cache_store"), merged.get("text"), model_version=merged.get("model_version", 'v1.0.0'), prefix=merged.get("prefix", ''), vector_to_cache=merged.get("vector_to_cache", None), max_entries=merged.get("max_entries", 1000))
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

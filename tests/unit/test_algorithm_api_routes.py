@@ -30,7 +30,7 @@ def test_api_list_algorithm_contracts(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["statusCode"] == 200
-    assert json_data["data"]["total_contracts"] == 102
+    assert json_data["data"]["total_contracts"] == 152
 
 
 def test_api_filter_contracts_by_category(client):

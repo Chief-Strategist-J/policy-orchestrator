@@ -16,8 +16,8 @@ def test_api_has_exactly_42_builtin_algorithms(client):
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
-    assert body["data"]["total_contracts"] == 102
-    assert len(body["data"]["contracts"]) == 102
+    assert body["data"]["total_contracts"] == 152
+    assert len(body["data"]["contracts"]) == 152
 
 
 def test_api_execute_all_42_algorithms_direct(client):
@@ -124,6 +124,56 @@ def test_api_execute_all_42_algorithms_direct(client):
         "ALGO-VEC-SRCH-108": {"requested_node_ids": [1], "cached_nodes": [], "page_size_bytes": 4096, "bytes_per_node": 128, "max_batch_size": 16},
         "ALGO-VEC-SRCH-109": {"current_tokens": 10.0, "max_tokens": 100.0, "refill_rate_per_sec": 10.0, "last_refill_timestamp": 0.0, "current_concurrency": 1, "max_concurrency": 10, "request_cost": 1.0, "now": 1.0},
         "ALGO-VEC-SRCH-110": {"ground_truth_topk": [[1]], "parameter_evaluations": [{"parameters": {"ef": 16}, "retrieved_topk": [[1]], "latency_ms": 1.0}], "target_recall": 0.8},
+        "ALGO-VEC-TRFM-01": {"text": "unbelievable tokenization test", "vocab": {"un": 1, "believ": 2, "able": 3, "token": 4, "ization": 5, "test": 6}},
+        "ALGO-VEC-TRFM-02": {"token_ids": [101, 2054, 102], "hidden_dim": 16},
+        "ALGO-VEC-TRFM-03": {"token_embeddings": [[1.0, 2.0], [3.0, 4.0]], "attention_mask": [1, 1]},
+        "ALGO-VEC-TRFM-04": {"token_embeddings": [[1.0, 2.0], [3.0, 4.0]]},
+        "ALGO-VEC-TRFM-05": {"token_embeddings": [[1.0, 2.0], [3.0, 4.0]], "attention_mask": [1, 1]},
+        "ALGO-VEC-TRFM-06": {"text": "what is vector search?", "task_type": "query"},
+        "ALGO-VEC-TRFM-07": {"query_vectors": [[1.0, 0.0]], "document_vectors": [[0.9, 0.1], [0.0, 1.0]]},
+        "ALGO-VEC-TRFM-08": {"candidates": [{"id": "d1", "similarity": 0.88}, {"id": "d2", "similarity": 0.5}], "positive_ids": ["d2"]},
+        "ALGO-VEC-TRFM-09": {"vector": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6], "nested_dims": [2, 4]},
+        "ALGO-VEC-TRFM-10": {"token_embeddings": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], "chunk_spans": [[0, 2], [2, 3]]},
+        "ALGO-VEC-TRFM-11": {"tokens": ["token1", "token2", "token3", "token4", "token5"], "window_size": 3, "overlap": 1},
+        "ALGO-VEC-TRFM-12": {"sentences": ["First sentence here.", "Second sentence follows.", "Third sentence about cars."], "sentence_embeddings": [[1.0, 0.0], [0.95, 0.05], [0.0, 1.0]]},
+        "ALGO-VEC-TRFM-13": {"text": "Paragraph one.\n\nParagraph two is slightly longer.", "chunk_size": 20},
+        "ALGO-VEC-TRFM-14": {"token_sequences": [[1, 2, 3], [4, 5]], "batch_size": 2},
+        "ALGO-VEC-TRFM-15": {"vector": [3.0, 4.0]},
+        "ALGO-VEC-TRFM-16": {"vectors": [[2.0, 4.0], [4.0, 6.0]]},
+        "ALGO-VEC-TRFM-17": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]},
+        "ALGO-VEC-TRFM-18": {"vectors": [[10.0, 1.0], [10.2, 2.0], [9.8, 0.5]], "num_components_to_remove": 1},
+        "ALGO-VEC-TRFM-19": {"database_vectors": [[1.0, 2.0], [3.0, 4.0]], "query_vector": [1.0, 1.0]},
+        "ALGO-VEC-TRFM-20": {"scores": [0.9, 0.5, 0.1], "method": "temperature"},
+        "ALGO-VEC-TRFM-21": {"query_vectors": [[1.0, 0.0]], "candidate_vectors": [[0.9, 0.1], [0.1, 0.9]]},
+        "ALGO-VEC-TRFM-22": {"source_anchors": [[1.0, 0.0], [0.0, 1.0]], "target_anchors": [[0.0, 1.0], [-1.0, 0.0]]},
+        "ALGO-VEC-TRFM-23": {"vectors": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], "target_dim": 2},
+        "ALGO-VEC-TRFM-24": {"vectors": [[1.0, 0.0, 2.0], [0.0, 3.0, 0.0], [4.0, 0.0, 5.0]], "n_components": 2},
+        "ALGO-VEC-TRFM-25": {"vectors": [[1.0, 2.0, 3.0, 4.0]], "target_dim": 2},
+        "ALGO-VEC-TRFM-26": {"vectors": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], "bottleneck_dim": 2},
+        "ALGO-VEC-TRFM-27": {"vectors": [[1.0, 0.0], [0.9, 0.1], [0.0, 1.0], [0.1, 0.9]], "n_components": 2, "n_neighbors": 2},
+        "ALGO-VEC-TRFM-28": {"vectors": [[1.0, 2.0], [1.1, 2.1], [5.0, 5.0], [5.1, 5.1]], "n_components": 2, "perplexity": 2.0},
+        "ALGO-VEC-TRFM-29": {"vector": [1.0, 2.0, 3.0, 4.0]},
+        "ALGO-VEC-TRFM-30": {"batch_vectors": [[1.0, 2.0], [3.0, 4.0]], "target_dim": 1},
+        "ALGO-VEC-TRFM-31": {"vector": [0.5, -0.2, 0.8], "num_bits": 16},
+        "ALGO-VEC-TRFM-32": {"token_embeddings": [[0.1, 0.8, -0.3]]},
+        "ALGO-VEC-TRFM-33": {"vector": [-1.0, 0.0, 0.5, 1.0], "bits": 8},
+        "ALGO-VEC-TRFM-34": {"vector": [0.5, -0.2, 0.8, -0.9]},
+        "ALGO-VEC-TRFM-35": {"vector": [1.0, 2.0, 3.0, 4.0], "m_subspaces": 2},
+        "ALGO-VEC-TRFM-36": {"vector": [1.0, 2.0, 3.0, 4.0], "m_subspaces": 2},
+        "ALGO-VEC-TRFM-37": {"vector": [1.0, 2.0, 3.0, 4.0], "num_stages": 2},
+        "ALGO-VEC-TRFM-38": {"vector": [1.0, 2.0, 3.0, 4.0]},
+        "ALGO-VEC-TRFM-39": {"vectors": [[0.0, 0.0], [1.0, 1.0], [5.0, 5.0], [6.0, 6.0]], "k_clusters": 2},
+        "ALGO-VEC-TRFM-40": {"vectors": [[0.0, 0.0], [1.0, 1.0], [5.0, 5.0], [6.0, 6.0]], "k_clusters": 2},
+        "ALGO-VEC-TRFM-41": {"vectors": [[0.0, 0.0], [1.0, 1.0], [10.0, 10.0], [11.0, 11.0]], "k_clusters": 2, "batch_size": 2},
+        "ALGO-VEC-TRFM-42": {"vectors": [[0.0, 0.0], [1.0, 1.0], [5.0, 5.0], [6.0, 6.0]], "branching_factor": 2, "max_depth": 1},
+        "ALGO-VEC-TRFM-43": {"query_vector": [1.0, 2.0], "codebooks": [[[0.0], [1.0]], [[0.0], [2.0]]], "candidate_pq_codes": [[1, 1], [0, 0]]},
+        "ALGO-VEC-TRFM-44": {"query_vector": [1.0, 2.0, 3.0, 4.0], "candidate_codes": [[0, 1], [1, 0]], "subspace_dim": 2},
+        "ALGO-VEC-TRFM-45": {"vector": [1.2, -0.8, 3.4]},
+        "ALGO-VEC-TRFM-46": {"vector": [1.0, -2.5, 0.003], "dtype_target": "float16"},
+        "ALGO-VEC-TRFM-47": {"tokens": ["hello", "world"], "token_embeddings": [[1.0, 0.0], [0.0, 1.0]]},
+        "ALGO-VEC-TRFM-48": {"token_vectors": [[1.0, 0.0], [0.99, 0.01], [0.0, 1.0]]},
+        "ALGO-VEC-TRFM-49": {"term_weights": {"vector": 0.8, "search": 0.5}},
+        "ALGO-VEC-TRFM-50": {"cache_store": {}, "text": "sample text query", "vector_to_cache": [0.1, 0.2]},
     }
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:

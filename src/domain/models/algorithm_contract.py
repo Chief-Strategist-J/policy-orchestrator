@@ -33,6 +33,7 @@ class AlgorithmCategory(str, Enum):
     GRAPH = "graph"
     REASONING = "reasoning"
     FILTER = "filter"
+    TRANSFORM = "transform"
 
 
 class Purity(str, Enum):
