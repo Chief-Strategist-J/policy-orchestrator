@@ -16,8 +16,8 @@ def test_api_has_exactly_42_builtin_algorithms(client):
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
-    assert body["data"]["total_contracts"] == 76
-    assert len(body["data"]["contracts"]) == 76
+    assert body["data"]["total_contracts"] == 102
+    assert len(body["data"]["contracts"]) == 102
 
 
 def test_api_execute_all_42_algorithms_direct(client):
@@ -98,6 +98,32 @@ def test_api_execute_all_42_algorithms_direct(client):
         "ALGO-VEC-FLTR-82": {"vectors": [[0.0, 0.0], [1.0, 0.0]], "metadata": [{"status": "active"}, {"status": "inactive"}], "adjacency": {"0": [1], "1": []}, "entry_point": 0, "query": [0.9, 0.0], "filters": {"status": "active"}, "k": 1, "ef_search": 4},
         "ALGO-VEC-FLTR-83": {"total_vectors": 1000, "metadata_sample": [{"tenant": "T1"}, {"tenant": "T2"}], "filters": {"tenant": "T1"}, "is_security_filter": True},
         "ALGO-VEC-FLTR-84": {"partitions": {"tenant_A": [{"id": "d1", "vector": [1.0, 0.0], "metadata": {}}]}, "target_partition": "tenant_A", "query": [0.9, 0.1], "k": 1},
+        "ALGO-VEC-SRCH-85": {"corpus": ["the quick brown fox"], "query": "fox", "k": 1},
+        "ALGO-VEC-SRCH-86": {"dense_results": [{"id": "1", "score": 0.9}], "sparse_results": [{"id": "1", "score": 10.0}], "alpha": 0.5, "k": 1},
+        "ALGO-VEC-SRCH-87": {"rankings": [[{"id": "doc1"}], [{"id": "doc1"}]], "k_rrf": 60, "top_k": 1},
+        "ALGO-VEC-SRCH-88": {"score_lists": [[{"id": "doc1", "score": 0.9}]], "weights": [1.0], "top_k": 1},
+        "ALGO-VEC-SRCH-89": {"candidate_vectors": [[1.0, 0.0]], "candidate_ids": ["1"], "query_vector": [1.0, 0.0], "lambda_mult": 0.5, "k": 1},
+        "ALGO-VEC-SRCH-90": {"vectors": [[0.0, 0.0]], "query": [0.0, 0.0], "radius": 1.0, "metric": "l2", "max_results": 1},
+        "ALGO-VEC-SRCH-91": {"document_token_vectors": [[[1.0, 0.0]]], "query_token_vectors": [[1.0, 0.0]], "k": 1},
+        "ALGO-VEC-SRCH-92": {"vectors": [[1.0, 0.0]], "expanded_queries": [[1.0, 0.0]], "k": 1, "aggregation": "max"},
+        "ALGO-VEC-SRCH-93": {"candidate_ids": [0], "full_precision_vectors": [[1.0, 0.0]], "query_vector": [1.0, 0.0], "metric": "l2", "top_k": 1},
+        "ALGO-VEC-SRCH-94": {"query": "test", "candidates": [{"id": "1", "text": "test document"}], "top_k": 1},
+        "ALGO-VEC-SRCH-95": {"stage1_candidates": [{"id": "1", "score": 1.0}], "stage2_top_m": 1, "stage3_top_k": 1},
+        "ALGO-VEC-SRCH-96": {"query": "test", "candidates": [{"id": "1", "text": "doc"}], "simulated_llm_response": "[0]", "top_k": 1},
+        "ALGO-VEC-SRCH-97": {"corpus_vectors": [[1.0, 0.0]], "query_vector": [1.0, 0.0], "hypothetical_vectors": [[1.0, 0.0]], "k": 1, "query_weight": 0.5},
+        "ALGO-VEC-SRCH-98": {"query": "def parse():", "available_routes": ["lexical_bm25", "dense_vector"]},
+        "ALGO-VEC-SRCH-99": {"shard_results": [[{"id": "doc1", "score": 1.0}]], "top_k": 1},
+        "ALGO-VEC-SRCH-100": {"centroids": [[1.0, 0.0]], "centroid_to_shard_map": {"0": "shard1"}, "query_vector": [1.0, 0.0], "num_target_shards": 1},
+        "ALGO-VEC-SRCH-101": {"replicas": [{"id": "rep1", "is_healthy": True, "active_connections": 1}], "strategy": "least_loaded", "counter": 0},
+        "ALGO-VEC-SRCH-102": {"primary_latency_ms": 10.0, "backup_latency_ms": 5.0, "hedge_delay_threshold_ms": 2.0, "is_read_only": True},
+        "ALGO-VEC-SRCH-103": {"shard_sorted_lists": [[{"id": "doc1", "score": 0.9}]], "k": 1},
+        "ALGO-VEC-SRCH-104": {"cache_store": {}, "query": "q", "tenant_id": "t1", "filters": {}, "index_version": "v1", "results": [{"id": "1"}], "ttl_seconds": 3600.0, "max_size": 1000},
+        "ALGO-VEC-SRCH-105": {"cached_entries": [{"id": "e1", "vector": [1.0, 0.0], "tenant_id": "t1", "response": "resp"}], "query_vector": [1.0, 0.0], "tenant_id": "t1", "similarity_threshold": 0.9},
+        "ALGO-VEC-SRCH-106": {"pending_queries": [{"id": "q1"}], "max_batch_size": 2, "max_latency_ms": 10.0},
+        "ALGO-VEC-SRCH-107": {"components": [{"name": "c1", "size_mb": 10, "access_priority": 1}], "ram_budget_mb": 100.0},
+        "ALGO-VEC-SRCH-108": {"requested_node_ids": [1], "cached_nodes": [], "page_size_bytes": 4096, "bytes_per_node": 128, "max_batch_size": 16},
+        "ALGO-VEC-SRCH-109": {"current_tokens": 10.0, "max_tokens": 100.0, "refill_rate_per_sec": 10.0, "last_refill_timestamp": 0.0, "current_concurrency": 1, "max_concurrency": 10, "request_cost": 1.0, "now": 1.0},
+        "ALGO-VEC-SRCH-110": {"ground_truth_topk": [[1]], "parameter_evaluations": [{"parameters": {"ef": 16}, "retrieved_topk": [[1]], "latency_ms": 1.0}], "target_recall": 0.8},
     }
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:

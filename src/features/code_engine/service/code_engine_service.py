@@ -167,6 +167,32 @@ from src.features.code_engine.algos.vector_search import (
     VectorSearchAlgoRandomHyperplaneLSH,
     VectorSearchAlgoMultiProbeLSH,
     VectorSearchAlgoE2LSH,
+    VectorSearchAlgoBM25,
+    VectorSearchAlgoSparseDenseHybrid,
+    VectorSearchAlgoRRF,
+    VectorSearchAlgoConvexScoreFusion,
+    VectorSearchAlgoMMR,
+    VectorSearchAlgoRangeSearch,
+    VectorSearchAlgoMaxSim,
+    VectorSearchAlgoMultiQueryExpansion,
+    VectorSearchAlgoFullPrecisionRescore,
+    VectorSearchAlgoCrossEncoderRerank,
+    VectorSearchAlgoMultiStageFunnel,
+    VectorSearchAlgoLLMListwiseRerank,
+    VectorSearchAlgoHyDE,
+    VectorSearchAlgoQueryRouting,
+    VectorSearchAlgoScatterGather,
+    VectorSearchAlgoPartitionAwareRouting,
+    VectorSearchAlgoReplicationLoadBalancer,
+    VectorSearchAlgoHedgedRequests,
+    VectorSearchAlgoKWayMerge,
+    VectorSearchAlgoQueryCache,
+    VectorSearchAlgoSemanticCache,
+    VectorSearchAlgoQueryBatching,
+    VectorSearchAlgoMemoryTiering,
+    VectorSearchAlgoDiskIOScheduler,
+    VectorSearchAlgoAdmissionControl,
+    VectorSearchAlgoSearchAutotune,
 )
 
 from src.features.code_engine.algos.vector_filter import (
@@ -1011,6 +1037,188 @@ class CodeEngineService:
             q = merged.get("query", [])
             k = merged.get("k", 5)
             return VectorFilterAlgoPartitionedIndex.search_partition(parts, target, q, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-85":
+            corpus = merged.get("corpus", [])
+            q = merged.get("query", "")
+            k = merged.get("k", 5)
+            k1 = merged.get("k1", 1.5)
+            b = merged.get("b", 0.75)
+            return VectorSearchAlgoBM25.search(corpus, q, k=k, k1=k1, b=b)
+
+        elif algo_id == "ALGO-VEC-SRCH-86":
+            dense = merged.get("dense_results", [])
+            sparse = merged.get("sparse_results", [])
+            alpha = merged.get("alpha", 0.5)
+            k = merged.get("k", 5)
+            return VectorSearchAlgoSparseDenseHybrid.blend(dense, sparse, alpha=alpha, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-87":
+            rankings = merged.get("rankings", [])
+            k_rrf = merged.get("k_rrf", 60)
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoRRF.fuse(rankings, k_rrf=k_rrf, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-88":
+            lists = merged.get("score_lists", [])
+            weights = merged.get("weights", None)
+            norm = merged.get("norm_method", "minmax")
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoConvexScoreFusion.fuse(lists, weights=weights, norm_method=norm, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-89":
+            cand_vecs = merged.get("candidate_vectors", [])
+            cand_ids = merged.get("candidate_ids", [])
+            q_vec = merged.get("query_vector", [])
+            lam = merged.get("lambda_mult", 0.7)
+            k = merged.get("k", 5)
+            return VectorSearchAlgoMMR.rerank(cand_vecs, cand_ids, q_vec, lambda_mult=lam, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-90":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            radius = merged.get("radius", 1.0)
+            max_r = merged.get("max_results", 100)
+            metric = merged.get("metric", "l2")
+            return VectorSearchAlgoRangeSearch.search_range(vecs, q, radius=radius, max_results=max_r, metric=metric)
+
+        elif algo_id == "ALGO-VEC-SRCH-91":
+            doc_toks = merged.get("document_token_vectors", [])
+            q_toks = merged.get("query_token_vectors", [])
+            k = merged.get("k", 5)
+            return VectorSearchAlgoMaxSim.compute_maxsim(doc_toks, q_toks, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-92":
+            vecs = merged.get("vectors", [])
+            queries = merged.get("expanded_queries", [])
+            agg = merged.get("aggregation", "rrf")
+            k = merged.get("k", 5)
+            return VectorSearchAlgoMultiQueryExpansion.search_expanded(vecs, queries, aggregation=agg, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-93":
+            cand_ids = merged.get("candidate_ids", [])
+            full_vecs = merged.get("full_precision_vectors", {})
+            q_vec = merged.get("query_vector", [])
+            metric = merged.get("metric", "l2")
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoFullPrecisionRescore.rescore(cand_ids, full_vecs, q_vec, metric=metric, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-94":
+            q = merged.get("query", "")
+            cands = merged.get("candidates", [])
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoCrossEncoderRerank.rerank(q, cands, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-95":
+            s1 = merged.get("stage1_candidates", [])
+            s2_m = merged.get("stage2_top_m", 20)
+            s3_k = merged.get("stage3_top_k", 5)
+            return VectorSearchAlgoMultiStageFunnel.execute_funnel(s1, stage2_top_m=s2_m, stage3_top_k=s3_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-96":
+            q = merged.get("query", "")
+            cands = merged.get("candidates", [])
+            sim = merged.get("simulated_llm_response", None)
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoLLMListwiseRerank.rerank(q, cands, simulated_llm_response=sim, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-97":
+            corpus_vecs = merged.get("corpus_vectors", [])
+            q_vec = merged.get("query_vector", [])
+            hypo_vecs = merged.get("hypothetical_vectors", [])
+            weight = merged.get("query_weight", 0.5)
+            k = merged.get("k", 5)
+            return VectorSearchAlgoHyDE.search_hyde(corpus_vecs, q_vec, hypo_vecs, query_weight=weight, k=k)
+
+        elif algo_id == "ALGO-VEC-SRCH-98":
+            q = merged.get("query", "")
+            routes = merged.get("available_routes", {})
+            return VectorSearchAlgoQueryRouting.route_query(q, routes)
+
+        elif algo_id == "ALGO-VEC-SRCH-99":
+            shard_res = merged.get("shard_results", {})
+            top_k = merged.get("top_k", 5)
+            return VectorSearchAlgoScatterGather.scatter_gather_merge(shard_res, top_k=top_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-100":
+            centroids = merged.get("centroids", [])
+            c_to_s = merged.get("centroid_to_shard_map", {})
+            q_vec = merged.get("query_vector", [])
+            num_shards = merged.get("num_target_shards", 2)
+            return VectorSearchAlgoPartitionAwareRouting.route_to_shards(centroids, c_to_s, q_vec, num_target_shards=num_shards)
+
+        elif algo_id == "ALGO-VEC-SRCH-101":
+            replicas = merged.get("replicas", [])
+            strat = merged.get("strategy", "least_loaded")
+            counter = merged.get("counter", 0)
+            return VectorSearchAlgoReplicationLoadBalancer.select_replica(replicas, strategy=strat, counter=counter)
+
+        elif algo_id == "ALGO-VEC-SRCH-102":
+            pri = merged.get("primary_latency_ms", 0.0)
+            sec = merged.get("backup_latency_ms", 0.0)
+            thresh = merged.get("hedge_delay_threshold_ms", 50.0)
+            ro = merged.get("is_read_only", True)
+            return VectorSearchAlgoHedgedRequests.evaluate_hedged_execution(pri, sec, hedge_delay_threshold_ms=thresh, is_read_only=ro)
+
+        elif algo_id == "ALGO-VEC-SRCH-103":
+            lists = merged.get("shard_sorted_lists", [])
+            k = merged.get("k", 5)
+            is_dist = merged.get("is_distance", False)
+            return VectorSearchAlgoKWayMerge.merge(lists, k=k, is_distance=is_dist)
+
+        elif algo_id == "ALGO-VEC-SRCH-104":
+            store = merged.get("cache_store", {})
+            q = merged.get("query", "")
+            t_id = merged.get("tenant_id", "")
+            fltrs = merged.get("filters", {})
+            ver = merged.get("index_version", "")
+            res = merged.get("results", None)
+            ttl = merged.get("ttl_seconds", 300)
+            max_s = merged.get("max_size", 1000)
+            return VectorSearchAlgoQueryCache.get_or_set(store, q, t_id, fltrs, ver, results=res, ttl_seconds=ttl, max_size=max_s)
+
+        elif algo_id == "ALGO-VEC-SRCH-105":
+            entries = merged.get("cached_entries", [])
+            q_vec = merged.get("query_vector", [])
+            t_id = merged.get("tenant_id", "")
+            thresh = merged.get("similarity_threshold", 0.95)
+            return VectorSearchAlgoSemanticCache.lookup(entries, q_vec, t_id, similarity_threshold=thresh)
+
+        elif algo_id == "ALGO-VEC-SRCH-106":
+            queries = merged.get("pending_queries", [])
+            batch_sz = merged.get("max_batch_size", 32)
+            max_lat = merged.get("max_latency_ms", 5.0)
+            return VectorSearchAlgoQueryBatching.form_batches(queries, max_batch_size=batch_sz, max_latency_ms=max_lat)
+
+        elif algo_id == "ALGO-VEC-SRCH-107":
+            comps = merged.get("components", [])
+            budget = merged.get("ram_budget_mb", 1024.0)
+            return VectorSearchAlgoMemoryTiering.plan_tiering(comps, ram_budget_mb=budget)
+
+        elif algo_id == "ALGO-VEC-SRCH-108":
+            req_ids = merged.get("requested_node_ids", [])
+            b_per_node = merged.get("bytes_per_node", 4096)
+            cached = merged.get("cached_nodes", None)
+            pg_sz = merged.get("page_size_bytes", 4096)
+            max_b = merged.get("max_batch_size", 16)
+            return VectorSearchAlgoDiskIOScheduler.schedule_reads(req_ids, bytes_per_node=b_per_node, cached_nodes=cached, page_size_bytes=pg_sz, max_batch_size=max_b)
+
+        elif algo_id == "ALGO-VEC-SRCH-109":
+            curr_tok = merged.get("current_tokens", 100.0)
+            max_tok = merged.get("max_tokens", 100.0)
+            refill = merged.get("refill_rate_per_sec", 10.0)
+            last_ts = merged.get("last_refill_timestamp", 0.0)
+            curr_c = merged.get("current_concurrency", 0)
+            max_c = merged.get("max_concurrency", 50)
+            cost = merged.get("request_cost", 1.0)
+            now = merged.get("now", 1.0)
+            return VectorSearchAlgoAdmissionControl.evaluate_admission(curr_tok, max_tok, refill, last_ts, curr_c, max_c, request_cost=cost, now=now)
+
+        elif algo_id == "ALGO-VEC-SRCH-110":
+            gt = merged.get("ground_truth_topk", [])
+            evals = merged.get("parameter_evaluations", [])
+            target = merged.get("target_recall", 0.95)
+            return VectorSearchAlgoSearchAutotune.autotune_parameters(gt, evals, target_recall=target)
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

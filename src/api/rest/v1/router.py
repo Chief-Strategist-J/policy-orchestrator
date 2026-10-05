@@ -96,6 +96,33 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
      • POST /api/v1/algos/vector-filter/in-graph: ACORN-Style In-Graph Filtering (ALGO-VEC-FLTR-82).
      • POST /api/v1/algos/vector-filter/selectivity-plan: Cost-Based Selectivity Query Planner (ALGO-VEC-FLTR-83).
      • POST /api/v1/algos/vector-filter/partitioned: Partitioned Multi-Tenant Index Search (ALGO-VEC-FLTR-84).
+   - Advanced Vector Search & Operations (ALGO-VEC-SRCH-85..110):
+     • POST /api/v1/algos/vector-search/bm25: Okapi BM25 Keyword Sparse Retrieval (ALGO-VEC-SRCH-85).
+     • POST /api/v1/algos/vector-search/sparse-dense-hybrid: Hybrid Sparse-Dense Blending (ALGO-VEC-SRCH-86).
+     • POST /api/v1/algos/vector-search/rrf: Reciprocal Rank Fusion (ALGO-VEC-SRCH-87).
+     • POST /api/v1/algos/vector-search/convex-score-fusion: Convex Score Normalization & Fusion (ALGO-VEC-SRCH-88).
+     • POST /api/v1/algos/vector-search/mmr: Maximal Marginal Relevance Diversity Ranking (ALGO-VEC-SRCH-89).
+     • POST /api/v1/algos/vector-search/range-search: Radius Bounded Search (ALGO-VEC-SRCH-90).
+     • POST /api/v1/algos/vector-search/maxsim: Multi-Vector ColBERT Late-Interaction MaxSim (ALGO-VEC-SRCH-91).
+     • POST /api/v1/algos/vector-search/multi-query-expansion: Multi-Query Search & Fusion (ALGO-VEC-SRCH-92).
+     • POST /api/v1/algos/vector-search/full-precision-rescore: Second-Stage Full Precision Rescoring (ALGO-VEC-SRCH-93).
+     • POST /api/v1/algos/vector-search/cross-encoder-rerank: Cross-Encoder Transformer Reranking (ALGO-VEC-SRCH-94).
+     • POST /api/v1/algos/vector-search/multi-stage-funnel: Multi-Stage Cascaded Retrieval Funnel (ALGO-VEC-SRCH-95).
+     • POST /api/v1/algos/vector-search/llm-listwise-rerank: LLM Listwise Reranking (ALGO-VEC-SRCH-96).
+     • POST /api/v1/algos/vector-search/hyde: Hypothetical Document Embeddings Search (ALGO-VEC-SRCH-97).
+     • POST /api/v1/algos/vector-search/query-routing: Query Intent & Collection Routing (ALGO-VEC-SRCH-98).
+     • POST /api/v1/algos/vector-search/scatter-gather: Sharded Scatter-Gather Search (ALGO-VEC-SRCH-99).
+     • POST /api/v1/algos/vector-search/partition-aware-routing: Centroid-Based Shard Routing (ALGO-VEC-SRCH-100).
+     • POST /api/v1/algos/vector-search/replication-load-balancer: Replica Load Balancing (ALGO-VEC-SRCH-101).
+     • POST /api/v1/algos/vector-search/hedged-requests: Hedged Request Execution (ALGO-VEC-SRCH-102).
+     • POST /api/v1/algos/vector-search/kway-merge: K-Way Sorted Result Merge (ALGO-VEC-SRCH-103).
+     • POST /api/v1/algos/vector-search/query-cache: Query & Result LRU Cache (ALGO-VEC-SRCH-104).
+     • POST /api/v1/algos/vector-search/semantic-cache: Semantic Similarity Query Cache (ALGO-VEC-SRCH-105).
+     • POST /api/v1/algos/vector-search/query-batching: Query Batching & Micro-Batching (ALGO-VEC-SRCH-106).
+     • POST /api/v1/algos/vector-search/memory-tiering: RAM/SSD Memory Tiering Planner (ALGO-VEC-SRCH-107).
+     • POST /api/v1/algos/vector-search/disk-io-scheduler: Disk I/O Beam Read Scheduler (ALGO-VEC-SRCH-108).
+     • POST /api/v1/algos/vector-search/admission-control: Token Bucket Admission Control (ALGO-VEC-SRCH-109).
+     • POST /api/v1/algos/vector-search/search-autotune: Pareto Recall-Latency Autotuner (ALGO-VEC-SRCH-110).
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
@@ -670,6 +697,188 @@ class VecFilterPartitionedDTO(BaseModel):
     target_partition: str = Field(..., description="Partition key to query")
     query: List[float] = Field(..., description="Query vector")
     k: int = Field(default=5, description="Top-k matching candidates")
+
+
+class VecSearchBM25DTO(BaseModel):
+    corpus: List[str] = Field(..., description="Document text corpus")
+    query: str = Field(..., description="Query search string")
+    k: int = Field(default=5, description="Top-k documents")
+    k1: float = Field(default=1.5, description="Term frequency saturation")
+    b: float = Field(default=0.75, description="Document length normalization")
+
+
+class VecSearchSparseDenseHybridDTO(BaseModel):
+    dense_results: List[Dict[str, Any]] = Field(..., description="Dense retrieval ranked matches")
+    sparse_results: List[Dict[str, Any]] = Field(..., description="Sparse lexical ranked matches")
+    alpha: float = Field(default=0.5, description="Dense score weight multiplier")
+    k: int = Field(default=5, description="Top-k fused matches")
+
+
+class VecSearchRRFDTO(BaseModel):
+    rankings: List[List[Dict[str, Any]]] = Field(..., description="Ranked candidate lists")
+    k_rrf: int = Field(default=60, description="RRF constant")
+    top_k: int = Field(default=5, description="Top-k fused candidates")
+
+
+class VecSearchConvexScoreFusionDTO(BaseModel):
+    score_lists: List[List[Dict[str, Any]]] = Field(..., description="Ranked score lists")
+    weights: Optional[List[float]] = Field(default=None, description="Per-list convex weights")
+    norm_method: str = Field(default="minmax", description="Score normalization method")
+    top_k: int = Field(default=5, description="Top-k fused candidates")
+
+
+class VecSearchMMRDTO(BaseModel):
+    candidate_vectors: List[List[float]] = Field(..., description="Candidate embeddings")
+    candidate_ids: List[Any] = Field(..., description="Candidate identifiers")
+    query_vector: List[float] = Field(..., description="Query embedding vector")
+    lambda_mult: float = Field(default=0.7, description="Relevance vs diversity trade-off")
+    k: int = Field(default=5, description="Top-k diversified candidates")
+
+
+class VecSearchRangeSearchDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: List[float] = Field(..., description="Query vector")
+    radius: float = Field(default=1.0, description="Search distance/similarity radius")
+    max_results: int = Field(default=100, description="Maximum matches to return")
+    metric: str = Field(default="l2", description="Distance metric")
+
+
+class VecSearchMaxSimDTO(BaseModel):
+    document_token_vectors: List[List[List[float]]] = Field(..., description="Document token embedding matrices")
+    query_token_vectors: List[List[float]] = Field(..., description="Query token embedding vectors")
+    k: int = Field(default=5, description="Top-k documents")
+
+
+class VecSearchMultiQueryExpansionDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Corpus vectors")
+    expanded_queries: List[List[float]] = Field(..., description="List of expanded query vectors")
+    aggregation: str = Field(default="rrf", description="Fusion aggregation method")
+    k: int = Field(default=5, description="Top-k candidates")
+
+
+class VecSearchFullPrecisionRescoreDTO(BaseModel):
+    candidate_ids: List[Any] = Field(..., description="Candidate IDs from quantized first stage")
+    full_precision_vectors: Dict[str, List[float]] = Field(..., description="Exact vectors keyed by ID")
+    query_vector: List[float] = Field(..., description="Query vector")
+    metric: str = Field(default="l2", description="Distance metric")
+    top_k: int = Field(default=5, description="Top-k rescored candidates")
+
+
+class VecSearchCrossEncoderRerankDTO(BaseModel):
+    query: str = Field(..., description="Query string")
+    candidates: List[Dict[str, Any]] = Field(..., description="First-stage retrieved candidates")
+    top_k: int = Field(default=5, description="Top-k reranked candidates")
+
+
+class VecSearchMultiStageFunnelDTO(BaseModel):
+    stage1_candidates: List[Dict[str, Any]] = Field(..., description="Stage 1 coarse candidate set")
+    stage2_top_m: int = Field(default=20, description="Stage 2 rescore pool size")
+    stage3_top_k: int = Field(default=5, description="Stage 3 final pool size")
+
+
+class VecSearchLLMListwiseRerankDTO(BaseModel):
+    query: str = Field(..., description="User query")
+    candidates: List[Dict[str, Any]] = Field(..., description="Candidate passages with id and text")
+    simulated_llm_response: Optional[str] = Field(default=None, description="Simulated LLM ranking output")
+    top_k: int = Field(default=5, description="Top-k reranked candidates")
+
+
+class VecSearchHyDEDTO(BaseModel):
+    corpus_vectors: List[List[float]] = Field(..., description="Document vectors")
+    query_vector: List[float] = Field(..., description="Original query vector")
+    hypothetical_vectors: List[List[float]] = Field(..., description="Vectors of hypothetical answer passages")
+    query_weight: float = Field(default=0.5, description="Original query weight")
+    k: int = Field(default=5, description="Top-k candidates")
+
+
+class VecSearchQueryRoutingDTO(BaseModel):
+    query: str = Field(..., description="Incoming user query")
+    available_routes: Dict[str, Any] = Field(..., description="Available routes and route metadata")
+
+
+class VecSearchScatterGatherDTO(BaseModel):
+    shard_results: Dict[str, List[Dict[str, Any]]] = Field(..., description="Results per shard")
+    top_k: int = Field(default=5, description="Global top-k results")
+
+
+class VecSearchPartitionAwareRoutingDTO(BaseModel):
+    centroids: List[List[float]] = Field(..., description="Partition cluster centroids")
+    centroid_to_shard_map: Dict[str, str] = Field(..., description="Centroid index to shard map")
+    query_vector: List[float] = Field(..., description="Query vector")
+    num_target_shards: int = Field(default=2, description="Number of target shards to query")
+
+
+class VecSearchReplicationLoadBalancerDTO(BaseModel):
+    replicas: List[Dict[str, Any]] = Field(..., description="List of replica node status objects")
+    strategy: str = Field(default="least_loaded", description="Selection strategy: round_robin, least_loaded, lowest_latency")
+    counter: int = Field(default=0, description="Round-robin sequence counter")
+
+
+class VecSearchHedgedRequestsDTO(BaseModel):
+    primary_latency_ms: float = Field(..., description="Observed primary replica latency in ms")
+    backup_latency_ms: float = Field(..., description="Backup replica latency in ms")
+    hedge_delay_threshold_ms: float = Field(default=50.0, description="Hedge trigger delay in ms")
+    is_read_only: bool = Field(default=True, description="Whether request is strictly read-only")
+
+
+class VecSearchKWayMergeDTO(BaseModel):
+    shard_sorted_lists: List[List[Dict[str, Any]]] = Field(..., description="Sorted result lists from each shard")
+    k: int = Field(default=5, description="Global top-k items")
+    is_distance: bool = Field(default=False, description="True if lower score indicates better match")
+
+
+class VecSearchQueryCacheDTO(BaseModel):
+    cache_store: Dict[str, Any] = Field(default_factory=dict, description="In-memory cache dict")
+    query: str = Field(..., description="Query string")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Query filters")
+    index_version: str = Field(..., description="Vector index version")
+    results: Optional[List[Dict[str, Any]]] = Field(default=None, description="Search results to cache")
+    ttl_seconds: int = Field(default=300, description="Cache entry TTL")
+    max_size: int = Field(default=1000, description="Maximum cache size")
+
+
+class VecSearchSemanticCacheDTO(BaseModel):
+    cached_entries: List[Dict[str, Any]] = Field(..., description="List of cached query objects with embedding")
+    query_vector: List[float] = Field(..., description="Query embedding vector")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    similarity_threshold: float = Field(default=0.95, description="Cosine similarity hit threshold")
+
+
+class VecSearchQueryBatchingDTO(BaseModel):
+    pending_queries: List[Dict[str, Any]] = Field(..., description="List of pending query objects")
+    max_batch_size: int = Field(default=32, description="Maximum batch size")
+    max_latency_ms: float = Field(default=5.0, description="Maximum wait window in ms")
+
+
+class VecSearchMemoryTieringDTO(BaseModel):
+    components: List[Dict[str, Any]] = Field(..., description="Index memory components")
+    ram_budget_mb: float = Field(default=1024.0, description="Total RAM budget in MB")
+
+
+class VecSearchDiskIOSchedulerDTO(BaseModel):
+    requested_node_ids: List[int] = Field(..., description="Graph node IDs to read from disk")
+    bytes_per_node: int = Field(default=4096, description="Bytes per node record")
+    cached_nodes: Optional[List[int]] = Field(default=None, description="Node IDs already cached in RAM")
+    page_size_bytes: int = Field(default=4096, description="Underlying OS page size in bytes")
+    max_batch_size: int = Field(default=16, description="Maximum concurrent beam read batch")
+
+
+class VecSearchAdmissionControlDTO(BaseModel):
+    current_tokens: float = Field(default=100.0, description="Tokens currently in bucket")
+    max_tokens: float = Field(default=100.0, description="Bucket capacity")
+    refill_rate_per_sec: float = Field(default=10.0, description="Token refill rate per second")
+    last_refill_timestamp: float = Field(default=0.0, description="Timestamp of last token refill")
+    current_concurrency: int = Field(default=0, description="Currently active concurrent requests")
+    max_concurrency: int = Field(default=50, description="Max allowed concurrent requests")
+    request_cost: float = Field(default=1.0, description="Cost of current request in tokens")
+    now: float = Field(default=1.0, description="Current unix timestamp")
+
+
+class VecSearchSearchAutotuneDTO(BaseModel):
+    ground_truth_topk: List[int] = Field(..., description="Ground-truth exact neighbor IDs")
+    parameter_evaluations: List[Dict[str, Any]] = Field(..., description="Evaluations across parameter settings")
+    target_recall: float = Field(default=0.95, description="Target recall threshold")
 
 
 def get_orchestrator_services() -> Dict[str, Any]:
@@ -1666,6 +1875,214 @@ def vector_filter_partitioned_endpoint(payload: VecFilterPartitionedDTO, request
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
     res = svc.execute_algorithm("ALGO-VEC-FLTR-84", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/bm25")
+def vector_search_bm25_endpoint(payload: VecSearchBM25DTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-85", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/sparse-dense-hybrid")
+def vector_search_sparse_dense_hybrid_endpoint(payload: VecSearchSparseDenseHybridDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-86", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/rrf")
+def vector_search_rrf_endpoint(payload: VecSearchRRFDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-87", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/convex-score-fusion")
+def vector_search_convex_score_fusion_endpoint(payload: VecSearchConvexScoreFusionDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-88", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/mmr")
+def vector_search_mmr_endpoint(payload: VecSearchMMRDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-89", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/range-search")
+def vector_search_range_search_endpoint(payload: VecSearchRangeSearchDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-90", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/maxsim")
+def vector_search_maxsim_endpoint(payload: VecSearchMaxSimDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-91", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/multi-query-expansion")
+def vector_search_multi_query_expansion_endpoint(payload: VecSearchMultiQueryExpansionDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-92", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/full-precision-rescore")
+def vector_search_full_precision_rescore_endpoint(payload: VecSearchFullPrecisionRescoreDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-93", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/cross-encoder-rerank")
+def vector_search_cross_encoder_rerank_endpoint(payload: VecSearchCrossEncoderRerankDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-94", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/multi-stage-funnel")
+def vector_search_multi_stage_funnel_endpoint(payload: VecSearchMultiStageFunnelDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-95", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/llm-listwise-rerank")
+def vector_search_llm_listwise_rerank_endpoint(payload: VecSearchLLMListwiseRerankDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-96", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/hyde")
+def vector_search_hyde_endpoint(payload: VecSearchHyDEDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-97", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/query-routing")
+def vector_search_query_routing_endpoint(payload: VecSearchQueryRoutingDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-98", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/scatter-gather")
+def vector_search_scatter_gather_endpoint(payload: VecSearchScatterGatherDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-99", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/partition-aware-routing")
+def vector_search_partition_aware_routing_endpoint(payload: VecSearchPartitionAwareRoutingDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-100", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/replication-load-balancer")
+def vector_search_replication_load_balancer_endpoint(payload: VecSearchReplicationLoadBalancerDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-101", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/hedged-requests")
+def vector_search_hedged_requests_endpoint(payload: VecSearchHedgedRequestsDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-102", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/kway-merge")
+def vector_search_kway_merge_endpoint(payload: VecSearchKWayMergeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-103", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/query-cache")
+def vector_search_query_cache_endpoint(payload: VecSearchQueryCacheDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-104", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/semantic-cache")
+def vector_search_semantic_cache_endpoint(payload: VecSearchSemanticCacheDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-105", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/query-batching")
+def vector_search_query_batching_endpoint(payload: VecSearchQueryBatchingDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-106", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/memory-tiering")
+def vector_search_memory_tiering_endpoint(payload: VecSearchMemoryTieringDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-107", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/disk-io-scheduler")
+def vector_search_disk_io_scheduler_endpoint(payload: VecSearchDiskIOSchedulerDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-108", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/admission-control")
+def vector_search_admission_control_endpoint(payload: VecSearchAdmissionControlDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-109", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/search-autotune")
+def vector_search_search_autotune_endpoint(payload: VecSearchSearchAutotuneDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-110", payload.model_dump())
     return build_success_envelope(data=res, trace_id=trace_id)
 
 

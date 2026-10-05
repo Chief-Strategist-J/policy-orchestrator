@@ -1910,6 +1910,630 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'
 
+  /api/v1/algos/vector-search/bm25:
+    post:
+      summary: Okapi BM25 Keyword Search (ALGO-VEC-SRCH-85)
+      operationId: vectorSearchBM25
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [corpus, query]
+              properties:
+                corpus: { type: array, items: { type: string } }
+                query: { type: string }
+                k: { type: integer, default: 5 }
+                k1: { type: number, default: 1.5 }
+                b: { type: number, default: 0.75 }
+      responses:
+        '200':
+          description: BM25 keyword search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/sparse-dense-hybrid:
+    post:
+      summary: Sparse-Dense Hybrid Search (ALGO-VEC-SRCH-86)
+      operationId: vectorSearchSparseDenseHybrid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dense_results, sparse_results]
+              properties:
+                dense_results: { type: array, items: { type: object } }
+                sparse_results: { type: array, items: { type: object } }
+                alpha: { type: number, default: 0.5 }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Blended hybrid results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/rrf:
+    post:
+      summary: Reciprocal Rank Fusion (ALGO-VEC-SRCH-87)
+      operationId: vectorSearchRRF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rankings]
+              properties:
+                rankings: { type: array, items: { type: array, items: { type: object } } }
+                k_rrf: { type: integer, default: 60 }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: RRF fused candidate rankings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/convex-score-fusion:
+    post:
+      summary: Convex Score Fusion (ALGO-VEC-SRCH-88)
+      operationId: vectorSearchConvexScoreFusion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score_lists]
+              properties:
+                score_lists: { type: array, items: { type: array, items: { type: object } } }
+                weights: { type: array, items: { type: number } }
+                norm_method: { type: string, default: minmax }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Convex score normalized fusion results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/mmr:
+    post:
+      summary: Maximal Marginal Relevance (ALGO-VEC-SRCH-89)
+      operationId: vectorSearchMMR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidate_vectors, candidate_ids, query_vector]
+              properties:
+                candidate_vectors: { type: array, items: { type: array, items: { type: number } } }
+                candidate_ids: { type: array }
+                query_vector: { type: array, items: { type: number } }
+                lambda_mult: { type: number, default: 0.7 }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Diversified MMR candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/range-search:
+    post:
+      summary: Range Radius Search (ALGO-VEC-SRCH-90)
+      operationId: vectorSearchRangeSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors: { type: array, items: { type: array, items: { type: number } } }
+                query: { type: array, items: { type: number } }
+                radius: { type: number, default: 1.0 }
+                max_results: { type: integer, default: 100 }
+                metric: { type: string, default: l2 }
+      responses:
+        '200':
+          description: Range radius bounded search matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/maxsim:
+    post:
+      summary: ColBERT Late-Interaction MaxSim (ALGO-VEC-SRCH-91)
+      operationId: vectorSearchMaxSim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_token_vectors, query_token_vectors]
+              properties:
+                document_token_vectors: { type: array, items: { type: array, items: { type: array, items: { type: number } } } }
+                query_token_vectors: { type: array, items: { type: array, items: { type: number } } }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Late-interaction MaxSim scored documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/multi-query-expansion:
+    post:
+      summary: Multi-Query Expansion Search (ALGO-VEC-SRCH-92)
+      operationId: vectorSearchMultiQueryExpansion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, expanded_queries]
+              properties:
+                vectors: { type: array, items: { type: array, items: { type: number } } }
+                expanded_queries: { type: array, items: { type: array, items: { type: number } } }
+                aggregation: { type: string, default: rrf }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Multi-query expanded fused matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/full-precision-rescore:
+    post:
+      summary: Full Precision Rescoring (ALGO-VEC-SRCH-93)
+      operationId: vectorSearchFullPrecisionRescore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidate_ids, full_precision_vectors, query_vector]
+              properties:
+                candidate_ids: { type: array }
+                full_precision_vectors: { type: object }
+                query_vector: { type: array, items: { type: number } }
+                metric: { type: string, default: l2 }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Full precision exact rescored results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/cross-encoder-rerank:
+    post:
+      summary: Cross-Encoder Transformer Reranker (ALGO-VEC-SRCH-94)
+      operationId: vectorSearchCrossEncoderRerank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, candidates]
+              properties:
+                query: { type: string }
+                candidates: { type: array, items: { type: object } }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Cross-encoder reranked candidate set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/multi-stage-funnel:
+    post:
+      summary: Multi-Stage Cascaded Funnel (ALGO-VEC-SRCH-95)
+      operationId: vectorSearchMultiStageFunnel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage1_candidates]
+              properties:
+                stage1_candidates: { type: array, items: { type: object } }
+                stage2_top_m: { type: integer, default: 20 }
+                stage3_top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Multi-stage cascaded retrieval results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/llm-listwise-rerank:
+    post:
+      summary: LLM Listwise Reranker (ALGO-VEC-SRCH-96)
+      operationId: vectorSearchLLMListwiseRerank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, candidates]
+              properties:
+                query: { type: string }
+                candidates: { type: array, items: { type: object } }
+                simulated_llm_response: { type: string }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: LLM reasoning listwise ranked results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/hyde:
+    post:
+      summary: Hypothetical Document Embeddings Search (ALGO-VEC-SRCH-97)
+      operationId: vectorSearchHyDE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [corpus_vectors, query_vector, hypothetical_vectors]
+              properties:
+                corpus_vectors: { type: array, items: { type: array, items: { type: number } } }
+                query_vector: { type: array, items: { type: number } }
+                hypothetical_vectors: { type: array, items: { type: array, items: { type: number } } }
+                query_weight: { type: number, default: 0.5 }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: HyDE blended retrieval matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/query-routing:
+    post:
+      summary: Query Intent & Collection Routing (ALGO-VEC-SRCH-98)
+      operationId: vectorSearchQueryRouting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, available_routes]
+              properties:
+                query: { type: string }
+                available_routes: { type: object }
+      responses:
+        '200':
+          description: Selected index route and confidence score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/scatter-gather:
+    post:
+      summary: Sharded Scatter-Gather Search (ALGO-VEC-SRCH-99)
+      operationId: vectorSearchScatterGather
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shard_results]
+              properties:
+                shard_results: { type: object }
+                top_k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Merged global top-k shard search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/partition-aware-routing:
+    post:
+      summary: Centroid-Based Partition Routing (ALGO-VEC-SRCH-100)
+      operationId: vectorSearchPartitionAwareRouting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [centroids, centroid_to_shard_map, query_vector]
+              properties:
+                centroids: { type: array, items: { type: array, items: { type: number } } }
+                centroid_to_shard_map: { type: object }
+                query_vector: { type: array, items: { type: number } }
+                num_target_shards: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: Targeted shard cluster assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/replication-load-balancer:
+    post:
+      summary: Replica Node Load Balancing (ALGO-VEC-SRCH-101)
+      operationId: vectorSearchReplicationLoadBalancer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [replicas]
+              properties:
+                replicas: { type: array, items: { type: object } }
+                strategy: { type: string, default: least_loaded }
+                counter: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Selected replica for query routing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/hedged-requests:
+    post:
+      summary: Hedged Request Execution (ALGO-VEC-SRCH-102)
+      operationId: vectorSearchHedgedRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [primary_latency_ms, backup_latency_ms]
+              properties:
+                primary_latency_ms: { type: number }
+                backup_latency_ms: { type: number }
+                hedge_delay_threshold_ms: { type: number, default: 50.0 }
+                is_read_only: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Hedged request evaluation report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/kway-merge:
+    post:
+      summary: K-Way Sorted Result Merge (ALGO-VEC-SRCH-103)
+      operationId: vectorSearchKWayMerge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shard_sorted_lists]
+              properties:
+                shard_sorted_lists: { type: array, items: { type: array, items: { type: object } } }
+                k: { type: integer, default: 5 }
+                is_distance: { type: boolean, default: false }
+      responses:
+        '200':
+          description: K-way merged top candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/query-cache:
+    post:
+      summary: Query & Result LRU Cache (ALGO-VEC-SRCH-104)
+      operationId: vectorSearchQueryCache
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cache_store, query, tenant_id, filters, index_version]
+              properties:
+                cache_store: { type: object }
+                query: { type: string }
+                tenant_id: { type: string }
+                filters: { type: object }
+                index_version: { type: string }
+                results: { type: array, items: { type: object } }
+                ttl_seconds: { type: integer, default: 300 }
+                max_size: { type: integer, default: 1000 }
+      responses:
+        '200':
+          description: Cache lookup or storage result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/semantic-cache:
+    post:
+      summary: Semantic Similarity Query Cache (ALGO-VEC-SRCH-105)
+      operationId: vectorSearchSemanticCache
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cached_entries, query_vector, tenant_id]
+              properties:
+                cached_entries: { type: array, items: { type: object } }
+                query_vector: { type: array, items: { type: number } }
+                tenant_id: { type: string }
+                similarity_threshold: { type: number, default: 0.95 }
+      responses:
+        '200':
+          description: Semantic cache match result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/query-batching:
+    post:
+      summary: Query Batching & Micro-Batching (ALGO-VEC-SRCH-106)
+      operationId: vectorSearchQueryBatching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pending_queries]
+              properties:
+                pending_queries: { type: array, items: { type: object } }
+                max_batch_size: { type: integer, default: 32 }
+                max_latency_ms: { type: number, default: 5.0 }
+      responses:
+        '200':
+          description: Formed query batches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/memory-tiering:
+    post:
+      summary: RAM/SSD Memory Tiering Planner (ALGO-VEC-SRCH-107)
+      operationId: vectorSearchMemoryTiering
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [components, ram_budget_mb]
+              properties:
+                components: { type: array, items: { type: object } }
+                ram_budget_mb: { type: number, default: 1024.0 }
+      responses:
+        '200':
+          description: Tiering residency allocation plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/disk-io-scheduler:
+    post:
+      summary: Disk I/O Beam Read Scheduler (ALGO-VEC-SRCH-108)
+      operationId: vectorSearchDiskIOScheduler
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requested_node_ids]
+              properties:
+                requested_node_ids: { type: array, items: { type: integer } }
+                bytes_per_node: { type: integer, default: 4096 }
+                cached_nodes: { type: array, items: { type: integer } }
+                page_size_bytes: { type: integer, default: 4096 }
+                max_batch_size: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: Page-aligned disk read batches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/admission-control:
+    post:
+      summary: Token Bucket Admission Control (ALGO-VEC-SRCH-109)
+      operationId: vectorSearchAdmissionControl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_tokens, max_tokens, refill_rate_per_sec, last_refill_timestamp, current_concurrency, max_concurrency, request_cost, now]
+              properties:
+                current_tokens: { type: number, default: 100.0 }
+                max_tokens: { type: number, default: 100.0 }
+                refill_rate_per_sec: { type: number, default: 10.0 }
+                last_refill_timestamp: { type: number, default: 0.0 }
+                current_concurrency: { type: integer, default: 0 }
+                max_concurrency: { type: integer, default: 50 }
+                request_cost: { type: number, default: 1.0 }
+                now: { type: number, default: 1.0 }
+      responses:
+        '200':
+          description: Request admission status and remaining capacity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/search-autotune:
+    post:
+      summary: Pareto Search Parameter Autotuner (ALGO-VEC-SRCH-110)
+      operationId: vectorSearchSearchAutotune
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ground_truth_topk, parameter_evaluations]
+              properties:
+                ground_truth_topk: { type: array, items: { type: integer } }
+                parameter_evaluations: { type: array, items: { type: object } }
+                target_recall: { type: number, default: 0.95 }
+      responses:
+        '200':
+          description: Autotuned search parameter configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
 components:
   schemas:
     ResponseMeta:

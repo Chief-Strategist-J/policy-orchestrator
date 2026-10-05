@@ -6,7 +6,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## 🎯 Purpose & Capabilities
 
-- **76 Production Algorithm Engines:** Complete suite of Graph, Vector (Preprocessing + Search & Indexing + Filtering), Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
+- **102 Production Algorithm Engines:** Complete suite of Graph, Vector (Preprocessing + Search & Indexing + Filtering + Reranking & Distributed Search), Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
 - **3-Tier Command Architecture:** Seamless interaction via **Normal Commands** (human-friendly aliases for beginners), **Developer Commands** (CLI power tools & catalog IDs for CI/CD), and **Code Commands** (REST API & Python SDK for services).
 - **Repository Invariant Auditing (`audit`):** Multi-vector static analysis detecting naked sleeps, race conditions, SQL injection risks, unsafe deserializers, deep `OFFSET` pagination, and Redis blocking commands.
 - **Safe Batch Refactoring (`refactor` / `patch`):** Deterministic, dry-run-verified search-and-replace across multi-language codebases (Go, TypeScript, JavaScript, Python, SQL, Prisma) using Concrete Syntax Tree (CST) analysis.
@@ -16,7 +16,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## ⚡ 3-Tier Command System
 
-Every one of the 76 algorithms supports three access tiers designed for different audiences and workflows:
+Every one of the 102 algorithms supports three access tiers designed for different audiences and workflows:
 
 | Tier | Target Audience | Syntax Style | Primary Use Case | Output Format |
 |---|---|---|---|---|
@@ -167,6 +167,39 @@ eval "$(policy-orchestrator completion bash)"
 | 74 | `ALGO-VEC-FLTR-82` | `policy-orchestrator run vec-filter-in-graph` | `policy-orchestrator exec ALGO-VEC-FLTR-82` | `POST /api/v1/algos/vector-filter/in-graph` | Traverses graph using ACORN bridges without breaking connectivity |
 | 75 | `ALGO-VEC-FLTR-83` | `policy-orchestrator run vec-filter-plan` | `policy-orchestrator exec ALGO-VEC-FLTR-83` | `POST /api/v1/algos/vector-filter/selectivity-plan` | Dynamically plans pre-, in-graph, or post-filtering by selectivity |
 | 76 | `ALGO-VEC-FLTR-84` | `policy-orchestrator run vec-filter-partition` | `policy-orchestrator exec ALGO-VEC-FLTR-84` | `POST /api/v1/algos/vector-filter/partitioned` | Routes query strictly into isolated physical tenant partition |
+
+---
+
+### 7. Vector Post-Retrieval, Reranking & Distributed Search Algorithms (26 Algorithms — #85 to #110)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 77 | `ALGO-VEC-SRCH-85` | `policy-orchestrator run vec-bm25` | `policy-orchestrator exec ALGO-VEC-SRCH-85` | `POST /api/v1/algos/vector-search/bm25` | Okapi BM25 inverted lexical term weighting & score accumulator |
+| 78 | `ALGO-VEC-SRCH-86` | `policy-orchestrator run vec-hybrid-blend` | `policy-orchestrator exec ALGO-VEC-SRCH-86` | `POST /api/v1/algos/vector-search/hybrid-blend` | Min-max normalized sparse-dense convex score fusion |
+| 79 | `ALGO-VEC-SRCH-87` | `policy-orchestrator run vec-rrf` | `policy-orchestrator exec ALGO-VEC-SRCH-87` | `POST /api/v1/algos/vector-search/rrf` | Reciprocal Rank Fusion rank-based merging without score calibration |
+| 80 | `ALGO-VEC-SRCH-88` | `policy-orchestrator run vec-score-fusion` | `policy-orchestrator exec ALGO-VEC-SRCH-88` | `POST /api/v1/algos/vector-search/score-fusion` | Weighted multi-list score combination with normalization |
+| 81 | `ALGO-VEC-SRCH-89` | `policy-orchestrator run vec-mmr` | `policy-orchestrator exec ALGO-VEC-SRCH-89` | `POST /api/v1/algos/vector-search/mmr` | Maximal Marginal Relevance diversity reranking & deduplication |
+| 82 | `ALGO-VEC-SRCH-90` | `policy-orchestrator run vec-range-search` | `policy-orchestrator exec ALGO-VEC-SRCH-90` | `POST /api/v1/algos/vector-search/range-search` | Radius-bounded hyperspherical candidate collection |
+| 83 | `ALGO-VEC-SRCH-91` | `policy-orchestrator run vec-maxsim` | `policy-orchestrator exec ALGO-VEC-SRCH-91` | `POST /api/v1/algos/vector-search/maxsim` | ColBERT-style late-interaction token maximum similarity |
+| 84 | `ALGO-VEC-SRCH-92` | `policy-orchestrator run vec-multi-query` | `policy-orchestrator exec ALGO-VEC-SRCH-92` | `POST /api/v1/algos/vector-search/multi-query` | Multi-perspective query expansion and score aggregation |
+| 85 | `ALGO-VEC-SRCH-93` | `policy-orchestrator run vec-rescore-fp32` | `policy-orchestrator exec ALGO-VEC-SRCH-93` | `POST /api/v1/algos/vector-search/rescore-fp32` | Full FP32 re-scoring of quantized vector candidates |
+| 86 | `ALGO-VEC-SRCH-94` | `policy-orchestrator run vec-cross-encoder` | `policy-orchestrator exec ALGO-VEC-SRCH-94` | `POST /api/v1/algos/vector-search/cross-encoder` | Cross-encoder pairwise deep relevance reranking |
+| 87 | `ALGO-VEC-SRCH-95` | `policy-orchestrator run vec-funnel` | `policy-orchestrator exec ALGO-VEC-SRCH-95` | `POST /api/v1/algos/vector-search/funnel` | Multi-stage cascade retrieval funnel pipeline |
+| 88 | `ALGO-VEC-SRCH-96` | `policy-orchestrator run vec-llm-rerank` | `policy-orchestrator exec ALGO-VEC-SRCH-96` | `POST /api/v1/algos/vector-search/llm-rerank` | LLM listwise sliding-window reasoning reranker |
+| 89 | `ALGO-VEC-SRCH-97` | `policy-orchestrator run vec-hyde` | `policy-orchestrator exec ALGO-VEC-SRCH-97` | `POST /api/v1/algos/vector-search/hyde` | Hypothetical Document Embedding pseudo-relevant retrieval |
+| 90 | `ALGO-VEC-SRCH-98` | `policy-orchestrator run vec-query-route` | `policy-orchestrator exec ALGO-VEC-SRCH-98` | `POST /api/v1/algos/vector-search/query-route` | Feature-based query intent classifier & index routing |
+| 91 | `ALGO-VEC-SRCH-99` | `policy-orchestrator run vec-scatter-gather` | `policy-orchestrator exec ALGO-VEC-SRCH-99` | `POST /api/v1/algos/vector-search/scatter-gather` | Distributed parallel shard broadcast and coordinator merge |
+| 92 | `ALGO-VEC-SRCH-100` | `policy-orchestrator run vec-partition-route` | `policy-orchestrator exec ALGO-VEC-SRCH-100` | `POST /api/v1/algos/vector-search/partition-route` | Centroid-proximity shard pruning for non-scatter searches |
+| 93 | `ALGO-VEC-SRCH-101` | `policy-orchestrator run vec-load-balance` | `policy-orchestrator exec ALGO-VEC-SRCH-101` | `POST /api/v1/algos/vector-search/load-balance` | Replica load balancing across identical shard mirrors |
+| 94 | `ALGO-VEC-SRCH-102` | `policy-orchestrator run vec-hedged-req` | `policy-orchestrator exec ALGO-VEC-SRCH-102` | `POST /api/v1/algos/vector-search/hedged-req` | Tail latency mitigation via backup speculative hedged requests |
+| 95 | `ALGO-VEC-SRCH-103` | `policy-orchestrator run vec-kway-merge` | `policy-orchestrator exec ALGO-VEC-SRCH-103` | `POST /api/v1/algos/vector-search/kway-merge` | Min-heap streaming k-way merge of presorted shard lists |
+| 96 | `ALGO-VEC-SRCH-104` | `policy-orchestrator run vec-query-cache` | `policy-orchestrator exec ALGO-VEC-SRCH-104` | `POST /api/v1/algos/vector-search/query-cache` | Deterministic exact LRU/LFU query cache with tenant isolation |
+| 97 | `ALGO-VEC-SRCH-105` | `policy-orchestrator run vec-semantic-cache` | `policy-orchestrator exec ALGO-VEC-SRCH-105` | `POST /api/v1/algos/vector-search/semantic-cache` | Vector embedding similarity cache for near-duplicate queries |
+| 98 | `ALGO-VEC-SRCH-106` | `policy-orchestrator run vec-query-batch` | `policy-orchestrator exec ALGO-VEC-SRCH-106` | `POST /api/v1/algos/vector-search/query-batch` | Dynamic request queue grouping for batch BLAS/GPU execution |
+| 99 | `ALGO-VEC-SRCH-107` | `policy-orchestrator run vec-memory-tier` | `policy-orchestrator exec ALGO-VEC-SRCH-107` | `POST /api/v1/algos/vector-search/memory-tier` | Hierarchical RAM, MMAP, and SSD storage tier planner |
+| 100 | `ALGO-VEC-SRCH-108` | `policy-orchestrator run vec-disk-io-sched` | `policy-orchestrator exec ALGO-VEC-SRCH-108` | `POST /api/v1/algos/vector-search/disk-io-sched` | Page-aligned sequential disk read batching for DiskANN |
+| 101 | `ALGO-VEC-SRCH-109` | `policy-orchestrator run vec-admission-ctrl` | `policy-orchestrator exec ALGO-VEC-SRCH-109` | `POST /api/v1/algos/vector-search/admission-ctrl` | Token-bucket rate limiting and adaptive load shedding |
+| 102 | `ALGO-VEC-SRCH-110` | `policy-orchestrator run vec-search-autotune` | `policy-orchestrator exec ALGO-VEC-SRCH-110` | `POST /api/v1/algos/vector-search/search-autotune` | Empirical Recall-vs-Latency Pareto curve parameter optimizer |
 
 ---
 

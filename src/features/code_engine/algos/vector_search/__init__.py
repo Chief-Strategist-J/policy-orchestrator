@@ -66,6 +66,34 @@ from src.features.code_engine.algos.vector_search.vector_search_algo_random_hype
 from src.features.code_engine.algos.vector_search.vector_search_algo_multi_probe_lsh import VectorSearchAlgoMultiProbeLSH
 from src.features.code_engine.algos.vector_search.vector_search_algo_e2lsh import VectorSearchAlgoE2LSH
 
+# Batch 3: Algorithms #85 - #110
+from src.features.code_engine.algos.vector_search.vector_search_algo_bm25 import VectorSearchAlgoBM25
+from src.features.code_engine.algos.vector_search.vector_search_algo_sparse_dense_hybrid import VectorSearchAlgoSparseDenseHybrid
+from src.features.code_engine.algos.vector_search.vector_search_algo_rrf import VectorSearchAlgoRRF
+from src.features.code_engine.algos.vector_search.vector_search_algo_convex_score_fusion import VectorSearchAlgoConvexScoreFusion
+from src.features.code_engine.algos.vector_search.vector_search_algo_mmr import VectorSearchAlgoMMR
+from src.features.code_engine.algos.vector_search.vector_search_algo_range_search import VectorSearchAlgoRangeSearch
+from src.features.code_engine.algos.vector_search.vector_search_algo_max_sim import VectorSearchAlgoMaxSim
+from src.features.code_engine.algos.vector_search.vector_search_algo_multi_query_expansion import VectorSearchAlgoMultiQueryExpansion
+from src.features.code_engine.algos.vector_search.vector_search_algo_full_precision_rescore import VectorSearchAlgoFullPrecisionRescore
+from src.features.code_engine.algos.vector_search.vector_search_algo_cross_encoder_rerank import VectorSearchAlgoCrossEncoderRerank
+from src.features.code_engine.algos.vector_search.vector_search_algo_multi_stage_funnel import VectorSearchAlgoMultiStageFunnel
+from src.features.code_engine.algos.vector_search.vector_search_algo_llm_listwise_rerank import VectorSearchAlgoLLMListwiseRerank
+from src.features.code_engine.algos.vector_search.vector_search_algo_hyde import VectorSearchAlgoHyDE
+from src.features.code_engine.algos.vector_search.vector_search_algo_query_routing import VectorSearchAlgoQueryRouting
+from src.features.code_engine.algos.vector_search.vector_search_algo_scatter_gather import VectorSearchAlgoScatterGather
+from src.features.code_engine.algos.vector_search.vector_search_algo_partition_aware_routing import VectorSearchAlgoPartitionAwareRouting
+from src.features.code_engine.algos.vector_search.vector_search_algo_replication_load_balancer import VectorSearchAlgoReplicationLoadBalancer
+from src.features.code_engine.algos.vector_search.vector_search_algo_hedged_requests import VectorSearchAlgoHedgedRequests
+from src.features.code_engine.algos.vector_search.vector_search_algo_kway_merge import VectorSearchAlgoKWayMerge
+from src.features.code_engine.algos.vector_search.vector_search_algo_query_cache import VectorSearchAlgoQueryCache
+from src.features.code_engine.algos.vector_search.vector_search_algo_semantic_cache import VectorSearchAlgoSemanticCache
+from src.features.code_engine.algos.vector_search.vector_search_algo_query_batching import VectorSearchAlgoQueryBatching
+from src.features.code_engine.algos.vector_search.vector_search_algo_memory_tiering import VectorSearchAlgoMemoryTiering
+from src.features.code_engine.algos.vector_search.vector_search_algo_disk_io_scheduler import VectorSearchAlgoDiskIOScheduler
+from src.features.code_engine.algos.vector_search.vector_search_algo_admission_control import VectorSearchAlgoAdmissionControl
+from src.features.code_engine.algos.vector_search.vector_search_algo_search_autotune import VectorSearchAlgoSearchAutotune
+
 __all__ = [
     "VectorSearchAlgoBruteForceGemm",
     "VectorSearchAlgoSimdDistance",
@@ -96,4 +124,31 @@ __all__ = [
     "VectorSearchAlgoRandomHyperplaneLSH",
     "VectorSearchAlgoMultiProbeLSH",
     "VectorSearchAlgoE2LSH",
+    "VectorSearchAlgoBM25",
+    "VectorSearchAlgoSparseDenseHybrid",
+    "VectorSearchAlgoRRF",
+    "VectorSearchAlgoConvexScoreFusion",
+    "VectorSearchAlgoMMR",
+    "VectorSearchAlgoRangeSearch",
+    "VectorSearchAlgoMaxSim",
+    "VectorSearchAlgoMultiQueryExpansion",
+    "VectorSearchAlgoFullPrecisionRescore",
+    "VectorSearchAlgoCrossEncoderRerank",
+    "VectorSearchAlgoMultiStageFunnel",
+    "VectorSearchAlgoLLMListwiseRerank",
+    "VectorSearchAlgoHyDE",
+    "VectorSearchAlgoQueryRouting",
+    "VectorSearchAlgoScatterGather",
+    "VectorSearchAlgoPartitionAwareRouting",
+    "VectorSearchAlgoReplicationLoadBalancer",
+    "VectorSearchAlgoHedgedRequests",
+    "VectorSearchAlgoKWayMerge",
+    "VectorSearchAlgoQueryCache",
+    "VectorSearchAlgoSemanticCache",
+    "VectorSearchAlgoQueryBatching",
+    "VectorSearchAlgoMemoryTiering",
+    "VectorSearchAlgoDiskIOScheduler",
+    "VectorSearchAlgoAdmissionControl",
+    "VectorSearchAlgoSearchAutotune",
 ]
+
