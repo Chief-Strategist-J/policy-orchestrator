@@ -6,8 +6,8 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: DATABASE MIGRATION & SEED RUNNER
 1. OVERVIEW & OBJECTIVE:
    Automated database schema migration, rollback, status tracking, and
    algorithm catalog seeder supporting Google AlloyDB Omni, PostgreSQL, and SQLite.
-   Implements idempotent upsert semantics (ON CONFLICT DO UPDATE) and
-   100% contract parity verification.
+   Discovers and executes SQL migration scripts from database/migrations/
+   with idempotent schema ledger tracking and contract parity verification.
 
 2. ARCHITECTURAL LOCATION:
    src/infra/adapters/database/migration_runner.py
@@ -34,16 +34,13 @@ from src.domain.models.algorithm_contract import (
     HardwareTarget,
     ComplexityCost,
 )
-from src.features.code_engine.registry.algorithm_catalog import (
-    BUILTIN_ALGORITHM_CONTRACTS,
-    BUILTIN_TYPE_ADAPTERS,
-)
 
 
 class DatabaseMigrationRunner:
     def __init__(self, db_url: Optional[str] = None) -> None:
         self.db_url = db_url or os.environ.get("DATABASE_URL", "sqlite:///:memory:")
         self.migrations_dir = Path(__file__).resolve().parents[4] / "database" / "migrations"
+        self.seeds_file = Path(__file__).resolve().parents[4] / "database" / "seeds" / "algorithm_catalog.json"
 
     def is_postgres(self) -> bool:
         return self.db_url.startswith("postgres://") or self.db_url.startswith("postgresql://")
@@ -67,24 +64,43 @@ class DatabaseMigrationRunner:
             conn = sqlite3.connect(db_path)
             close_conn = True
 
-        migration_file = self.migrations_dir / "0001_create_algorithm_registry_sqlite.sql"
-        if not migration_file.exists():
-            raise FileNotFoundError(f"SQLite migration file missing at: {migration_file}")
-
-        sql = migration_file.read_text(encoding="utf-8")
-        conn.executescript(sql)
-
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (?, ?)",
-            ("0001", "create_algorithm_registry_sqlite"),
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
         )
         conn.commit()
+
+        cursor.execute("SELECT version FROM schema_migrations")
+        applied_versions = {row[0] for row in cursor.fetchall()}
+
+        sqlite_files = sorted(
+            [f for f in self.migrations_dir.glob("*_sqlite.sql") if not f.name.endswith(".rollback.sql")]
+        )
+
+        applied = []
+        for file in sqlite_files:
+            version = file.stem.split("_")[0]
+            if version in applied_versions:
+                continue
+            sql = file.read_text(encoding="utf-8")
+            conn.executescript(sql)
+            cursor.execute(
+                "INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (?, ?)",
+                (version, file.stem),
+            )
+            conn.commit()
+            applied.append(version)
 
         if close_conn:
             conn.close()
 
-        return {"status": "success", "applied_version": "0001", "db": "sqlite"}
+        return {"status": "success", "applied_versions": applied, "db": "sqlite"}
 
     def _rollback_sqlite_migrations(self, conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
         close_conn = False
@@ -93,18 +109,23 @@ class DatabaseMigrationRunner:
             conn = sqlite3.connect(db_path)
             close_conn = True
 
-        rollback_file = self.migrations_dir / "0001_create_algorithm_registry_sqlite.rollback.sql"
-        if not rollback_file.exists():
-            raise FileNotFoundError(f"SQLite rollback file missing at: {rollback_file}")
+        rollback_files = sorted(
+            [f for f in self.migrations_dir.glob("*_sqlite.rollback.sql")],
+            reverse=True,
+        )
 
-        sql = rollback_file.read_text(encoding="utf-8")
-        conn.executescript(sql)
-        conn.commit()
+        rolled_back = []
+        for file in rollback_files:
+            version = file.name.split("_")[0]
+            sql = file.read_text(encoding="utf-8")
+            conn.executescript(sql)
+            conn.commit()
+            rolled_back.append(version)
 
         if close_conn:
             conn.close()
 
-        return {"status": "success", "rolled_back_version": "0001", "db": "sqlite"}
+        return {"status": "success", "rolled_back_versions": rolled_back, "db": "sqlite"}
 
     def _run_postgres_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
         import psycopg2
@@ -114,28 +135,49 @@ class DatabaseMigrationRunner:
             conn = psycopg2.connect(self.db_url)
             close_conn = True
 
-        migration_file = self.migrations_dir / "0001_create_algorithm_registry_table.sql"
-        if not migration_file.exists():
-            raise FileNotFoundError(f"PostgreSQL migration file missing at: {migration_file}")
-
-        sql = migration_file.read_text(encoding="utf-8")
-
         with conn.cursor() as cur:
-            cur.execute(sql)
             cur.execute(
                 """
-                INSERT INTO schema_migrations (version, name)
-                VALUES (%s, %s)
-                ON CONFLICT (version) DO NOTHING
-                """,
-                ("0001", "create_algorithm_registry_table"),
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version VARCHAR(64) PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
             )
+            cur.execute("SELECT version FROM schema_migrations")
+            applied_versions = {row[0] for row in cur.fetchall()}
+
+        pg_files = sorted(
+            [
+                f for f in self.migrations_dir.glob("*.sql")
+                if not f.name.endswith(".rollback.sql") and "_sqlite" not in f.name
+            ]
+        )
+
+        applied = []
+        with conn.cursor() as cur:
+            for file in pg_files:
+                version = file.stem.split("_")[0]
+                if version in applied_versions:
+                    continue
+                sql = file.read_text(encoding="utf-8")
+                cur.execute(sql)
+                cur.execute(
+                    """
+                    INSERT INTO schema_migrations (version, name)
+                    VALUES (%s, %s)
+                    ON CONFLICT (version) DO NOTHING
+                    """,
+                    (version, file.stem),
+                )
+                applied.append(version)
         conn.commit()
 
         if close_conn:
             conn.close()
 
-        return {"status": "success", "applied_version": "0001", "db": "postgres"}
+        return {"status": "success", "applied_versions": applied, "db": "postgres"}
 
     def _rollback_postgres_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
         import psycopg2
@@ -145,28 +187,39 @@ class DatabaseMigrationRunner:
             conn = psycopg2.connect(self.db_url)
             close_conn = True
 
-        rollback_file = self.migrations_dir / "0001_create_algorithm_registry_table.rollback.sql"
-        if not rollback_file.exists():
-            raise FileNotFoundError(f"PostgreSQL rollback file missing at: {rollback_file}")
+        rollback_files = sorted(
+            [
+                f for f in self.migrations_dir.glob("*.rollback.sql")
+                if "_sqlite" not in f.name
+            ],
+            reverse=True,
+        )
 
-        sql = rollback_file.read_text(encoding="utf-8")
-
+        rolled_back = []
         with conn.cursor() as cur:
-            cur.execute(sql)
+            for file in rollback_files:
+                version = file.name.split("_")[0]
+                sql = file.read_text(encoding="utf-8")
+                cur.execute(sql)
+                rolled_back.append(version)
         conn.commit()
 
         if close_conn:
             conn.close()
 
-        return {"status": "success", "rolled_back_version": "0001", "db": "postgres"}
+        return {"status": "success", "rolled_back_versions": rolled_back, "db": "postgres"}
 
     def seed_algorithm_catalog(self, conn: Optional[Any] = None) -> int:
+        from src.features.code_engine.registry.algorithm_catalog import (
+            BUILTIN_ALGORITHM_CONTRACTS,
+            BUILTIN_TYPE_ADAPTERS,
+        )
         if self.is_postgres():
-            return self._seed_postgres(conn)
+            return self._seed_postgres(BUILTIN_ALGORITHM_CONTRACTS, BUILTIN_TYPE_ADAPTERS, conn)
         else:
-            return self._seed_sqlite(conn)
+            return self._seed_sqlite(BUILTIN_ALGORITHM_CONTRACTS, BUILTIN_TYPE_ADAPTERS, conn)
 
-    def _seed_sqlite(self, conn: Optional[sqlite3.Connection] = None) -> int:
+    def _seed_sqlite(self, algos: List[AlgorithmContract], adapters: List[TypeAdapterContract], conn: Optional[sqlite3.Connection] = None) -> int:
         close_conn = False
         if conn is None:
             db_path = self.db_url.replace("sqlite:///", "")
@@ -176,7 +229,7 @@ class DatabaseMigrationRunner:
         cursor = conn.cursor()
         inserted_count = 0
 
-        for algo in BUILTIN_ALGORITHM_CONTRACTS:
+        for algo in algos:
             cursor.execute(
                 """
                 INSERT INTO algorithm_registry (
@@ -235,7 +288,7 @@ class DatabaseMigrationRunner:
             )
             inserted_count += 1
 
-        for adapter in BUILTIN_TYPE_ADAPTERS:
+        for adapter in adapters:
             cursor.execute(
                 """
                 INSERT INTO type_adapters (
@@ -266,7 +319,7 @@ class DatabaseMigrationRunner:
 
         return inserted_count
 
-    def _seed_postgres(self, conn: Optional[Any] = None) -> int:
+    def _seed_postgres(self, algos: List[AlgorithmContract], adapters: List[TypeAdapterContract], conn: Optional[Any] = None) -> int:
         import psycopg2
 
         close_conn = False
@@ -276,7 +329,7 @@ class DatabaseMigrationRunner:
 
         inserted_count = 0
         with conn.cursor() as cur:
-            for algo in BUILTIN_ALGORITHM_CONTRACTS:
+            for algo in algos:
                 cur.execute(
                     """
                     INSERT INTO algorithm_registry (
@@ -335,7 +388,7 @@ class DatabaseMigrationRunner:
                 )
                 inserted_count += 1
 
-            for adapter in BUILTIN_TYPE_ADAPTERS:
+            for adapter in adapters:
                 cur.execute(
                     """
                     INSERT INTO type_adapters (
@@ -393,6 +446,8 @@ class DatabaseMigrationRunner:
             return {"applied": [{"version": r[0], "name": r[1], "applied_at": str(r[2])} for r in rows]}
 
     def verify_database_parity(self, conn: Optional[Any] = None) -> Dict[str, Any]:
+        from src.features.code_engine.registry.algorithm_catalog import BUILTIN_ALGORITHM_CONTRACTS
+
         if self.is_postgres():
             from src.infra.adapters.database.alloydb_algorithm_registry_adapter import AlloyDBAlgorithmRegistryAdapter
             adapter = AlloyDBAlgorithmRegistryAdapter(self.db_url)
@@ -411,7 +466,11 @@ class DatabaseMigrationRunner:
         for aid, code_algo in code_algos.items():
             if aid in db_algos:
                 db_algo = db_algos[aid]
-                if code_algo.name != db_algo.name or code_algo.category != db_algo.category or code_algo.complexity.time != db_algo.complexity.time:
+                if (
+                    code_algo.name != db_algo.name
+                    or code_algo.category != db_algo.category
+                    or code_algo.complexity.time != db_algo.complexity.time
+                ):
                     mismatches.append({"id": aid, "reason": "attribute_difference"})
 
         return {
