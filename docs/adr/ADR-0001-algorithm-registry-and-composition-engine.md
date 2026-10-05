@@ -128,9 +128,9 @@ flowchart TD
     TOOLS --> COMPOSER
     TOOLS --> CODE_ENGINE
     COMPOSER --> PORT
-    PORT <|.. A_ALLOY
-    PORT <|.. A_SQLITE
-    PORT <|.. A_MEM
+    A_ALLOY -.->|Implements| PORT
+    A_SQLITE -.->|Implements| PORT
+    A_MEM -.->|Implements| PORT
 
     A_ALLOY --> ALLOY_DB
     A_SQLITE --> SQLITE_DB
