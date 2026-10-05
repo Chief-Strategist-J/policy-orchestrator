@@ -23,6 +23,48 @@ import mmap
 from typing import List
 
 class SearchEngineMmapScannerAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-15
+      name: SearchEngineMmapScannerAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - scanner.mmap
+      - zero_copy.scan
+      - kernel.page_cache
+      inputs:
+        type: object
+        required:
+        - file_path
+        - pattern_bytes
+        properties:
+          file_path:
+            type: string
+          pattern_bytes:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: integer
+      parameters:
+        type: object
+        properties: {}
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(FileSize)
+        space: O(1)
+      preconditions:
+      - os.path.getsize(input.file_path) > 0
+      postconditions:
+      - is_strictly_ascending(output)
+      compatible_adapters:
+      - ADAPTER-OFFSET-TO-SPAN-OBS-16
+    ---
+    """
     @staticmethod
     def scan_file(file_path: str, needle: str) -> List[int]:
         if not needle or not os.path.isfile(file_path):

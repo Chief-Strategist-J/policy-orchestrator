@@ -30,6 +30,70 @@ class AstNode:
 
 
 class AstExtractor:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-17
+      name: AstExtractor
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - parser.ast
+      - ast.tree_extractor
+      - cst.visitor
+      inputs:
+        type: object
+        required:
+        - source_code
+        properties:
+          source_code:
+            type: string
+          filename:
+            type: string
+            default: <source>
+      outputs:
+        type: array
+        items:
+          type: object
+          required:
+          - node_type
+          - name
+          - line_start
+          - line_end
+          properties:
+            node_type:
+              type: string
+            name:
+              type: string
+            line_start:
+              type: integer
+            line_end:
+              type: integer
+            docstring:
+              type: string
+              nullable: true
+            decorators:
+              type: array
+              items:
+                type: string
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|SourceCode|)
+        space: O(ASTNodes)
+      preconditions:
+      - len(input.source_code) >= 0
+      postconditions:
+      - all(n.line_start <= n.line_end for n in output)
+      compatible_adapters:
+      - ADAPTER-AST-TO-SCOPE-TREE
+      - ADAPTER-AST-TO-OUTLINE
+    ---
+    """
     def parse_python(self, code: str) -> AstNode:
         try:
             tree = ast.parse(code)

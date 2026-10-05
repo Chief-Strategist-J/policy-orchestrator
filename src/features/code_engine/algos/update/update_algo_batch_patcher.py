@@ -37,6 +37,86 @@ class PatchResult:
 
 
 class UpdateBatchPatcherAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-UPD-23
+      name: UpdateBatchPatcherAlgo
+      version: 2.0.0
+      category: update
+      capability_tags:
+      - patch.atomic
+      - update.filesystem
+      - safe.rollback
+      - sha256.precondition
+      inputs:
+        type: object
+        required:
+        - operations
+        properties:
+          operations:
+            type: array
+            items:
+              type: object
+              required:
+              - file_path
+              - find_pattern
+              - replace_text
+              properties:
+                file_path:
+                  type: string
+                find_pattern:
+                  type: string
+                replace_text:
+                  type: string
+                expected_sha256:
+                  type: string
+                  nullable: true
+                is_regex:
+                  type: boolean
+                  default: false
+          dry_run:
+            type: boolean
+            default: false
+      outputs:
+        type: array
+        items:
+          type: object
+          required:
+          - file_path
+          - success
+          - before_sha256
+          - after_sha256
+          properties:
+            file_path:
+              type: string
+            success:
+              type: boolean
+            occurrences:
+              type: integer
+            before_sha256:
+              type: string
+            after_sha256:
+              type: string
+            error_message:
+              type: string
+              nullable: true
+      parameters:
+        type: object
+        properties: {}
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(TotalFileSize)
+        space: O(MaxFileSize)
+      preconditions:
+      - all(os.path.exists(op.file_path) for op in input.operations)
+      postconditions:
+      - all(len(r.after_sha256) == 64 for r in output)
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def compute_sha256(content: str) -> str:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()

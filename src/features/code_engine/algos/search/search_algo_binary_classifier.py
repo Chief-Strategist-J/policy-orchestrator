@@ -22,6 +22,50 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: BINARY / TEXT CLASSIFIER (ALGO 05)
 import os
 
 class SearchEngineBinaryClassifierAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-05
+      name: SearchEngineBinaryClassifierAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - classifier.binary
+      - filter.text
+      - probe.null_byte
+      inputs:
+        type: object
+        required:
+        - file_path
+        properties:
+          file_path:
+            type: string
+      outputs:
+        type: object
+        required:
+        - is_text
+        properties:
+          is_text:
+            type: boolean
+      parameters:
+        type: object
+        properties:
+          sample_size:
+            type: integer
+            default: 1024
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(min(FileSize, SampleSize))
+        space: O(1)
+      preconditions:
+      - os.path.isfile(input.file_path) == True
+      postconditions:
+      - isinstance(output.is_text, bool)
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def is_text_file(file_path: str, probe_bytes: int = 8192) -> bool:
         if not os.path.isfile(file_path):

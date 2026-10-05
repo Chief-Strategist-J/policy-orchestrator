@@ -55,6 +55,7 @@ from src.domain.ports.tool_registry_port import ToolRegistryPort, DynamicToolRec
 from src.features.rag.service.rag_service import RAGService
 from src.features.rag.types.rag_types import RAGQueryRequest
 from src.features.audit.service.audit_service import AuditService
+from src.features.code_engine.service.code_engine_service import CodeEngineService
 from src.features.agent.types.agent_types import (
     AgentExecutionRequest,
     AgentExecutionResult,
@@ -81,12 +82,14 @@ class AgentService:
         audit_service: AuditService,
         search_provider: Optional[WebSearchPort] = None,
         tool_registry: Optional[ToolRegistryPort] = None,
+        code_engine: Optional[CodeEngineService] = None,
     ) -> None:
         self.llm_provider = llm_provider
         self.rag_service = rag_service
         self.audit_service = audit_service
         self.search_provider = search_provider
         self.tool_registry = tool_registry
+        self.code_engine = code_engine or CodeEngineService()
         self._tools = self._register_tools()
 
     def _register_tools(self) -> List[ToolDefinition]:
@@ -129,15 +132,85 @@ class AgentService:
             ),
             ToolDefinition(
                 name="search_codebase_ast",
-                description="Search codebase files by pattern, token, or AST structure across languages.",
+                description="Search codebase files using fast Aho-Corasick multi-pattern scanner, git-aware walking, and context snippet extraction.",
                 parameters_schema={
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "Regex or string pattern to locate in code"},
+                        "query": {"type": "string", "description": "Search pattern or token to locate across code"},
                         "target_dir": {"type": "string", "description": "Root directory to search"},
-                        "extension": {"type": "string", "description": "Comma-separated extensions (e.g. .py,.ts,.go)"},
                     },
                     "required": ["query"],
+                },
+            ),
+            ToolDefinition(
+                name="inspect_file_outline",
+                description="Extract structured AST code outline, class hierarchies, and exported symbols.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_path": {"type": "string", "description": "Target file path to inspect"},
+                    },
+                    "required": ["file_path"],
+                },
+            ),
+            ToolDefinition(
+                name="analyze_module_dependencies",
+                description="Analyze import dependency graphs, detect circular imports, and generate topological load orders.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "directory": {"type": "string", "description": "Target directory to analyze"},
+                    },
+                    "required": ["directory"],
+                },
+            ),
+            ToolDefinition(
+                name="apply_batch_patch",
+                description="Apply safe, atomic batch patch operations with precondition SHA-256 verification and dry-run support.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "operations": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "file_path": {"type": "string"},
+                                    "find_pattern": {"type": "string"},
+                                    "replace_text": {"type": "string"},
+                                    "is_regex": {"type": "boolean"},
+                                    "expected_sha256": {"type": "string"},
+                                },
+                                "required": ["file_path", "find_pattern", "replace_text"],
+                            },
+                        },
+                        "dry_run": {"type": "boolean"},
+                    },
+                    "required": ["operations"],
+                },
+            ),
+            ToolDefinition(
+                name="generate_diff",
+                description="Compute unified diffs and analyze changes between original and modified source content.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "original_content": {"type": "string"},
+                        "modified_content": {"type": "string"},
+                        "file_path": {"type": "string"},
+                    },
+                    "required": ["original_content", "modified_content"],
+                },
+            ),
+            ToolDefinition(
+                name="lint_zero_inline_comments",
+                description="Lint files for Zero-Inline-Comment Doctrine compliance and identify inline comment violations.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "file_path": {"type": "string", "description": "File path to lint"},
+                    },
+                    "required": ["file_path"],
                 },
             ),
             ToolDefinition(
@@ -225,23 +298,31 @@ class AgentService:
         elif name == "search_codebase_ast":
             pattern = arguments.get("query", "")
             target_dir = arguments.get("target_dir", ".")
-            exts = [e.strip() for e in arguments.get("extension", ".py,.ts,.go,.js").split(",")]
-            matches = []
-            regex = re.compile(pattern, re.IGNORECASE)
-            for root, _, files in os.walk(target_dir):
-                for f in files:
-                    if any(f.endswith(e) for e in exts):
-                        full_path = os.path.join(root, f)
-                        try:
-                            with open(full_path, "r", encoding="utf-8", errors="ignore") as fh:
-                                for line_no, line in enumerate(fh, 1):
-                                    if regex.search(line):
-                                        matches.append({"file": full_path, "line": line_no, "snippet": line.strip()[:120]})
-                                        if len(matches) >= 20:
-                                            break
-                        except Exception:
-                            pass
-            return {"pattern": pattern, "total_matches": len(matches), "matches": matches}
+            results = self.code_engine.scan_directory_multipattern(root_dir=target_dir, patterns=[pattern])
+            return {"pattern": pattern, "total_matches": sum(r["match_count"] for r in results), "matches": results}
+
+        elif name == "inspect_file_outline":
+            file_path = arguments.get("file_path", "")
+            return self.code_engine.inspect_file_outline(file_path=file_path)
+
+        elif name == "analyze_module_dependencies":
+            directory = arguments.get("directory", ".")
+            return self.code_engine.analyze_module_dependencies(directory=directory)
+
+        elif name == "apply_batch_patch":
+            operations = arguments.get("operations", [])
+            dry_run = arguments.get("dry_run", False)
+            return self.code_engine.apply_batch_patch(operations=operations, dry_run=dry_run)
+
+        elif name == "generate_diff":
+            orig = arguments.get("original_content", "")
+            mod = arguments.get("modified_content", "")
+            path = arguments.get("file_path", "file")
+            return self.code_engine.generate_diff(original_content=orig, modified_content=mod, file_path=path)
+
+        elif name == "lint_zero_inline_comments":
+            file_path = arguments.get("file_path", "")
+            return self.code_engine.lint_zero_inline_comments(file_path=file_path)
 
         elif name == "register_reusable_tool":
             if not self.tool_registry:

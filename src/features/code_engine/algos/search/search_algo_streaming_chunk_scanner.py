@@ -22,6 +22,51 @@ import os
 from typing import List, Tuple
 
 class SearchEngineStreamingChunkScannerAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-13
+      name: SearchEngineStreamingChunkScannerAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - scanner.streaming
+      - buffer.sliding_window
+      - chunk.overlap
+      inputs:
+        type: object
+        required:
+        - file_path
+        properties:
+          file_path:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: object
+      parameters:
+        type: object
+        properties:
+          chunk_size:
+            type: integer
+            default: 65536
+          overlap_size:
+            type: integer
+            default: 1024
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(FileSize)
+        space: O(ChunkSize)
+      preconditions:
+      - parameters.overlap_size < parameters.chunk_size
+      - os.path.isfile(input.file_path)
+      postconditions:
+      - len(output) >= 0
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def scan_file_chunks(
         file_path: str,

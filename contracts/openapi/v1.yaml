@@ -332,6 +332,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_RuleImpactResponse'
 
+  /api/v1/algos/contracts:
+    get:
+      summary: List and Filter All 24 Layer 1 Algorithm Contracts
+      operationId: listAlgorithmContracts
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [search, observability, update, graph, reasoning]
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: purity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PURE, IMPURE]
+        - name: side_effects
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [READ_ONLY, IN_MEMORY, DISK_WRITE, NETWORK_IO]
+      responses:
+        '200':
+          description: List of registered Layer 1 Algorithm Contracts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgorithmContractListResponse'
+
+  /api/v1/algos/contracts/{algo_id}:
+    get:
+      summary: Get Specific Layer 1 Algorithm Contract by ID
+      operationId: getAlgorithmContract
+      parameters:
+        - name: algo_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "ALGO-SRCH-11"
+      responses:
+        '200':
+          description: Full Layer 1 Algorithm Contract specification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgorithmContractResponse'
+
+  /api/v1/algos/adapters:
+    get:
+      summary: List All G4 Type Conversion Adapters
+      operationId: listTypeAdapters
+      responses:
+        '200':
+          description: List of registered type conversion adapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_TypeAdapterListResponse'
+
+  /api/v1/algos/compose:
+    post:
+      summary: Validate and Compose Dynamic Multi-Algorithm Pipeline (Layer 1-3)
+      operationId: composeAlgorithmPipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlgoComposeRequest'
+      responses:
+        '200':
+          description: Validated execution pipeline DAG and inferred G4 adapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoComposeResponse'
+
 components:
   schemas:
     ResponseMeta:
@@ -547,3 +632,100 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ErrorItem'
+
+    AlgoComposeRequest:
+      type: object
+      required: [algo_ids]
+      properties:
+        algo_ids:
+          type: array
+          items:
+            type: string
+          example: ["ALGO-SRCH-03", "ALGO-SRCH-11", "ALGO-OBS-16"]
+        strict_check:
+          type: boolean
+          default: true
+
+    Envelope_AlgorithmContractListResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+          properties:
+            total_contracts:
+              type: integer
+            contracts:
+              type: array
+              items:
+                type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AlgorithmContractResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_TypeAdapterListResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+          properties:
+            total_adapters:
+              type: integer
+            adapters:
+              type: array
+              items:
+                type: object
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+
+    Envelope_AlgoComposeResponse:
+      type: object
+      required: [meta, data]
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        data:
+          type: object
+          properties:
+            total_steps:
+              type: integer
+            pipeline_steps:
+              type: array
+              items:
+                type: object
+            inferred_adapters:
+              type: array
+              items:
+                type: object
+            safety_issues:
+              type: array
+              items:
+                type: string
+            is_valid:
+              type: boolean
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+

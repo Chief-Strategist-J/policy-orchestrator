@@ -29,6 +29,52 @@ from src.features.code_engine.algos.search.search_algo_recursive_walk import (
 )
 
 class SearchEngineWorkStealingWalkerAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-02
+      name: SearchEngineWorkStealingWalkerAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - filesystem.traversal
+      - directory.walk.parallel
+      - concurrency.work_stealing
+      inputs:
+        type: object
+        required:
+        - root_dir
+        properties:
+          root_dir:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: string
+      parameters:
+        type: object
+        properties:
+          num_workers:
+            type: integer
+            minimum: 1
+          allowed_extensions:
+            type: array
+            items:
+              type: string
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(N/P)
+        space: O(N)
+      preconditions:
+      - os.path.isdir(input.root_dir) == True
+      postconditions:
+      - is_sorted(output)
+      compatible_adapters:
+      - ADAPTER-FILE-PATH-TO-CONTENT
+    ---
+    """
     @staticmethod
     def execute(
         root_dir: str,

@@ -33,6 +33,53 @@ GENERATED_SIGNATURES = [
 ]
 
 class SearchEngineGeneratedCodeClassifierAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-08
+      name: SearchEngineGeneratedCodeClassifierAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - classifier.generated_code
+      - filter.minified
+      - filter.lockfile
+      inputs:
+        type: object
+        required:
+        - file_path
+        - content_header
+        properties:
+          file_path:
+            type: string
+          content_header:
+            type: string
+      outputs:
+        type: object
+        required:
+        - is_generated
+        properties:
+          is_generated:
+            type: boolean
+          marker:
+            type: string
+            nullable: true
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(HeaderLength)
+        space: O(1)
+      preconditions:
+      - len(input.file_path) > 0
+      postconditions:
+      - isinstance(output.is_generated, bool)
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def is_generated(file_path: str, max_lines_to_check: int = 20) -> bool:
         if not os.path.isfile(file_path):

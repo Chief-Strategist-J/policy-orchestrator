@@ -35,6 +35,75 @@ class DependencyGraphReport:
 
 
 class ImportDependencyGrapher:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-20
+      name: ImportDependencyGrapher
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - graph.imports
+      - dag.cycle_detector
+      - graph.topological_sort
+      inputs:
+        type: object
+        required:
+        - modules
+        properties:
+          modules:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              - code
+              properties:
+                name:
+                  type: string
+                code:
+                  type: string
+      outputs:
+        type: object
+        required:
+        - total_modules
+        - total_edges
+        - has_cycles
+        - topological_order
+        properties:
+          total_modules:
+            type: integer
+          total_edges:
+            type: integer
+          has_cycles:
+            type: boolean
+          cycles:
+            type: array
+            items:
+              type: array
+              items:
+                type: string
+          topological_order:
+            type: array
+            items:
+              type: string
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(V + E)
+        space: O(V + E)
+      preconditions:
+      - len(input.modules) > 0
+      postconditions:
+      - output.has_cycles == False ==> len(output.topological_order) == output.total_modules
+      compatible_adapters:
+      - ADAPTER-DAG-TO-EXECUTION-ORDER
+    ---
+    """
     def __init__(self) -> None:
         self.nodes: Dict[str, ImportNode] = {}
 

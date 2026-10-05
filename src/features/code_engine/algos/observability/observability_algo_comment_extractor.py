@@ -37,6 +37,60 @@ class CommentLintResult:
 
 
 class CommentExtractor:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-19
+      name: CommentExtractor
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - linter.comments
+      - doctrine.zero_inline
+      - comment.extractor
+      inputs:
+        type: object
+        required:
+        - source_code
+        properties:
+          source_code:
+            type: string
+      outputs:
+        type: object
+        required:
+        - is_compliant
+        - total_comments
+        - banned_inline_comments
+        properties:
+          is_compliant:
+            type: boolean
+          total_comments:
+            type: integer
+          banned_inline_comments:
+            type: array
+            items:
+              type: object
+          todos_and_fixmes:
+            type: array
+            items:
+              type: object
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|SourceCode|)
+        space: O(Comments)
+      preconditions:
+      - len(input.source_code) >= 0
+      postconditions:
+      - isinstance(output.is_compliant, bool)
+      compatible_adapters:
+      - ADAPTER-BANNED-COMMENTS-TO-PATCH
+    ---
+    """
     def extract_python_comments(self, code: str) -> List[ExtractedComment]:
         comments: List[ExtractedComment] = []
         tokens = tokenize.tokenize(io.BytesIO(code.encode("utf-8")).readline)

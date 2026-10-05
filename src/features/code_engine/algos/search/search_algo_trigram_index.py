@@ -24,6 +24,50 @@ from collections import defaultdict
 from typing import List, Dict, Set
 
 class SearchEngineTrigramIndexAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-09
+      name: SearchEngineTrigramIndexAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - index.trigram
+      - search.candidate_filter
+      - index.inverted
+      inputs:
+        type: object
+        required:
+        - documents
+        properties:
+          documents:
+            type: object
+            additionalProperties:
+              type: string
+      outputs:
+        type: object
+        required:
+        - total_trigrams
+        properties:
+          total_trigrams:
+            type: integer
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(SumDocLength)
+        space: O(Trigrams)
+      preconditions:
+      - len(input.documents) > 0
+      postconditions:
+      - output.total_trigrams >= 0
+      compatible_adapters:
+      - ADAPTER-QUERY-TO-TRIGRAM-CANDIDATES
+    ---
+    """
     def __init__(self) -> None:
         self._index: Dict[str, Set[str]] = defaultdict(set)
         self._indexed_files: Set[str] = set()

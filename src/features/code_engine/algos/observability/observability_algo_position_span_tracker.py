@@ -26,6 +26,76 @@ class PositionSpan:
 
 
 class PositionSpanTracker:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-16
+      name: PositionSpanTracker
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - adapter.offset_to_line_col
+      - coordinate.converter
+      - bisect.line_index
+      inputs:
+        type: object
+        required:
+        - source_code
+        - start_offset
+        - end_offset
+        properties:
+          source_code:
+            type: string
+          start_offset:
+            type: integer
+            minimum: 0
+          end_offset:
+            type: integer
+            minimum: 0
+      outputs:
+        type: object
+        required:
+        - start_line
+        - start_col
+        - end_line
+        - end_col
+        - byte_start
+        - byte_end
+        properties:
+          start_line:
+            type: integer
+            minimum: 1
+          start_col:
+            type: integer
+            minimum: 0
+          end_line:
+            type: integer
+            minimum: 1
+          end_col:
+            type: integer
+            minimum: 0
+          byte_start:
+            type: integer
+          byte_end:
+            type: integer
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(log Lines)
+        space: O(Lines)
+      preconditions:
+      - 0 <= input.start_offset <= input.end_offset <= len(input.source_code)
+      postconditions:
+      - output.start_line <= output.end_line
+      - output.byte_start == input.start_offset
+      compatible_adapters:
+      - ADAPTER-SPAN-TO-CST-RANGE
+    ---
+    """
     def __init__(self, content: bytes | str) -> None:
         if isinstance(content, str):
             raw_bytes = content.encode("utf-8")

@@ -22,6 +22,49 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: SIMD-STYLE FAST BYTE SEARCHER (ALGO 10)
 from typing import List
 
 class SearchEngineSimdMemchrAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-10
+      name: SearchEngineSimdMemchrAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - search.raw_byte
+      - simd.memchr
+      - scan.fast_byte
+      inputs:
+        type: object
+        required:
+        - haystack
+        - needle
+        properties:
+          haystack:
+            type: string
+          needle:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: integer
+          description: Byte offset
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|Haystack| / SIMD_WIDTH)
+        space: O(1)
+      preconditions:
+      - len(input.needle) > 0
+      postconditions:
+      - is_strictly_ascending(output)
+      compatible_adapters:
+      - ADAPTER-OFFSET-TO-SPAN-OBS-16
+    ---
+    """
     @staticmethod
     def find_all_occurrences(content: str, pattern: str) -> List[int]:
         if not pattern or not content:

@@ -35,6 +35,56 @@ class FileOutline:
 
 
 class CodeOutlineGenerator:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-21
+      name: CodeOutlineGenerator
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - outline.generator
+      - markdown.outline
+      - symbol.hierarchy
+      inputs:
+        type: object
+        required:
+        - file_path
+        - source_code
+        properties:
+          file_path:
+            type: string
+          source_code:
+            type: string
+      outputs:
+        type: object
+        required:
+        - total_lines
+        - symbols_count
+        - markdown
+        properties:
+          total_lines:
+            type: integer
+          symbols_count:
+            type: integer
+          markdown:
+            type: string
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|SourceCode|)
+        space: O(Symbols)
+      preconditions:
+      - len(input.source_code) >= 0
+      postconditions:
+      - len(output.markdown) > 0
+      compatible_adapters: []
+    ---
+    """
     def generate_python_outline(self, filename: str, code: str) -> FileOutline:
         lines = code.splitlines()
         outline = FileOutline(

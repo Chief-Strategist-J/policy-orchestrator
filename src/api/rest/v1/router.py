@@ -26,7 +26,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
 """
 
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Request, HTTPException
 
@@ -56,8 +56,25 @@ from src.infra.adapters.tools.in_memory_tool_registry_adapter import InMemoryToo
 from src.infra.adapters.agent.in_memory_agent_registry_adapter import InMemoryAgentManifestRegistryAdapter
 from src.infra.adapters.llm.openai_compatible_adapter import OpenAICompatibleAdapter
 from src.infra.adapters.llm.mock_llm_adapter import MockLLMAdapter
+from src.domain.models.algorithm_contract import (
+    AlgorithmCategory,
+    Purity,
+    SideEffectScope,
+    AlgorithmContract,
+    TypeAdapterContract,
+)
+from src.infra.adapters.database import (
+    InMemoryAlgorithmRegistryAdapter,
+    SQLiteAlgorithmRegistryAdapter,
+    AlloyDBAlgorithmRegistryAdapter,
+    PostgresAlgorithmRegistryAdapter,
+    DatabaseMigrationRunner,
+)
+from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
 
 router = APIRouter(prefix="/api/v1")
+
+
 
 class GraphQueryDTO(BaseModel):
     query: str = Field(..., description="Cypher or pattern matching query")
@@ -97,6 +114,41 @@ def get_orchestrator_services() -> Dict[str, Any]:
 
     tool_registry = InMemoryToolRegistryAdapter()
     agent_registry = InMemoryAgentManifestRegistryAdapter(load_builtins=True)
+
+    db_url = os.environ.get("DATABASE_URL")
+    auto_migrate = os.environ.get("AUTO_MIGRATE", "true").lower() == "true"
+
+    if db_url and (db_url.startswith("postgres://") or db_url.startswith("postgresql://")):
+        if auto_migrate:
+            try:
+                migration_runner = DatabaseMigrationRunner(db_url)
+                migration_runner.run_migrations()
+                migration_runner.seed_algorithm_catalog()
+            except Exception:
+                pass
+        algo_registry = AlloyDBAlgorithmRegistryAdapter(db_url)
+    elif db_url and db_url.startswith("sqlite://"):
+        if auto_migrate:
+            try:
+                migration_runner = DatabaseMigrationRunner(db_url)
+                migration_runner.run_migrations()
+                migration_runner.seed_algorithm_catalog()
+            except Exception:
+                pass
+        db_path = db_url.replace("sqlite:///", "")
+        algo_registry = SQLiteAlgorithmRegistryAdapter(db_path)
+    else:
+        algo_registry = SQLiteAlgorithmRegistryAdapter(":memory:")
+        if auto_migrate:
+            try:
+                migration_runner = DatabaseMigrationRunner("sqlite:///:memory:")
+                migration_runner.run_migrations(conn=algo_registry._memory_conn)
+                migration_runner.seed_algorithm_catalog(conn=algo_registry._memory_conn)
+            except Exception:
+                pass
+
+    composer_svc = AlgorithmComposerService(algo_registry)
+
 
     if llm_backend == "openai":
         llm_provider = OpenAICompatibleAdapter(
@@ -138,6 +190,8 @@ def get_orchestrator_services() -> Dict[str, Any]:
         "graph": graph_svc,
         "agent_registry": agent_registry,
         "tool_registry": tool_registry,
+        "algo_registry": algo_registry,
+        "composer": composer_svc,
     }
 
 _SERVICES = None
@@ -476,3 +530,72 @@ def get_rule_impact(rule_id: str, request: Request) -> Dict[str, Any]:
     svcs = get_services()
     impact = svcs["graph"].get_rule_impact(rule_id)
     return build_success_envelope(data={"rule_id": rule_id, "impact": impact}, trace_id=trace_id)
+
+
+class AlgoComposeRequestDTO(BaseModel):
+    algo_ids: List[str] = Field(..., description="Ordered list of algorithm IDs to compose")
+    strict_check: bool = Field(default=True, description="Enforce strict contract safety checks")
+
+
+@router.get("/algos/contracts")
+def list_algorithm_contracts(
+    request: Request,
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+    purity: Optional[str] = None,
+    side_effects: Optional[str] = None,
+) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    
+    cat_enum = AlgorithmCategory(category) if category else None
+    purity_enum = Purity(purity) if purity else None
+    se_enum = SideEffectScope(side_effects) if side_effects else None
+    tags_filter = [tag] if tag else None
+
+    contracts = svcs["algo_registry"].list_algorithms(
+        category=cat_enum,
+        tags=tags_filter,
+        purity=purity_enum,
+        side_effects=se_enum,
+    )
+    return build_success_envelope(
+        data={"total_contracts": len(contracts), "contracts": [c.model_dump() for c in contracts]},
+        trace_id=trace_id,
+    )
+
+
+@router.get("/algos/contracts/{algo_id}")
+def get_algorithm_contract(algo_id: str, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    contract = svcs["algo_registry"].get_algorithm(algo_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail=f"Algorithm contract '{algo_id}' not found.")
+    return build_success_envelope(data=contract.model_dump(), trace_id=trace_id)
+
+
+@router.get("/algos/adapters")
+def list_type_adapters(request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    adapters = svcs["algo_registry"].list_adapters()
+    return build_success_envelope(
+        data={"total_adapters": len(adapters), "adapters": [a.model_dump() for a in adapters]},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/compose")
+def compose_algorithm_pipeline(payload: AlgoComposeRequestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svcs = get_services()
+    try:
+        plan = svcs["composer"].compose_pipeline(
+            algo_ids=payload.algo_ids,
+            strict_contract_check=payload.strict_check,
+        )
+        return build_success_envelope(data=plan, trace_id=trace_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

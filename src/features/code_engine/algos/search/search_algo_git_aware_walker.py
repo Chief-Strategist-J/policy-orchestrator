@@ -28,6 +28,49 @@ from src.features.code_engine.algos.search.search_algo_recursive_walk import (
 )
 
 class SearchEngineGitAwareWalkerAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-03
+      name: SearchEngineGitAwareWalkerAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - filesystem.traversal
+      - git.ignore.aware
+      - vcs.filter
+      inputs:
+        type: object
+        required:
+        - root_dir
+        properties:
+          root_dir:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: string
+      parameters:
+        type: object
+        properties:
+          respect_gitignore:
+            type: boolean
+            default: true
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(N)
+        space: O(N)
+      preconditions:
+      - os.path.isdir(input.root_dir) == True
+      postconditions:
+      - is_sorted(output)
+      - not_contains(output, '.git')
+      compatible_adapters:
+      - ADAPTER-FILE-PATH-TO-CONTENT
+    ---
+    """
     @staticmethod
     def execute(
         root_dir: str,

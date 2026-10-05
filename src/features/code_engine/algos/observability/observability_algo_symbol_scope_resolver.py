@@ -39,6 +39,65 @@ class LexicalScope:
 
 
 class SymbolScopeResolver:
+    """
+    ---
+    contract:
+      algo_id: ALGO-OBS-18
+      name: SymbolScopeResolver
+      version: 1.0.0
+      category: observability
+      capability_tags:
+      - resolver.scope
+      - symbol.lexical_scope
+      - symbol.references
+      inputs:
+        type: object
+        required:
+        - source_code
+        properties:
+          source_code:
+            type: string
+      outputs:
+        type: object
+        required:
+        - symbols
+        properties:
+          symbols:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              - kind
+              - defined_line
+              properties:
+                name:
+                  type: string
+                kind:
+                  type: string
+                defined_line:
+                  type: integer
+                references:
+                  type: array
+                  items:
+                    type: integer
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|AST|)
+        space: O(Symbols)
+      preconditions:
+      - len(input.source_code) >= 0
+      postconditions:
+      - len(output.symbols) >= 0
+      compatible_adapters:
+      - ADAPTER-SCOPE-TO-RENAME-PLAN
+    ---
+    """
     def __init__(self) -> None:
         self._scope_counter = 0
 

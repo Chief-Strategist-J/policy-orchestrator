@@ -26,6 +26,71 @@ class CstMatch:
 
 
 class CstMatcher:
+    """
+    ---
+    contract:
+      algo_id: ALGO-UPD-22
+      name: CstMatcher
+      version: 1.0.0
+      category: update
+      capability_tags:
+      - cst.matcher
+      - ast.whitespace_preserving
+      - refactoring.pattern_match
+      inputs:
+        type: object
+        required:
+        - source_code
+        - target_node_type
+        properties:
+          source_code:
+            type: string
+          target_node_type:
+            type: string
+          pattern_filter:
+            type: object
+            default: {}
+      outputs:
+        type: array
+        items:
+          type: object
+          required:
+          - start_line
+          - end_line
+          - start_col
+          - end_col
+          - original_text
+          properties:
+            start_line:
+              type: integer
+            end_line:
+              type: integer
+            start_col:
+              type: integer
+            end_col:
+              type: integer
+            original_text:
+              type: string
+            node_name:
+              type: string
+              nullable: true
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|SourceCode|)
+        space: O(Matches)
+      preconditions:
+      - len(input.source_code) >= 0
+      postconditions:
+      - all(m.start_line <= m.end_line for m in output)
+      compatible_adapters:
+      - ADAPTER-CST-MATCH-TO-PATCH-OP
+    ---
+    """
     def __init__(self, pattern: str) -> None:
         self.pattern = pattern
         self._regex, self._placeholders = self._compile_cst_pattern(pattern)

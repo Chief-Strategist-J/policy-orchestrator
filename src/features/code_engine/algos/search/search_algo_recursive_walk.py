@@ -29,8 +29,64 @@ DEFAULT_IGNORED_NAMES: Set[str] = {
     "data", "brain", ".gemini", "scratch", "tmp", "bin"
 }
 
+
 class SearchEngineRecursiveWalkAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-01
+      name: SearchEngineRecursiveWalkAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - filesystem.traversal
+      - directory.walk.dfs
+      - filter.ignored_dirs
+      inputs:
+        type: object
+        required:
+        - root_dir
+        properties:
+          root_dir:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: string
+          description: Absolute file path
+      parameters:
+        type: object
+        properties:
+          max_depth:
+            type: integer
+            default: 16
+            minimum: 1
+          allowed_extensions:
+            type: array
+            items:
+              type: string
+          ignored_names:
+            type: array
+            items:
+              type: string
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(N)
+        space: O(D)
+      preconditions:
+      - os.path.isdir(input.root_dir) == True
+      postconditions:
+      - is_sorted(output)
+      - all(os.path.isfile(p) for p in output)
+      compatible_adapters:
+      - ADAPTER-FILE-PATH-TO-CONTENT
+      - ADAPTER-FILE-PATH-TO-AST
+    ---
+    """
     @staticmethod
+
     def execute(
         root_dir: str,
         max_depth: int = 16,

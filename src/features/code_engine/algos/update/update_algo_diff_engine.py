@@ -25,6 +25,67 @@ class UnifiedDiffResult:
 
 
 class UpdateDiffEngineAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-UPD-24
+      name: UpdateDiffEngineAlgo
+      version: 1.0.0
+      category: update
+      capability_tags:
+      - diff.unified
+      - diff.gnu_git
+      - diff.line_counter
+      inputs:
+        type: object
+        required:
+        - original_content
+        - modified_content
+        properties:
+          original_content:
+            type: string
+          modified_content:
+            type: string
+          file_path:
+            type: string
+            default: file
+      outputs:
+        type: object
+        required:
+        - file_path
+        - has_changes
+        - added_lines
+        - deleted_lines
+        - patch
+        properties:
+          file_path:
+            type: string
+          has_changes:
+            type: boolean
+          added_lines:
+            type: integer
+          deleted_lines:
+            type: integer
+          patch:
+            type: string
+      parameters:
+        type: object
+        properties: {}
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(N * M)
+        space: O(N + M)
+      preconditions:
+      - isinstance(input.original_content, str)
+      - isinstance(input.modified_content, str)
+      postconditions:
+      - output.added_lines >= 0
+      - output.deleted_lines >= 0
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def generate_unified_diff(
         original_content: str,

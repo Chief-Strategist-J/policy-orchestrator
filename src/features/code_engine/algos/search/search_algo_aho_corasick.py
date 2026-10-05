@@ -30,6 +30,68 @@ class AhoCorasickNode:
         self.outputs: List[str] = []
 
 class SearchEngineAhoCorasickAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-11
+      name: SearchEngineAhoCorasickAlgo
+      version: 1.2.0
+      category: search
+      capability_tags:
+      - search.multipattern
+      - automaton.trie
+      - automaton.dfa
+      inputs:
+        type: object
+        required:
+        - text
+        properties:
+          text:
+            type: string
+      outputs:
+        type: array
+        items:
+          type: object
+          required:
+          - start_offset
+          - end_offset
+          - pattern
+          properties:
+            start_offset:
+              type: integer
+              minimum: 0
+            end_offset:
+              type: integer
+              minimum: 0
+            pattern:
+              type: string
+      parameters:
+        type: object
+        required:
+        - patterns
+        properties:
+          patterns:
+            type: array
+            items:
+              type: string
+              minLength: 1
+            minItems: 1
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(|Text| + |Matches|)
+        space: O(TotalPatternChars)
+      preconditions:
+      - len(parameters.patterns) > 0
+      - all(len(p) > 0 for p in parameters.patterns)
+      postconditions:
+      - all(0 <= m.start_offset < m.end_offset <= len(input.text) for m in output)
+      compatible_adapters:
+      - ADAPTER-OFFSET-TO-SPAN-OBS-16
+      - ADAPTER-SNIPPET-WINDOW-SRCH-14
+    ---
+    """
     def __init__(self, patterns: List[str]) -> None:
         self.root = AhoCorasickNode()
         self._build_trie(patterns)

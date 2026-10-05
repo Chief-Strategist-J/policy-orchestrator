@@ -10,6 +10,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql://alloy_admin:alloysecret@alloydb:5432/policy_orchestration
       - POLICY_RULES_DIR=/app/policies/rules
       - LLM_BACKEND=mock # Options: mock, openai, ollama
       - VECTOR_BACKEND=qdrant # Options: inmemory, qdrant
@@ -27,6 +28,8 @@ services:
     volumes:
       - ../rules:/app/policies/rules:ro
     depends_on:
+      alloydb:
+        condition: service_healthy
       qdrant:
         condition: service_healthy
       neo4j:
@@ -37,6 +40,25 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  alloydb:
+    image: google/alloydbomni:latest
+    container_name: policy-alloydb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=alloy_admin
+      - POSTGRES_PASSWORD=alloysecret
+      - POSTGRES_DB=policy_orchestration
+    volumes:
+      - alloydb_data:/var/lib/postgresql/data
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alloy_admin -d policy_orchestration"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:v1.12.1
@@ -78,5 +100,6 @@ services:
       retries: 5
 
 volumes:
+  alloydb_data:
   qdrant_data:
   neo4j_data:

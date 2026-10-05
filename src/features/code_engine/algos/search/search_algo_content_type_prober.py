@@ -22,6 +22,50 @@ import os
 from typing import Optional
 
 class SearchEngineContentTypeProberAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-06
+      name: SearchEngineContentTypeProberAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - classifier.mime
+      - probe.content_type
+      - magic_bytes
+      inputs:
+        type: object
+        required:
+        - file_path
+        properties:
+          file_path:
+            type: string
+      outputs:
+        type: object
+        required:
+        - mime_type
+        - encoding
+        properties:
+          mime_type:
+            type: string
+          encoding:
+            type: string
+      parameters:
+        type: object
+        properties: {}
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(1)
+        space: O(1)
+      preconditions:
+      - os.path.isfile(input.file_path) == True
+      postconditions:
+      - len(output.mime_type) > 0
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def probe(file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()

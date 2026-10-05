@@ -24,6 +24,56 @@ import fnmatch
 from typing import List
 
 class SearchEngineGlobMatcherAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-04
+      name: SearchEngineGlobMatcherAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - filter.path
+      - glob.match
+      - fnmatch
+      inputs:
+        type: object
+        required:
+        - paths
+        - include_patterns
+        properties:
+          paths:
+            type: array
+            items:
+              type: string
+          include_patterns:
+            type: array
+            items:
+              type: string
+      outputs:
+        type: array
+        items:
+          type: string
+      parameters:
+        type: object
+        properties:
+          exclude_patterns:
+            type: array
+            items:
+              type: string
+      purity: PURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(N * P)
+        space: O(N)
+      preconditions:
+      - len(input.include_patterns) > 0
+      postconditions:
+      - set(output).issubset(set(input.paths))
+      compatible_adapters:
+      - ADAPTER-FILE-PATH-TO-CONTENT
+    ---
+    """
     @staticmethod
     def execute(pattern: str, file_paths: List[str]) -> List[str]:
         regex_pattern = fnmatch.translate(pattern)

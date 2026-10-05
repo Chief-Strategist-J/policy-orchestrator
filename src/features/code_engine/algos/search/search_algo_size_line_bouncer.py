@@ -23,6 +23,56 @@ import os
 from typing import Tuple
 
 class SearchEngineSizeLineBouncerAlgo:
+    """
+    ---
+    contract:
+      algo_id: ALGO-SRCH-07
+      name: SearchEngineSizeLineBouncerAlgo
+      version: 1.0.0
+      category: search
+      capability_tags:
+      - filter.size
+      - guardrail.resource
+      - bouncer.line_length
+      inputs:
+        type: object
+        required:
+        - file_path
+        properties:
+          file_path:
+            type: string
+      outputs:
+        type: object
+        required:
+        - is_acceptable
+        properties:
+          is_acceptable:
+            type: boolean
+          rejection_reason:
+            type: string
+            nullable: true
+      parameters:
+        type: object
+        properties:
+          max_bytes:
+            type: integer
+            default: 5000000
+          max_line_length:
+            type: integer
+            default: 10000
+      purity: IMPURE
+      determinism: DETERMINISTIC
+      idempotency: IDEMPOTENT
+      complexity:
+        time: O(K)
+        space: O(1)
+      preconditions:
+      - os.path.isfile(input.file_path) == True
+      postconditions:
+      - isinstance(output.is_acceptable, bool)
+      compatible_adapters: []
+    ---
+    """
     @staticmethod
     def check_limits(
         file_path: str,
