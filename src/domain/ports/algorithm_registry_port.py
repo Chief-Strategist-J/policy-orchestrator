@@ -26,8 +26,13 @@ from src.domain.models.algorithm_contract import (
 
 class AlgorithmRegistryPort(ABC):
     @abstractmethod
-    def register_algorithm(self, contract: AlgorithmContract) -> None:
-        """Register or update an algorithm contract in the catalog."""
+    def register_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
+        """Register or update an algorithm contract in the catalog (Upsert semantics)."""
+        pass
+
+    @abstractmethod
+    def upsert_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
+        """Explicit upsert: creates the algorithm contract if not present, otherwise updates it."""
         pass
 
     @abstractmethod
@@ -48,8 +53,23 @@ class AlgorithmRegistryPort(ABC):
         pass
 
     @abstractmethod
-    def register_adapter(self, adapter: TypeAdapterContract) -> None:
-        """Register a G4 Type Adapter."""
+    def update_algorithm(self, algo_id: str, updates: Dict[str, Any]) -> Optional[AlgorithmContract]:
+        """Update specific fields of an existing algorithm contract."""
+        pass
+
+    @abstractmethod
+    def delete_algorithm(self, algo_id: str, hard_delete: bool = False) -> bool:
+        """Delete an algorithm contract (soft delete is_active=False by default, or hard delete)."""
+        pass
+
+    @abstractmethod
+    def register_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
+        """Register or update a G4 Type Adapter (Upsert semantics)."""
+        pass
+
+    @abstractmethod
+    def upsert_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
+        """Explicit upsert for a type adapter."""
         pass
 
     @abstractmethod
@@ -61,3 +81,9 @@ class AlgorithmRegistryPort(ABC):
     def list_adapters(self) -> List[TypeAdapterContract]:
         """List all registered type adapters."""
         pass
+
+    @abstractmethod
+    def delete_adapter(self, adapter_id: str) -> bool:
+        """Delete a type adapter from the catalog."""
+        pass
+

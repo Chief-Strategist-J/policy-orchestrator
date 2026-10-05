@@ -11,6 +11,13 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- 0. Schema Migration Ledger
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 1. Capability & Algorithm Contract Registry (Layer 1 G1-G3)
 CREATE TABLE IF NOT EXISTS algorithm_registry (
     id VARCHAR(64) PRIMARY KEY,

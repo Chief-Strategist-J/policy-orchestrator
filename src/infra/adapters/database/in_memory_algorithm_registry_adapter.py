@@ -4,16 +4,17 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: IN-MEMORY ALGORITHM REGISTRY ADAPTER
 ================================================================================
 
 1. OVERVIEW & OBJECTIVE:
-   In-memory implementation of AlgorithmRegistryPort with full GIN-style tag
-   matching and property filtering for fast local testing and fallbacks.
+   In-memory implementation of AlgorithmRegistryPort with full CRUD,
+   upsert semantics, GIN-style tag matching, and property filtering for fast
+   local testing, offline execution, and fallback resilience.
 
 2. ARCHITECTURAL LOCATION:
-   src/infra/database/adapters/in_memory_algorithm_registry_adapter.py
+   src/infra/adapters/database/in_memory_algorithm_registry_adapter.py
    Adheres to api.structure.working.rule.md Section 3.8.
 ================================================================================
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from src.domain.models.algorithm_contract import (
     AlgorithmContract,
     TypeAdapterContract,
@@ -39,8 +40,12 @@ class InMemoryAlgorithmRegistryAdapter(AlgorithmRegistryPort):
             for adapter in BUILTIN_TYPE_ADAPTERS:
                 self.register_adapter(adapter)
 
-    def register_algorithm(self, contract: AlgorithmContract) -> None:
+    def register_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
+        return self.upsert_algorithm(contract)
+
+    def upsert_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
         self._algorithms[contract.id] = contract
+        return contract
 
     def get_algorithm(self, algo_id: str) -> Optional[AlgorithmContract]:
         return self._algorithms.get(algo_id)
@@ -54,7 +59,7 @@ class InMemoryAlgorithmRegistryAdapter(AlgorithmRegistryPort):
         is_active: bool = True,
     ) -> List[AlgorithmContract]:
         results: List[AlgorithmContract] = []
-        for algo in self._algorithms.values():
+        for algo in sorted(self._algorithms.values(), key=lambda a: a.id):
             if algo.is_active != is_active:
                 continue
             if category and algo.category != category:
@@ -69,8 +74,36 @@ class InMemoryAlgorithmRegistryAdapter(AlgorithmRegistryPort):
             results.append(algo)
         return results
 
-    def register_adapter(self, adapter: TypeAdapterContract) -> None:
+    def update_algorithm(self, algo_id: str, updates: Dict[str, Any]) -> Optional[AlgorithmContract]:
+        if algo_id not in self._algorithms:
+            return None
+        existing = self._algorithms[algo_id]
+        data = existing.model_dump() if hasattr(existing, "model_dump") else existing.dict()
+        updates_copy = dict(updates)
+        if "time_complexity" in updates_copy or "space_complexity" in updates_copy:
+            time_c = updates_copy.pop("time_complexity", existing.complexity.time)
+            space_c = updates_copy.pop("space_complexity", existing.complexity.space)
+            data["complexity"] = {"time": time_c, "space": space_c}
+        data.update(updates_copy)
+        updated = AlgorithmContract(**data)
+        self._algorithms[algo_id] = updated
+        return updated
+
+    def delete_algorithm(self, algo_id: str, hard_delete: bool = False) -> bool:
+        if algo_id not in self._algorithms:
+            return False
+        if hard_delete:
+            del self._algorithms[algo_id]
+        else:
+            self._algorithms[algo_id].is_active = False
+        return True
+
+    def register_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
+        return self.upsert_adapter(adapter)
+
+    def upsert_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
         self._adapters[adapter.id] = adapter
+        return adapter
 
     def get_adapters_for_types(self, source_type: str, target_type: str) -> List[TypeAdapterContract]:
         return [
@@ -79,4 +112,10 @@ class InMemoryAlgorithmRegistryAdapter(AlgorithmRegistryPort):
         ]
 
     def list_adapters(self) -> List[TypeAdapterContract]:
-        return list(self._adapters.values())
+        return sorted(list(self._adapters.values()), key=lambda a: a.id)
+
+    def delete_adapter(self, adapter_id: str) -> bool:
+        if adapter_id not in self._adapters:
+            return False
+        del self._adapters[adapter_id]
+        return True

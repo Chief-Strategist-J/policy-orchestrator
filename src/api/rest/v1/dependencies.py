@@ -140,6 +140,9 @@ def get_orchestrator_services() -> Dict[str, Any]:
         knowledge_source=knowledge_source,
     )
 
+    from src.features.code_engine.service.algorithm_registry_service import AlgorithmRegistryService
+    algo_registry_svc = AlgorithmRegistryService(algo_registry)
+
     return {
         "rag": rag_svc,
         "audit": audit_svc,
@@ -148,6 +151,7 @@ def get_orchestrator_services() -> Dict[str, Any]:
         "agent_registry": agent_registry,
         "tool_registry": tool_registry,
         "algo_registry": algo_registry,
+        "algo_registry_service": algo_registry_svc,
         "composer": composer_svc,
         "code_engine": code_engine_svc,
     }
@@ -165,3 +169,8 @@ def get_services() -> Dict[str, Any]:
 
 def get_code_engine_service() -> CodeEngineService:
     return get_services()["code_engine"]
+
+
+def get_algorithm_registry_service() -> Any:
+    return get_services()["algo_registry_service"]
+

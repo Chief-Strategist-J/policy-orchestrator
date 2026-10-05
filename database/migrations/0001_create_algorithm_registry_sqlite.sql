@@ -6,6 +6,13 @@
 -- reversible:     YES
 -- lock_risk:      LOW
 
+-- 0. Schema Migration Ledger
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS algorithm_registry (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

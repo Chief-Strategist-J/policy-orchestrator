@@ -203,29 +203,71 @@ def test_cli_all_42_algorithms_execute():
         "ALGO-VEC-UPD-153": {"sample_vectors": [[0.1, 0.2, 0.3, 0.4]], "num_subvectors_m": 2, "centroids_per_subvector_k": 2},
         "ALGO-VEC-UPD-154": {"current_inverted_index": {}, "mutation_type": "UPSERT", "record_id": "r1", "metadata": {"tenant": "t1"}},
         "ALGO-VEC-UPD-155": {"vector": [0.1, 0.2], "metadata": {"tenant_id": "t1", "acl": ["read"]}},
-
+        "ALGO-VEC-OBS-156": {"retrieved_ids": [["a", "b", "c"]], "ground_truth_ids": [["a", "b", "d"]], "k": 3},
+        "ALGO-VEC-OBS-157": {"sampled_queries": [{"query_id": "q1", "embedding": [1.0, 0.0]}], "snapshot_vectors": [{"id": "d1", "embedding": [1.0, 0.0]}, {"id": "d2", "embedding": [0.0, 1.0]}], "k": 1},
+        "ALGO-VEC-OBS-158": {"retrieved_ids": [["a", "b", "c"]], "relevant_ids": [["a", "c"]], "k": 3},
+        "ALGO-VEC-OBS-159": {"retrieved_ids": [["x", "a", "b"]], "relevant_ids": [["a"]], "k": 10},
+        "ALGO-VEC-OBS-160": {"retrieved_ids": [["a", "b"]], "ground_truth_relevance": [{"a": 2.0, "b": 1.0}], "k": 2},
+        "ALGO-VEC-OBS-161": {"retrieved_ids": [["a", "b"], ["c", "d"]], "relevant_ids": [["a"], ["x"]], "k": 2},
+        "ALGO-VEC-OBS-162": {"approximate_distances": [[1.05, 1.1]], "exact_distances": [[1.0, 1.0]]},
+        "ALGO-VEC-OBS-163": {"judgments": [{"query_id": "q1", "context_score": 3.0, "groundedness_score": 3.0, "synthesis_score": 3.0, "failure_type": "none"}], "min_passing_score": 2.0},
+        "ALGO-VEC-OBS-164": {"baseline_results": [{"query_id": "q1", "doc_ids": ["d1", "d2"]}], "candidate_results": [{"query_id": "q1", "doc_ids": ["d1", "d2"]}], "golden_expected_ids": [{"query_id": "q1", "expected_ids": ["d1", "d2"]}], "max_allowed_drop": 0.02},
+        "ALGO-VEC-OBS-165": {"events": [{"session_id": "s1", "clicked_doc_id": "d1", "dwell_time_seconds": 10.0, "abandoned": False, "query_reformulated": False}], "min_dwell_threshold_seconds": 5.0},
+        "ALGO-VEC-OBS-166": {"ranker_a_results": ["a1", "a2"], "ranker_b_results": ["b1", "b2"], "k": 4, "clicked_ids": ["a1"]},
+        "ALGO-VEC-OBS-167": {"answer_text": "Vectors are numeric arrays.", "retrieved_passages": ["Vectors are numeric arrays in dense space."], "claims": ["Vectors are numeric arrays"]},
+        "ALGO-VEC-OBS-168": {"reference_vectors": [[1.0, 0.0], [1.0, 0.1]], "current_vectors": [[1.0, 0.0], [1.0, 0.1]], "drift_threshold": 0.15},
+        "ALGO-VEC-OBS-169": {"reference_sample": [[1.0, 0.0], [0.9, 0.1]], "current_sample": [[1.0, 0.0], [0.9, 0.1]], "drift_p_value_threshold": 0.05},
+        "ALGO-VEC-OBS-170": {"reference_projections": [0.1, 0.2, 0.3, 0.4, 0.5], "current_projections": [0.1, 0.2, 0.3, 0.4, 0.5], "num_bins": 5},
+        "ALGO-VEC-OBS-171": {"top1_scores": [0.95, 0.88, 0.82, 0.79, 0.40], "min_spread_threshold": 0.05},
+        "ALGO-VEC-OBS-172": {"vectors": [[1.0, 0.0], [0.707106, 0.707106]], "expected_norm": 1.0, "tolerance": 0.05},
+        "ALGO-VEC-OBS-173": {"partition_sizes": [100, 105, 98, 102], "max_allowed_imbalance_ratio": 2.0},
+        "ALGO-VEC-OBS-174": {"top_k_results": [["d1", "d2"], ["d1", "d3"]], "hub_multiplier_threshold": 3.0},
+        "ALGO-VEC-OBS-175": {"vectors": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]], "sample_size": 10},
+        "ALGO-VEC-OBS-176": {"vectors": [{"id": "v1", "vector": [1.0, 1.0]}, {"id": "v2", "vector": [1.1, 0.9]}], "k_neighbors": 1, "outlier_z_threshold": 1.5},
+        "ALGO-VEC-OBS-177": {"query_vector": [10.0, 10.0], "corpus_centroids": [[0.0, 0.0]], "max_distance_threshold": 1.2},
+        "ALGO-VEC-OBS-178": {"latencies_ms": [10.0, 15.0, 20.0, 45.0, 80.0]},
+        "ALGO-VEC-OBS-179": {"service_red": {"request_count": 1000, "error_count": 2, "total_duration_seconds": 20.0, "latency_p99_seconds": 0.035}, "resource_use": {"cpu_utilization_pct": 65.0, "memory_utilization_pct": 70.0, "queue_depth": 5, "disk_errors": 0}},
+        "ALGO-VEC-OBS-180": {"target_slo": 0.999, "total_events": 100000, "bad_events": 50, "window_hours": 24.0},
+        "ALGO-VEC-OBS-181": {"traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "spans": [{"span_id": "s1", "name": "vector_search", "duration_ms": 25.0, "status": "OK"}]},
+        "ALGO-VEC-OBS-182": {"mutation_events": [{"source_timestamp": 100.0, "index_timestamp": 102.0, "status": "COMMITTED"}], "max_allowed_lag_seconds": 60.0},
+        "ALGO-VEC-OBS-183": {"adjacency_list": {"0": ["1", "2"], "1": ["0"], "2": ["0"]}, "entry_points": ["0"]},
+        "ALGO-VEC-OBS-184": {"segments": [{"segment_id": "seg1", "active_records_count": 1000, "tombstone_records_count": 250, "size_bytes": 1000000}], "compaction_threshold_ratio": 0.20},
+        "ALGO-VEC-OBS-185": {"cache_metrics": {"hits": 850, "misses": 150, "evictions": 10}, "memory_stats": {"used_bytes": 1073741824, "total_allocated_bytes": 2147483648, "fragmentation_pct": 5.0}, "min_acceptable_hit_ratio": 0.8},
+        "ALGO-VEC-OBS-186": {"arrival_rate_qps": 200.0, "mean_latency_seconds": 0.05, "p99_latency_seconds": 0.15, "headroom_ratio": 0.4, "max_threads_per_replica": 32},
+        "ALGO-VEC-OBS-187": {"partitions": [{"partition_id": 0, "log_end_offset": 5000, "current_consumer_offset": 4800}], "consumption_rate_per_sec": 500.0, "max_acceptable_lag_records": 5000},
+        "ALGO-VEC-OBS-188": {"labels": {"tenant_id": "tenant-1", "status": "200", "user_uuid": "123e4567-e89b-12d3-a456-426614174000"}, "allowed_label_keys": ["tenant_id", "status"]},
+        "ALGO-VEC-OBS-189": {"metric_series": [10.0, 11.0, 10.5, 10.2, 50.0], "alpha": 0.2, "sigma_threshold": 2.0},
+        "ALGO-VEC-OBS-190": {"shard_data_streams": [[10.0, 20.0, 30.0], [40.0, 50.0]], "quantiles_to_query": [0.5, 0.9]},
+        "ALGO-VEC-OBS-191": {"query_id": "q-1", "stages": [{"stage_name": "pre_filter", "candidates_in": 1000, "candidates_out": 200, "duration_ms": 1.5}, {"stage_name": "hnsw_search", "candidates_in": 200, "candidates_out": 10, "duration_ms": 5.0}]},
+        "ALGO-VEC-OBS-192": {"trace_payload": {"query_id": "q-99", "query_text": "confidential user query", "duration_ms": 25.0, "has_error": False}, "sample_rate": 1.0},
+        "ALGO-VEC-OBS-193": {"vectors": [[1.0, 0.5, 0.2], [0.2, 0.8, 0.1], [0.5, 0.2, 0.9]], "target_dimensions": 2},
+        "ALGO-VEC-OBS-194": {"failed_queries": [{"query_id": "q1", "text": "error 500", "embedding": [0.9, 0.1]}, {"query_id": "q2", "text": "http 500 crash", "embedding": [0.88, 0.12]}], "cluster_distance_threshold": 0.5},
+        "ALGO-VEC-OBS-195": {"canary_query_results": [{"probe_id": "p1", "success": True, "latency_ms": 12.0}], "isolation_probe_results": [{"probe_id": "iso1", "leak_detected": False}]},
+        "ALGO-VEC-OBS-196": {"comparisons": [{"query_id": "q1", "prod_doc_ids": ["d1", "d2"], "shadow_doc_ids": ["d1", "d2"], "prod_latency_ms": 15.0, "shadow_latency_ms": 12.0}], "min_jaccard_threshold": 0.6},
+        "ALGO-VEC-OBS-197": {"vector_records": [{"vector_id": "vec-100", "source_doc_id": "doc.pdf", "chunk_id": "c1", "model_version": "v1.0", "created_at": 100.0}]},
+        "ALGO-VEC-OBS-198": {"source_database_ids": ["doc-1", "doc-2"], "vector_index_ids": ["doc-1"]},
+        "ALGO-VEC-OBS-199": {"queries_count": 10000, "total_tokens_embedded": 500000, "total_reranked_passages": 50000, "indexed_vector_count": 1000000, "vector_dimension": 768, "precision_bytes": 4},
+        "ALGO-VEC-OBS-200": {"failure_clusters": [{"size": 3, "sample_queries": ["query-alpha"]}], "ood_queries": ["query-beta"], "current_recall": 0.75, "target_recall": 0.90},
     }
 
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 197
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 242
+
+    from src.api.cli.main import build_parser, handle_algo_command
+    import io
+    from contextlib import redirect_stdout
+
+    parser = build_parser()
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:
         algo_id = contract.id
         inp_json = json.dumps(test_inputs[algo_id])
-        cmd = [
-            "python3",
-            "-m",
-            "src.api.cli.main",
-            "algo",
-            "execute",
-            "--id",
-            algo_id,
-            "--input",
-            inp_json,
-            "--json",
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        assert result.returncode == 0, f"CLI execution failed for {algo_id}: {result.stderr}"
-        parsed = json.loads(result.stdout)
+        args = parser.parse_args(["algo", "execute", "--id", algo_id, "--input", inp_json, "--json"])
+        
+        f = io.StringIO()
+        with redirect_stdout(f):
+            exit_code = handle_algo_command(args)
+        assert exit_code == 0, f"CLI execution failed for {algo_id}"
+        parsed = json.loads(f.getvalue())
         assert "algo_id" in parsed
         assert parsed["algo_id"] == algo_id
         assert "result" in parsed

@@ -1621,6 +1621,366 @@ ALGO_ALIASES: dict = {
         "example": '{"vector": [0.1, 0.2], "metadata": {"tenant_id": "t1", "acl": ["read"]}}',
         "category": "update",
     },
+    "vec-obs-recall-at-k": {
+        "id": "ALGO-VEC-OBS-156",
+        "algo_name": "VectorObservabilityAlgoRecallAtK",
+        "plain_name": "Recall@K Metric",
+        "what_it_does": "Measures retrieval recall against exact brute-force ground truth IDs.",
+        "example": '{"retrieved_ids": ["a", "b", "c"], "ground_truth_ids": ["a", "b", "d"], "k": 3}',
+        "category": "observability",
+    },
+    "vec-obs-ground-truth-sampling": {
+        "id": "ALGO-VEC-OBS-157",
+        "algo_name": "VectorObservabilityAlgoGroundTruthSampling",
+        "plain_name": "Ground Truth Sampling",
+        "what_it_does": "Samples queries and performs exact brute-force search to generate ground-truth baselines.",
+        "example": '{"sample_queries": [[0.1, 0.2]], "corpus_vectors": [{"id": "d1", "vector": [0.1, 0.2]}], "ground_truth_k": 1}',
+        "category": "observability",
+    },
+    "vec-obs-precision-at-k": {
+        "id": "ALGO-VEC-OBS-158",
+        "algo_name": "VectorObservabilityAlgoPrecisionAtK",
+        "plain_name": "Precision@K Metric",
+        "what_it_does": "Measures the fraction of top-K retrieved items that are relevant.",
+        "example": '{"retrieved_ids": ["a", "b", "c"], "relevant_ids": ["a", "c"], "k": 3}',
+        "category": "observability",
+    },
+    "vec-obs-mrr": {
+        "id": "ALGO-VEC-OBS-159",
+        "algo_name": "VectorObservabilityAlgoMrr",
+        "plain_name": "Mean Reciprocal Rank (MRR)",
+        "what_it_does": "Calculates reciprocal rank of the first relevant result in retrieved ranking.",
+        "example": '{"retrieved_ids": ["x", "a", "b"], "relevant_ids": ["a"]}',
+        "category": "observability",
+    },
+    "vec-obs-ndcg": {
+        "id": "ALGO-VEC-OBS-160",
+        "algo_name": "VectorObservabilityAlgoNdcg",
+        "plain_name": "Normalized Discounted Cumulative Gain (NDCG)",
+        "what_it_does": "Calculates position-discounted graded relevance score for ranking quality.",
+        "example": '{"retrieved_ids": ["a", "b"], "relevance_scores": {"a": 2.0, "b": 1.0}, "k": 2}',
+        "category": "observability",
+    },
+    "vec-obs-hit-rate": {
+        "id": "ALGO-VEC-OBS-161",
+        "algo_name": "VectorObservabilityAlgoHitRate",
+        "plain_name": "Hit Rate Metric",
+        "what_it_does": "Evaluates the proportion of queries with at least one relevant retrieved candidate.",
+        "example": '{"query_evaluations": [{"retrieved_ids": ["a"], "relevant_ids": ["a"]}]}',
+        "category": "observability",
+    },
+    "vec-obs-relative-distance-error": {
+        "id": "ALGO-VEC-OBS-162",
+        "algo_name": "VectorObservabilityAlgoRelativeDistanceError",
+        "plain_name": "Relative Distance Error (RDE)",
+        "what_it_does": "Quantifies distance distortion introduced by approximate nearest neighbor or quantization.",
+        "example": '{"approximate_distances": [1.05, 1.1], "exact_distances": [1.0, 1.0]}',
+        "category": "observability",
+    },
+    "vec-obs-llm-as-judge": {
+        "id": "ALGO-VEC-OBS-163",
+        "algo_name": "VectorObservabilityAlgoLlmAsJudge",
+        "plain_name": "LLM-as-a-Judge Evaluation",
+        "what_it_does": "Aggregates and audits LLM judge relevance scores for retrieved context.",
+        "example": '{"evaluations": [{"query_id": "q1", "judge_score": 0.9, "reasoning": "Accurate"}], "pass_threshold": 0.7}',
+        "category": "observability",
+    },
+    "vec-obs-golden-query-regression": {
+        "id": "ALGO-VEC-OBS-164",
+        "algo_name": "VectorObservabilityAlgoGoldenQueryRegression",
+        "plain_name": "Golden Query Regression Testing",
+        "what_it_does": "Detects regressions between current search results and golden baseline sets.",
+        "example": '{"current_results": {"q1": ["d1", "d2"]}, "golden_results": {"q1": ["d1", "d2"]}, "k": 2}',
+        "category": "observability",
+    },
+    "vec-obs-online-implicit-feedback": {
+        "id": "ALGO-VEC-OBS-165",
+        "algo_name": "VectorObservabilityAlgoOnlineImplicitFeedback",
+        "plain_name": "Online Implicit Feedback Tracking",
+        "what_it_does": "Analyzes CTR and dwell-time implicit signals to score retrieval relevance.",
+        "example": '{"retrieved_ids": ["d1", "d2"], "clicked_ids": ["d1"], "dwell_times_sec": {"d1": 25.0}}',
+        "category": "observability",
+    },
+    "vec-obs-interleaving-experiments": {
+        "id": "ALGO-VEC-OBS-166",
+        "algo_name": "VectorObservabilityAlgoInterleavingExperiments",
+        "plain_name": "Team Draft Interleaving",
+        "what_it_does": "Performs unbiased online A/B comparison between two retrieval rankings.",
+        "example": '{"list_a": ["a1", "a2"], "list_b": ["b1", "b2"], "clicked_ids": ["a1"]}',
+        "category": "observability",
+    },
+    "vec-obs-faithfulness-groundedness": {
+        "id": "ALGO-VEC-OBS-167",
+        "algo_name": "VectorObservabilityAlgoFaithfulnessGroundedness",
+        "plain_name": "Faithfulness & Groundedness Metric",
+        "what_it_does": "Calculates overlap and hallucination risk between generated claims and context.",
+        "example": '{"answer_claims": ["Vectors are numeric arrays"], "retrieved_context_chunks": ["Vectors are arrays of numbers"]}',
+        "category": "observability",
+    },
+    "vec-obs-centroid-shift": {
+        "id": "ALGO-VEC-OBS-168",
+        "algo_name": "VectorObservabilityAlgoCentroidShift",
+        "plain_name": "Centroid Shift Drift Detection",
+        "what_it_does": "Computes cosine and Euclidean shift between baseline and current dataset centroids.",
+        "example": '{"baseline_vectors": [[1.0, 0.0]], "current_vectors": [[0.99, 0.01]]}',
+        "category": "observability",
+    },
+    "vec-obs-mmd": {
+        "id": "ALGO-VEC-OBS-169",
+        "algo_name": "VectorObservabilityAlgoMmd",
+        "plain_name": "Maximum Mean Discrepancy (MMD)",
+        "what_it_does": "Non-parametric kernel test for high-dimensional vector distribution drift.",
+        "example": '{"sample_p": [[1.0, 0.0]], "sample_q": [[1.0, 0.0]], "gamma": 1.0}',
+        "category": "observability",
+    },
+    "vec-obs-psi-ks-drift": {
+        "id": "ALGO-VEC-OBS-170",
+        "algo_name": "VectorObservabilityAlgoPsiKsDrift",
+        "plain_name": "PSI & KS-Test Drift",
+        "what_it_does": "Measures Population Stability Index and Kolmogorov-Smirnov distance on scalar distributions.",
+        "example": '{"baseline_distribution": [0.1, 0.2, 0.3], "current_distribution": [0.12, 0.22, 0.32]}',
+        "category": "observability",
+    },
+    "vec-obs-similarity-score-distribution": {
+        "id": "ALGO-VEC-OBS-171",
+        "algo_name": "VectorObservabilityAlgoSimilarityScoreDistribution",
+        "plain_name": "Similarity Score Distribution Profiler",
+        "what_it_does": "Monitors similarity score quantiles and detects score compression or degradation.",
+        "example": '{"similarity_scores": [0.95, 0.88, 0.82, 0.79]}',
+        "category": "observability",
+    },
+    "vec-obs-vector-norm-distribution": {
+        "id": "ALGO-VEC-OBS-172",
+        "algo_name": "VectorObservabilityAlgoVectorNormDistribution",
+        "plain_name": "Vector Norm Distribution Monitor",
+        "what_it_does": "Audits L2 norm consistency to flag unnormalized vectors or embedding anomalies.",
+        "example": '{"vectors": [[1.0, 0.0], [0.707, 0.707]], "expected_norm": 1.0}',
+        "category": "observability",
+    },
+    "vec-obs-partition-cluster-balance": {
+        "id": "ALGO-VEC-OBS-173",
+        "algo_name": "VectorObservabilityAlgoPartitionClusterBalance",
+        "plain_name": "Partition & Cluster Balance Monitor",
+        "what_it_does": "Calculates entropy, Gini coefficient, and imbalance ratios across index partitions.",
+        "example": '{"cluster_sizes": [100, 105, 98, 102]}',
+        "category": "observability",
+    },
+    "vec-obs-hubness-measurement": {
+        "id": "ALGO-VEC-OBS-174",
+        "algo_name": "VectorObservabilityAlgoHubnessMeasurement",
+        "plain_name": "Hubness Measurement",
+        "what_it_does": "Quantifies k-occurrence skewness and detects problematic hub vectors in high dimensions.",
+        "example": '{"nearest_neighbor_graph": {"q1": ["d1", "d2"], "q2": ["d1", "d3"]}, "total_queries": 2}',
+        "category": "observability",
+    },
+    "vec-obs-intrinsic-dimension": {
+        "id": "ALGO-VEC-OBS-175",
+        "algo_name": "VectorObservabilityAlgoIntrinsicDimension",
+        "plain_name": "Intrinsic Dimension Estimation (Two-NN)",
+        "what_it_does": "Estimates true manifold dimensionality using the Two-NN algorithm.",
+        "example": '{"vectors": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]}',
+        "category": "observability",
+    },
+    "vec-obs-outlier-detection": {
+        "id": "ALGO-VEC-OBS-176",
+        "algo_name": "VectorObservabilityAlgoOutlierDetection",
+        "plain_name": "Vector Outlier Detection",
+        "what_it_does": "Identifies isolated anomaly vectors based on local neighbor density and centroid distance.",
+        "example": '{"vectors": [[1.0, 1.0], [1.1, 0.9], [10.0, 10.0]]}',
+        "category": "observability",
+    },
+    "vec-obs-query-ood-detection": {
+        "id": "ALGO-VEC-OBS-177",
+        "algo_name": "VectorObservabilityAlgoQueryOodDetection",
+        "plain_name": "Query Out-of-Distribution Detection",
+        "what_it_does": "Flags out-of-distribution queries exceeding reference corpus distance radii.",
+        "example": '{"query_vector": [5.0, 5.0], "centroid": [0.0, 0.0], "reference_radii": [1.0, 1.5, 2.0]}',
+        "category": "observability",
+    },
+    "vec-obs-latency-histograms": {
+        "id": "ALGO-VEC-OBS-178",
+        "algo_name": "VectorObservabilityAlgoLatencyHistograms",
+        "plain_name": "Latency Histograms & Percentiles",
+        "what_it_does": "Computes p50, p90, p95, p99 latencies and verifies SLO compliance.",
+        "example": '{"latencies_ms": [10.0, 15.0, 20.0, 45.0, 80.0], "slo_p95_ms": 50.0}',
+        "category": "observability",
+    },
+    "vec-obs-red-use-methods": {
+        "id": "ALGO-VEC-OBS-179",
+        "algo_name": "VectorObservabilityAlgoRedUseMethods",
+        "plain_name": "RED & USE Observability Framework",
+        "what_it_does": "Synthesizes Rate, Errors, Duration (RED) and Utilization, Saturation, Errors (USE) health metrics.",
+        "example": '{"requests_per_sec": 500.0, "error_rate": 0.002, "duration_p99_ms": 35.0, "utilization_pct": 65.0, "saturation_pct": 10.0, "system_errors": 0}',
+        "category": "observability",
+    },
+    "vec-obs-slo-error-budget-burn": {
+        "id": "ALGO-VEC-OBS-180",
+        "algo_name": "VectorObservabilityAlgoSloErrorBudgetBurn",
+        "plain_name": "SLO & Error Budget Burn Rate",
+        "what_it_does": "Tracks error budget consumption and triggers multi-window burn rate alerts.",
+        "example": '{"slo_target_percentage": 99.9, "error_budget_window_hours": 720.0, "measured_error_rate": 0.001}',
+        "category": "observability",
+    },
+    "vec-obs-distributed-tracing": {
+        "id": "ALGO-VEC-OBS-181",
+        "algo_name": "VectorObservabilityAlgoDistributedTracing",
+        "plain_name": "Distributed Tracing Span Processor",
+        "what_it_does": "Audits trace span hierarchies, bottleneck durations, and dependency graphs.",
+        "example": '{"trace_id": "tr-101", "spans": [{"span_id": "s1", "name": "vector_search", "start_time_ms": 0.0, "end_time_ms": 25.0}]}',
+        "category": "observability",
+    },
+    "vec-obs-freshness-lag": {
+        "id": "ALGO-VEC-OBS-182",
+        "algo_name": "VectorObservabilityAlgoFreshnessLag",
+        "plain_name": "Index Freshness & Replication Lag",
+        "what_it_does": "Calculates mean and max elapsed duration between upstream mutations and index availability.",
+        "example": '{"source_commit_timestamps_sec": [100.0, 110.0], "index_indexed_timestamps_sec": [102.0, 113.0]}',
+        "category": "observability",
+    },
+    "vec-obs-graph-index-health": {
+        "id": "ALGO-VEC-OBS-183",
+        "algo_name": "VectorObservabilityAlgoGraphIndexHealth",
+        "plain_name": "Graph Index Connectivity & Health",
+        "what_it_does": "Audits HNSW/Vamana graph connectivity, isolated nodes, and average node degrees.",
+        "example": '{"adjacency_list": {"0": ["1", "2"], "1": ["0"], "2": ["0"]}}',
+        "category": "observability",
+    },
+    "vec-obs-tombstone-ratio": {
+        "id": "ALGO-VEC-OBS-184",
+        "algo_name": "VectorObservabilityAlgoTombstoneRatio",
+        "plain_name": "Tombstone Accumulation Monitor",
+        "what_it_does": "Calculates deleted tombstone ratio and triggers index vacuuming recommendations.",
+        "example": '{"total_indexed_records": 10000, "active_tombstones": 2500, "compaction_threshold_ratio": 0.20}',
+        "category": "observability",
+    },
+    "vec-obs-cache-hit-ratio-memory": {
+        "id": "ALGO-VEC-OBS-185",
+        "algo_name": "VectorObservabilityAlgoCacheHitRatioMemory",
+        "plain_name": "Cache Hit Ratio & Memory Monitor",
+        "what_it_does": "Monitors vector search caching efficiency and memory footprint bounds.",
+        "example": '{"cache_hits": 850, "cache_misses": 150, "allocated_memory_bytes": 1073741824, "max_memory_capacity_bytes": 2147483648}',
+        "category": "observability",
+    },
+    "vec-obs-capacity-planning-littles-law": {
+        "id": "ALGO-VEC-OBS-186",
+        "algo_name": "VectorObservabilityAlgoCapacityPlanningLittlesLaw",
+        "plain_name": "Capacity Planning via Little's Law",
+        "what_it_does": "Calculates required concurrent worker capacity and thread provisioning from throughput and latency.",
+        "example": '{"target_throughput_qps": 500.0, "average_latency_seconds": 0.02, "peak_load_safety_multiplier": 1.5}',
+        "category": "observability",
+    },
+    "vec-obs-consumer-lag": {
+        "id": "ALGO-VEC-OBS-187",
+        "algo_name": "VectorObservabilityAlgoConsumerLag",
+        "plain_name": "Streaming Ingestion Consumer Lag",
+        "what_it_does": "Monitors Kafka/Pulsar ingestion topic partition offsets and consumer group lag.",
+        "example": '{"partition_offsets": {"p0": {"log_end_offset": 5000, "current_offset": 4800}}}',
+        "category": "observability",
+    },
+    "vec-obs-cardinality-safe-labels": {
+        "id": "ALGO-VEC-OBS-188",
+        "algo_name": "VectorObservabilityAlgoCardinalitySafeLabels",
+        "plain_name": "Cardinality-Safe Metric Labeling",
+        "what_it_does": "Redacts high-cardinality metadata keys from metric tags to prevent Prometheus explosion.",
+        "example": '{"labels": {"tenant_id": "tenant-1", "user_uuid": "123e4567-e89b-12d3-a456-426614174000"}, "allowed_cardinality_keys": ["tenant_id", "status"]}',
+        "category": "observability",
+    },
+    "vec-obs-metric-anomaly-detection": {
+        "id": "ALGO-VEC-OBS-189",
+        "algo_name": "VectorObservabilityAlgoMetricAnomalyDetection",
+        "plain_name": "Metric Anomaly Detection",
+        "what_it_does": "Detects statistical anomalies and sudden spikes in observability time series using Z-score.",
+        "example": '{"time_series_values": [10.0, 11.0, 10.5, 10.2, 50.0], "z_threshold": 2.5}',
+        "category": "observability",
+    },
+    "vec-obs-quantile-sketches": {
+        "id": "ALGO-VEC-OBS-190",
+        "algo_name": "VectorObservabilityAlgoQuantileSketches",
+        "plain_name": "Streaming Quantile Estimation",
+        "what_it_does": "Computes memory-efficient approximate percentiles over high-throughput streaming observations.",
+        "example": '{"raw_stream_values": [12.0, 15.0, 18.0, 22.0, 30.0], "requested_quantiles": [0.5, 0.9, 0.99]}',
+        "category": "observability",
+    },
+    "vec-obs-query-explain": {
+        "id": "ALGO-VEC-OBS-191",
+        "algo_name": "VectorObservabilityAlgoQueryExplain",
+        "plain_name": "Vector Query Execution Explain",
+        "what_it_does": "Produces structured explanation of execution stages, candidate counts, and index parameters.",
+        "example": '{"query_text": "cloud storage", "applied_filters": {"region": "us-west"}, "candidate_count": 120, "returned_count": 10}',
+        "category": "observability",
+    },
+    "vec-obs-retrieval-trace-logging": {
+        "id": "ALGO-VEC-OBS-192",
+        "algo_name": "VectorObservabilityAlgoRetrievalTraceLogging",
+        "plain_name": "Retrieval Trace Sampling & Logging",
+        "what_it_does": "Performs privacy-preserving, sampled logging of retrieval queries, docs, and scores.",
+        "example": '{"query_id": "q-99", "query_text": "confidential user query", "retrieved_doc_ids": ["doc-1"], "score_list": [0.88], "sample_rate": 1.0, "anonymize_text": true}',
+        "category": "observability",
+    },
+    "vec-obs-embedding-visualization": {
+        "id": "ALGO-VEC-OBS-193",
+        "algo_name": "VectorObservabilityAlgoEmbeddingVisualization",
+        "plain_name": "Embedding Space 2D/3D Projection",
+        "what_it_does": "Projects high-dimensional embeddings to 2D coordinates for UI visualization via PCA.",
+        "example": '{"vectors": [[1.0, 0.5, 0.2], [0.2, 0.8, 0.1]], "target_dimensions": 2}',
+        "category": "observability",
+    },
+    "vec-obs-failure-clustering": {
+        "id": "ALGO-VEC-OBS-194",
+        "algo_name": "VectorObservabilityAlgoFailureClustering",
+        "plain_name": "Retrieval Failure Clustering",
+        "what_it_does": "Clusters zero-result or low-relevance queries into semantic topic groups for diagnostics.",
+        "example": '{"failed_queries": [{"query_id": "q1", "text": "error 500", "embedding": [0.9, 0.1]}, {"query_id": "q2", "text": "http 500 crash", "embedding": [0.88, 0.12]}]}',
+        "category": "observability",
+    },
+    "vec-obs-canary-probes": {
+        "id": "ALGO-VEC-OBS-195",
+        "algo_name": "VectorObservabilityAlgoCanaryProbes",
+        "plain_name": "Synthetic Canary Probing",
+        "what_it_does": "Evaluates synthetic probe execution results to monitor end-to-end vector search availability.",
+        "example": '{"probe_results": [{"probe_id": "p1", "success": true, "latency_ms": 12.0}], "max_tolerable_error_rate": 0.0}',
+        "category": "observability",
+    },
+    "vec-obs-shadow-traffic-comparison": {
+        "id": "ALGO-VEC-OBS-196",
+        "algo_name": "VectorObservabilityAlgoShadowTrafficComparison",
+        "plain_name": "Shadow Traffic Differential Analysis",
+        "what_it_does": "Compares primary production results vs shadow pipeline candidate results in real time.",
+        "example": '{"primary_results": ["d1", "d2"], "shadow_results": ["d1", "d2"], "primary_latency_ms": 15.0, "shadow_latency_ms": 12.0}',
+        "category": "observability",
+    },
+    "vec-obs-data-lineage": {
+        "id": "ALGO-VEC-OBS-197",
+        "algo_name": "VectorObservabilityAlgoDataLineage",
+        "plain_name": "Vector & Chunk Lineage Audit",
+        "what_it_does": "Traces complete provenance chain from source document to chunk, embedding model, and index.",
+        "example": '{"record_id": "vec-100", "lineage_events": [{"event_type": "EMBED", "model_version": "text-embedding-3-small"}]}',
+        "category": "observability",
+    },
+    "vec-obs-reconciliation-checks": {
+        "id": "ALGO-VEC-OBS-198",
+        "algo_name": "VectorObservabilityAlgoReconciliationChecks",
+        "plain_name": "Source-to-Vector Reconciliation Audit",
+        "what_it_does": "Audits consistency between primary relational/document store records and vector index vectors.",
+        "example": '{"source_id_list": ["doc-1", "doc-2"], "vector_index_id_list": ["doc-1"]}',
+        "category": "observability",
+    },
+    "vec-obs-cost-accounting": {
+        "id": "ALGO-VEC-OBS-199",
+        "algo_name": "VectorObservabilityAlgoCostAccounting",
+        "plain_name": "Vector Storage & Query Cost Accounting",
+        "what_it_does": "Calculates infrastructure cost per tenant based on vector memory footprint and query load.",
+        "example": '{"indexed_vectors_count": 1000000, "dimension": 1536, "monthly_query_count": 5000000}',
+        "category": "observability",
+    },
+    "vec-obs-feedback-improvement-loop": {
+        "id": "ALGO-VEC-OBS-200",
+        "algo_name": "VectorObservabilityAlgoFeedbackImprovementLoop",
+        "plain_name": "Automated Quality Improvement Loop",
+        "what_it_does": "Synthesizes observability signals to trigger automated index tuning or re-embedding workflows.",
+        "example": '{"low_performing_queries": ["query-alpha"], "average_recall_score": 0.75, "tombstone_ratio": 0.25}',
+        "category": "observability",
+    },
 }
 import os
 import re
@@ -2270,20 +2630,38 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
 
 
 def handle_migrate_command(args: argparse.Namespace) -> int:
-    runner = DatabaseMigrationRunner()
-    if getattr(args, "action", "run") == "run":
-        db_target = getattr(args, "db", "sqlite")
-        if db_target == "sqlite":
-            res = runner.run_sqlite_migrations(getattr(args, "sqlite_path", "policy_registry.db"))
-        else:
-            res = runner.run_postgres_migrations(getattr(args, "postgres_url", "postgresql://postgres:postgres@localhost:5432/postgres"))
-        print(f"✅ Migration successful: Applied {res.get('applied_migrations')} migrations, Seeded {res.get('seeded_algorithms')} algorithms.")
+    db_target = getattr(args, "db", "sqlite")
+    if db_target == "sqlite":
+        db_url = f"sqlite:///{getattr(args, 'sqlite_path', 'policy_registry.db')}"
+    else:
+        db_url = getattr(args, "postgres_url", "postgresql://postgres:postgres@localhost:5432/postgres")
+
+    runner = DatabaseMigrationRunner(db_url)
+    action = getattr(args, "action", "run")
+
+    if action == "run":
+        runner.run_migrations()
+        count = runner.seed_algorithm_catalog()
+        print(f"✅ Migration successful on {db_target}: Applied schema migrations, Seeded {count} algorithm contracts & type adapters.")
         return 0
-    elif getattr(args, "action", "") == "status":
-        status = runner.get_migration_status(getattr(args, "sqlite_path", None) if getattr(args, "db", "sqlite") == "sqlite" else None)
+    elif action == "rollback":
+        res = runner.rollback_migrations()
+        print(f"🔄 Rollback successful on {db_target}: {res}")
+        return 0
+    elif action == "seed":
+        count = runner.seed_algorithm_catalog()
+        print(f"🌱 Seeded {count} algorithm contracts & type adapters into {db_target}.")
+        return 0
+    elif action == "parity":
+        parity = runner.verify_database_parity()
+        print(json.dumps(parity, indent=2))
+        return 0 if parity.get("parity_matched") else 1
+    elif action == "status":
+        status = runner.get_migration_status()
         print(json.dumps(status, indent=2))
         return 0
     return 0
+
 
 
 def handle_serve_command(args: argparse.Namespace) -> int:
@@ -2294,7 +2672,7 @@ def handle_serve_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="policy-orchestrator",
         description="Repository Invariant Auditor, Layer 1 Algorithm Suite & Policy Orchestrator",
@@ -2416,10 +2794,11 @@ def main() -> None:
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
     migrate_parser = subparsers.add_parser("migrate", help="Run database migrations and seed algorithm contracts")
-    migrate_parser.add_argument("action", choices=["run", "status"], default="run", nargs="?", help="Migration action")
+    migrate_parser.add_argument("action", choices=["run", "status", "rollback", "seed", "parity"], default="run", nargs="?", help="Migration action")
     migrate_parser.add_argument("--db", choices=["sqlite", "alloydb", "postgres"], default="sqlite", help="Target database")
     migrate_parser.add_argument("--sqlite-path", default="policy_registry.db", help="SQLite database path")
     migrate_parser.add_argument("--postgres-url", default="postgresql://postgres:postgres@localhost:5432/postgres", help="PostgreSQL connection string")
+
 
     rag_parser = subparsers.add_parser("rag", help="Retrieve or index grounded policy rules")
     rag_parser.add_argument("action", choices=["search", "index"], help="RAG action")
@@ -2458,6 +2837,11 @@ def main() -> None:
     serve_parser.add_argument("--rules-dir", default="../rules", help="Path to rules folder")
     serve_parser.add_argument("--backend", default="mock", choices=["mock", "openai", "ollama"], help="LLM backend")
 
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
 
     # Normalise flags vs positional shortcuts

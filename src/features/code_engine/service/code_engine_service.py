@@ -304,6 +304,53 @@ from src.features.code_engine.algos.vector_update import (
     VectorUpdateAlgoMetadataIndexMaintenance,
     VectorUpdateAlgoAtomicCommit,
 )
+from src.features.code_engine.algos.vector_observability import (
+    VectorObservabilityAlgoRecallAtK,
+    VectorObservabilityAlgoGroundTruthSampling,
+    VectorObservabilityAlgoPrecisionAtK,
+    VectorObservabilityAlgoMrr,
+    VectorObservabilityAlgoNdcg,
+    VectorObservabilityAlgoHitRate,
+    VectorObservabilityAlgoRelativeDistanceError,
+    VectorObservabilityAlgoLlmAsJudge,
+    VectorObservabilityAlgoGoldenQueryRegression,
+    VectorObservabilityAlgoOnlineImplicitFeedback,
+    VectorObservabilityAlgoInterleavingExperiments,
+    VectorObservabilityAlgoFaithfulnessGroundedness,
+    VectorObservabilityAlgoCentroidShift,
+    VectorObservabilityAlgoMmd,
+    VectorObservabilityAlgoPsiKsDrift,
+    VectorObservabilityAlgoSimilarityScoreDistribution,
+    VectorObservabilityAlgoVectorNormDistribution,
+    VectorObservabilityAlgoPartitionClusterBalance,
+    VectorObservabilityAlgoHubnessMeasurement,
+    VectorObservabilityAlgoIntrinsicDimension,
+    VectorObservabilityAlgoOutlierDetection,
+    VectorObservabilityAlgoQueryOodDetection,
+    VectorObservabilityAlgoLatencyHistograms,
+    VectorObservabilityAlgoRedUseMethods,
+    VectorObservabilityAlgoSloErrorBudgetBurn,
+    VectorObservabilityAlgoDistributedTracing,
+    VectorObservabilityAlgoFreshnessLag,
+    VectorObservabilityAlgoGraphIndexHealth,
+    VectorObservabilityAlgoTombstoneRatio,
+    VectorObservabilityAlgoCacheHitRatioMemory,
+    VectorObservabilityAlgoCapacityPlanningLittlesLaw,
+    VectorObservabilityAlgoConsumerLag,
+    VectorObservabilityAlgoCardinalitySafeLabels,
+    VectorObservabilityAlgoMetricAnomalyDetection,
+    VectorObservabilityAlgoQuantileSketches,
+    VectorObservabilityAlgoQueryExplain,
+    VectorObservabilityAlgoRetrievalTraceLogging,
+    VectorObservabilityAlgoEmbeddingVisualization,
+    VectorObservabilityAlgoFailureClustering,
+    VectorObservabilityAlgoCanaryProbes,
+    VectorObservabilityAlgoShadowTrafficComparison,
+    VectorObservabilityAlgoDataLineage,
+    VectorObservabilityAlgoReconciliationChecks,
+    VectorObservabilityAlgoCostAccounting,
+    VectorObservabilityAlgoFeedbackImprovementLoop,
+)
 
 
 
@@ -1608,6 +1655,141 @@ class CodeEngineService:
 
         elif algo_id == "ALGO-VEC-UPD-155":
             return VectorUpdateAlgoAtomicCommit.commit_record(merged.get("vector", []), merged.get("metadata", {}), required_security_fields=merged.get("required_security_fields"))
+
+        elif algo_id == "ALGO-VEC-OBS-156":
+            return VectorObservabilityAlgoRecallAtK.evaluate(merged.get("retrieved_ids", []), merged.get("ground_truth_ids", []), k=merged.get("k", 10), segments=merged.get("segments"))
+
+        elif algo_id == "ALGO-VEC-OBS-157":
+            return VectorObservabilityAlgoGroundTruthSampling.evaluate(merged.get("sampled_queries", []), merged.get("snapshot_vectors", []), k=merged.get("k", 5), metric=merged.get("metric", "cosine"))
+
+        elif algo_id == "ALGO-VEC-OBS-158":
+            return VectorObservabilityAlgoPrecisionAtK.evaluate(merged.get("retrieved_ids", []), merged.get("relevant_ids", []), k=merged.get("k", 5))
+
+        elif algo_id == "ALGO-VEC-OBS-159":
+            return VectorObservabilityAlgoMrr.evaluate(merged.get("retrieved_ids", []), merged.get("relevant_ids", []), k=merged.get("k", 10))
+
+        elif algo_id == "ALGO-VEC-OBS-160":
+            return VectorObservabilityAlgoNdcg.evaluate(merged.get("retrieved_ids", []), merged.get("ground_truth_relevance", []), k=merged.get("k", 10))
+
+        elif algo_id == "ALGO-VEC-OBS-161":
+            return VectorObservabilityAlgoHitRate.evaluate(merged.get("retrieved_ids", []), merged.get("relevant_ids", []), k=merged.get("k", 5))
+
+        elif algo_id == "ALGO-VEC-OBS-162":
+            return VectorObservabilityAlgoRelativeDistanceError.evaluate(merged.get("approximate_distances", []), merged.get("exact_distances", []), eps=merged.get("eps", 1e-6))
+
+        elif algo_id == "ALGO-VEC-OBS-163":
+            return VectorObservabilityAlgoLlmAsJudge.evaluate(merged.get("judgments", []), human_labels=merged.get("human_labels"), min_passing_score=merged.get("min_passing_score", 2.0))
+
+        elif algo_id == "ALGO-VEC-OBS-164":
+            return VectorObservabilityAlgoGoldenQueryRegression.evaluate(merged.get("baseline_results", []), merged.get("candidate_results", []), merged.get("golden_expected_ids", []), max_allowed_drop=merged.get("max_allowed_drop", 0.02))
+
+        elif algo_id == "ALGO-VEC-OBS-165":
+            return VectorObservabilityAlgoOnlineImplicitFeedback.evaluate(merged.get("events", []), min_dwell_threshold_seconds=merged.get("min_dwell_threshold_seconds", 5.0))
+
+        elif algo_id == "ALGO-VEC-OBS-166":
+            return VectorObservabilityAlgoInterleavingExperiments.interleave_and_score(merged.get("ranker_a_results", []), merged.get("ranker_b_results", []), k=merged.get("k", 10), seed=merged.get("seed"), clicked_ids=merged.get("clicked_ids"))
+
+        elif algo_id == "ALGO-VEC-OBS-167":
+            return VectorObservabilityAlgoFaithfulnessGroundedness.evaluate(merged.get("answer_text", ""), merged.get("retrieved_passages", []), claims=merged.get("claims"))
+
+        elif algo_id == "ALGO-VEC-OBS-168":
+            return VectorObservabilityAlgoCentroidShift.evaluate(merged.get("reference_vectors", []), merged.get("current_vectors", []), drift_threshold=merged.get("drift_threshold", 0.1))
+
+        elif algo_id == "ALGO-VEC-OBS-169":
+            return VectorObservabilityAlgoMmd.evaluate(merged.get("reference_sample", []), merged.get("current_sample", []), gamma=merged.get("gamma"), drift_p_value_threshold=merged.get("drift_p_value_threshold", 0.05))
+
+        elif algo_id == "ALGO-VEC-OBS-170":
+            return VectorObservabilityAlgoPsiKsDrift.evaluate(merged.get("reference_projections", []), merged.get("current_projections", []), num_bins=merged.get("num_bins", 10))
+
+        elif algo_id == "ALGO-VEC-OBS-171":
+            return VectorObservabilityAlgoSimilarityScoreDistribution.evaluate(merged.get("top1_scores", []), baseline_mean_score=merged.get("baseline_mean_score"), min_spread_threshold=merged.get("min_spread_threshold", 0.05))
+
+        elif algo_id == "ALGO-VEC-OBS-172":
+            return VectorObservabilityAlgoVectorNormDistribution.evaluate(merged.get("vectors", []), expected_norm=merged.get("expected_norm", 1.0), tolerance=merged.get("tolerance", 0.05))
+
+        elif algo_id == "ALGO-VEC-OBS-173":
+            return VectorObservabilityAlgoPartitionClusterBalance.evaluate(merged.get("partition_sizes", []), max_allowed_imbalance_ratio=merged.get("max_allowed_imbalance_ratio", 3.0))
+
+        elif algo_id == "ALGO-VEC-OBS-174":
+            return VectorObservabilityAlgoHubnessMeasurement.evaluate(merged.get("top_k_results", []), all_document_ids=merged.get("all_document_ids"), hub_multiplier_threshold=merged.get("hub_multiplier_threshold", 3.0))
+
+        elif algo_id == "ALGO-VEC-OBS-175":
+            return VectorObservabilityAlgoIntrinsicDimension.evaluate(merged.get("vectors", []), sample_size=merged.get("sample_size", 100))
+
+        elif algo_id == "ALGO-VEC-OBS-176":
+            return VectorObservabilityAlgoOutlierDetection.evaluate(merged.get("vectors", []), k_neighbors=merged.get("k_neighbors", 5), outlier_z_threshold=merged.get("outlier_z_threshold", 2.5))
+
+        elif algo_id == "ALGO-VEC-OBS-177":
+            return VectorObservabilityAlgoQueryOodDetection.evaluate(merged.get("query_vector", []), merged.get("corpus_centroids", []), max_distance_threshold=merged.get("max_distance_threshold", 1.2), top1_similarity=merged.get("top1_similarity"), min_top1_similarity_threshold=merged.get("min_top1_similarity_threshold", 0.4))
+
+        elif algo_id == "ALGO-VEC-OBS-178":
+            return VectorObservabilityAlgoLatencyHistograms.evaluate(merged.get("latencies_ms", []), stage_latencies_ms=merged.get("stage_latencies_ms"), bucket_thresholds_ms=merged.get("bucket_thresholds_ms"))
+
+        elif algo_id == "ALGO-VEC-OBS-179":
+            return VectorObservabilityAlgoRedUseMethods.evaluate(merged.get("service_red", {}), merged.get("resource_use", {}))
+
+        elif algo_id == "ALGO-VEC-OBS-180":
+            return VectorObservabilityAlgoSloErrorBudgetBurn.evaluate(target_slo=merged.get("target_slo", 0.999), total_events=merged.get("total_events", 100000), bad_events=merged.get("bad_events", 50), window_hours=merged.get("window_hours", 24.0))
+
+        elif algo_id == "ALGO-VEC-OBS-181":
+            return VectorObservabilityAlgoDistributedTracing.process_trace(traceparent=merged.get("traceparent"), spans=merged.get("spans"), tail_sampling_latency_ms=merged.get("tail_sampling_latency_ms", 100.0))
+
+        elif algo_id == "ALGO-VEC-OBS-182":
+            return VectorObservabilityAlgoFreshnessLag.evaluate(merged.get("mutation_events", []), max_allowed_lag_seconds=merged.get("max_allowed_lag_seconds", 60.0))
+
+        elif algo_id == "ALGO-VEC-OBS-183":
+            return VectorObservabilityAlgoGraphIndexHealth.evaluate(merged.get("adjacency_list", {}), merged.get("entry_points", []), deleted_node_ids=merged.get("deleted_node_ids"))
+
+        elif algo_id == "ALGO-VEC-OBS-184":
+            return VectorObservabilityAlgoTombstoneRatio.evaluate(merged.get("segments", []), compaction_threshold_ratio=merged.get("compaction_threshold_ratio", 0.2))
+
+        elif algo_id == "ALGO-VEC-OBS-185":
+            return VectorObservabilityAlgoCacheHitRatioMemory.evaluate(merged.get("cache_metrics", {}), merged.get("memory_stats", {}), min_acceptable_hit_ratio=merged.get("min_acceptable_hit_ratio", 0.8))
+
+        elif algo_id == "ALGO-VEC-OBS-186":
+            return VectorObservabilityAlgoCapacityPlanningLittlesLaw.evaluate(arrival_rate_qps=merged.get("arrival_rate_qps", 200.0), mean_latency_seconds=merged.get("mean_latency_seconds", 0.05), p99_latency_seconds=merged.get("p99_latency_seconds", 0.15), headroom_ratio=merged.get("headroom_ratio", 0.4), max_threads_per_replica=merged.get("max_threads_per_replica", 32))
+
+        elif algo_id == "ALGO-VEC-OBS-187":
+            return VectorObservabilityAlgoConsumerLag.evaluate(merged.get("partitions", []), consumption_rate_per_sec=merged.get("consumption_rate_per_sec", 500.0), max_acceptable_lag_records=merged.get("max_acceptable_lag_records", 5000))
+
+        elif algo_id == "ALGO-VEC-OBS-188":
+            return VectorObservabilityAlgoCardinalitySafeLabels.sanitize(merged.get("labels", {}), allowed_label_keys=merged.get("allowed_label_keys"), max_label_value_length=merged.get("max_label_value_length", 64))
+
+        elif algo_id == "ALGO-VEC-OBS-189":
+            return VectorObservabilityAlgoMetricAnomalyDetection.evaluate(merged.get("metric_series", []), alpha=merged.get("alpha", 0.2), sigma_threshold=merged.get("sigma_threshold", 3.0))
+
+        elif algo_id == "ALGO-VEC-OBS-190":
+            return VectorObservabilityAlgoQuantileSketches.evaluate(merged.get("shard_data_streams", []), relative_error_alpha=merged.get("relative_error_alpha", 0.01), quantiles_to_query=merged.get("quantiles_to_query"))
+
+        elif algo_id == "ALGO-VEC-OBS-191":
+            return VectorObservabilityAlgoQueryExplain.explain(merged.get("query_id", ""), merged.get("stages", []), target_document_id=merged.get("target_document_id"))
+
+        elif algo_id == "ALGO-VEC-OBS-192":
+            return VectorObservabilityAlgoRetrievalTraceLogging.process_and_sample(merged.get("trace_payload", {}), sample_rate=merged.get("sample_rate", 0.05), max_duration_threshold_ms=merged.get("max_duration_threshold_ms", 200.0))
+
+        elif algo_id == "ALGO-VEC-OBS-193":
+            return VectorObservabilityAlgoEmbeddingVisualization.project(merged.get("vectors", []), metadata=merged.get("metadata"), target_dimensions=merged.get("target_dimensions", 2))
+
+        elif algo_id == "ALGO-VEC-OBS-194":
+            return VectorObservabilityAlgoFailureClustering.cluster_failures(merged.get("failed_queries", []), cluster_distance_threshold=merged.get("cluster_distance_threshold", 0.5))
+
+        elif algo_id == "ALGO-VEC-OBS-195":
+            return VectorObservabilityAlgoCanaryProbes.evaluate(merged.get("canary_query_results", []), merged.get("isolation_probe_results", []), write_freshness_seconds=merged.get("write_freshness_seconds"), max_allowed_freshness_seconds=merged.get("max_allowed_freshness_seconds", 30.0))
+
+        elif algo_id == "ALGO-VEC-OBS-196":
+            return VectorObservabilityAlgoShadowTrafficComparison.compare(merged.get("comparisons", []), min_jaccard_threshold=merged.get("min_jaccard_threshold", 0.7))
+
+        elif algo_id == "ALGO-VEC-OBS-197":
+            return VectorObservabilityAlgoDataLineage.audit_lineage(merged.get("vector_records", []), required_lineage_fields=merged.get("required_lineage_fields"))
+
+        elif algo_id == "ALGO-VEC-OBS-198":
+            return VectorObservabilityAlgoReconciliationChecks.audit(merged.get("source_database_ids", []), merged.get("vector_index_ids", []), stale_content_hashes=merged.get("stale_content_hashes"))
+
+        elif algo_id == "ALGO-VEC-OBS-199":
+            return VectorObservabilityAlgoCostAccounting.calculate_cost(queries_count=merged.get("queries_count", 10000), total_tokens_embedded=merged.get("total_tokens_embedded", 500000), total_reranked_passages=merged.get("total_reranked_passages", 50000), indexed_vector_count=merged.get("indexed_vector_count", 1000000), vector_dimension=merged.get("vector_dimension", 768), precision_bytes=merged.get("precision_bytes", 4), unit_prices=merged.get("unit_prices"))
+
+        elif algo_id == "ALGO-VEC-OBS-200":
+            return VectorObservabilityAlgoFeedbackImprovementLoop.synthesize_actions(merged.get("failure_clusters", []), merged.get("ood_queries", []), current_recall=merged.get("current_recall", 0.85), target_recall=merged.get("target_recall", 0.90))
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

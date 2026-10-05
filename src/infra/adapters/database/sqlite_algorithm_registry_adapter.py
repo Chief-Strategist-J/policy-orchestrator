@@ -5,17 +5,17 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: SQLITE ALGORITHM REGISTRY ADAPTER
 
 1. OVERVIEW & OBJECTIVE:
    SQLite3 persistent and in-memory implementation of AlgorithmRegistryPort
-   with JSON parsing and schema validation.
+   with complete CRUD, upsert semantics, JSON schema validation, and tag filtering.
 
 2. ARCHITECTURAL LOCATION:
-   src/infra/database/adapters/sqlite_algorithm_registry_adapter.py
+   src/infra/adapters/database/sqlite_algorithm_registry_adapter.py
    Adheres to api.structure.working.rule.md Section 3.8.
 ================================================================================
 """
 
 import json
 import sqlite3
-from typing import List, Optional, Any
+from typing import List, Optional, Dict, Any
 from src.domain.models.algorithm_contract import (
     AlgorithmContract,
     TypeAdapterContract,
@@ -31,7 +31,6 @@ from src.domain.models.algorithm_contract import (
 )
 from src.domain.ports.algorithm_registry_port import AlgorithmRegistryPort
 from src.infra.adapters.database.migration_runner import DatabaseMigrationRunner
-
 
 
 class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
@@ -55,7 +54,10 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
         conn.row_factory = sqlite3.Row
         return conn
 
-    def register_algorithm(self, contract: AlgorithmContract) -> None:
+    def register_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
+        return self.upsert_algorithm(contract)
+
+    def upsert_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
@@ -116,6 +118,7 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                 ),
             )
             conn.commit()
+            return self.get_algorithm(contract.id)  # type: ignore
         finally:
             if conn is not self._memory_conn:
                 conn.close()
@@ -156,6 +159,8 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                 query += " AND side_effects = ?"
                 params.append(side_effects.value)
 
+            query += " ORDER BY id ASC"
+
             cursor = conn.cursor()
             cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
@@ -169,7 +174,78 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
             if conn is not self._memory_conn:
                 conn.close()
 
-    def register_adapter(self, adapter: TypeAdapterContract) -> None:
+    def update_algorithm(self, algo_id: str, updates: Dict[str, Any]) -> Optional[AlgorithmContract]:
+        conn = self._get_connection()
+        try:
+            existing = self.get_algorithm(algo_id)
+            if not existing:
+                return None
+
+            field_mapping = {
+                "name": ("name", lambda v: v),
+                "version": ("version", lambda v: v),
+                "category": ("category", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "capability_tags": ("capability_tags", lambda v: json.dumps(list(v))),
+                "input_schema": ("input_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else str(v)),
+                "output_schema": ("output_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else str(v)),
+                "parameters_schema": ("parameters_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else str(v)),
+                "purity": ("purity", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "determinism": ("determinism", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "idempotency": ("idempotency", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "reversibility": ("reversibility", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "side_effects": ("side_effects", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "concurrency_model": ("concurrency_model", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "hardware_target": ("hardware_target", lambda v: v.value if hasattr(v, "value") else str(v)),
+                "time_complexity": ("time_complexity", lambda v: str(v)),
+                "space_complexity": ("space_complexity", lambda v: str(v)),
+                "preconditions": ("preconditions", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else str(v)),
+                "postconditions": ("postconditions", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else str(v)),
+                "compatible_adapters": ("compatible_adapters", lambda v: json.dumps(list(v))),
+                "is_active": ("is_active", lambda v: 1 if v else 0),
+            }
+
+            set_clauses = []
+            set_params = []
+            for k, val in updates.items():
+                if k in field_mapping:
+                    col_name, transform = field_mapping[k]
+                    set_clauses.append(f"{col_name} = ?")
+                    set_params.append(transform(val))
+
+            if not set_clauses:
+                return existing
+
+            set_clauses.append("updated_at = datetime('now')")
+            sql = f"UPDATE algorithm_registry SET {', '.join(set_clauses)} WHERE id = ?"
+            set_params.append(algo_id)
+
+            cursor = conn.cursor()
+            cursor.execute(sql, tuple(set_params))
+            conn.commit()
+
+            return self.get_algorithm(algo_id)
+        finally:
+            if conn is not self._memory_conn:
+                conn.close()
+
+    def delete_algorithm(self, algo_id: str, hard_delete: bool = False) -> bool:
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            if hard_delete:
+                cursor.execute("DELETE FROM algorithm_registry WHERE id = ?", (algo_id,))
+            else:
+                cursor.execute("UPDATE algorithm_registry SET is_active = 0, updated_at = datetime('now') WHERE id = ?", (algo_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            if conn is not self._memory_conn:
+                conn.close()
+
+    def register_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
+        return self.upsert_adapter(adapter)
+
+    def upsert_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
@@ -197,6 +273,7 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                 ),
             )
             conn.commit()
+            return adapter
         finally:
             if conn is not self._memory_conn:
                 conn.close()
@@ -230,7 +307,7 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, name, source_type, target_type, algo_id, is_lossy, description FROM type_adapters")
+            cursor.execute("SELECT id, name, source_type, target_type, algo_id, is_lossy, description FROM type_adapters ORDER BY id ASC")
             rows = cursor.fetchall()
             return [
                 TypeAdapterContract(
@@ -244,6 +321,17 @@ class SQLiteAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                 )
                 for r in rows
             ]
+        finally:
+            if conn is not self._memory_conn:
+                conn.close()
+
+    def delete_adapter(self, adapter_id: str) -> bool:
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM type_adapters WHERE id = ?", (adapter_id,))
+            conn.commit()
+            return cursor.rowcount > 0
         finally:
             if conn is not self._memory_conn:
                 conn.close()

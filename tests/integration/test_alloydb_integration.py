@@ -21,6 +21,7 @@ from src.infra.adapters.database import (
 
 from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
 from src.domain.models.algorithm_contract import AlgorithmCategory
+from src.features.code_engine.registry.algorithm_catalog import BUILTIN_ALGORITHM_CONTRACTS
 
 ALLOYDB_TEST_URL = os.environ.get(
     "ALLOYDB_TEST_URL",
@@ -45,12 +46,12 @@ class TestAlloyDBIntegration:
         runner = DatabaseMigrationRunner(ALLOYDB_TEST_URL)
         runner.run_migrations()
         count = runner.seed_algorithm_catalog()
-        assert count == 33
+        assert count == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     def test_live_alloydb_adapter_queries_and_gin_index(self):
         adapter = AlloyDBAlgorithmRegistryAdapter(ALLOYDB_TEST_URL)
         all_algos = adapter.list_algorithms()
-        assert len(all_algos) == 33
+        assert len(all_algos) == len(BUILTIN_ALGORITHM_CONTRACTS)
 
         # Test GIN index query for capability tag
         multipattern_algos = adapter.list_algorithms(tags=["search.multipattern"])
@@ -63,13 +64,17 @@ class TestAlloyDBIntegration:
         assert len(search_algos) == 15
 
         obs_algos = adapter.list_algorithms(category=AlgorithmCategory.OBSERVABILITY)
-        assert len(obs_algos) == 6
+        assert len(obs_algos) == 51
 
         upd_algos = adapter.list_algorithms(category=AlgorithmCategory.UPDATE)
-        assert len(upd_algos) == 3
+        assert len(upd_algos) == 48
 
         vec_algos = adapter.list_algorithms(category=AlgorithmCategory.VECTOR)
-        assert len(vec_algos) == 9
+        assert len(vec_algos) == 119
+
+        graph_algos = adapter.list_algorithms(category=AlgorithmCategory.GRAPH)
+        assert len(graph_algos) == 9
+
 
     def test_live_alloydb_type_adapters_and_composition(self):
         adapter = PostgresAlgorithmRegistryAdapter(ALLOYDB_TEST_URL)

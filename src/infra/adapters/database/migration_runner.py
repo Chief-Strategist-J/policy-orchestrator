@@ -4,22 +4,36 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: DATABASE MIGRATION & SEED RUNNER
 ================================================================================
 
 1. OVERVIEW & OBJECTIVE:
-   Automated database schema migration and algorithm catalog seeder.
-   Supports both Google AlloyDB Omni / PostgreSQL and SQLite.
+   Automated database schema migration, rollback, status tracking, and
+   algorithm catalog seeder supporting Google AlloyDB Omni, PostgreSQL, and SQLite.
+   Implements idempotent upsert semantics (ON CONFLICT DO UPDATE) and
+   100% contract parity verification.
 
 2. ARCHITECTURAL LOCATION:
-   src/infra/database/migrations/migration_runner.py
-   Adheres to api.structure.working.rule.md Section 3.8 and database/migration.md.
+   src/infra/adapters/database/migration_runner.py
+   Adheres to api.structure.working.rule.md Section 3.8.
 ================================================================================
 """
 
 import os
 import json
 import sqlite3
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List
 from pathlib import Path
 
-from src.domain.models.algorithm_contract import AlgorithmContract, TypeAdapterContract
+from src.domain.models.algorithm_contract import (
+    AlgorithmContract,
+    TypeAdapterContract,
+    AlgorithmCategory,
+    Purity,
+    Determinism,
+    Idempotency,
+    Reversibility,
+    SideEffectScope,
+    ConcurrencyModel,
+    HardwareTarget,
+    ComplexityCost,
+)
 from src.features.code_engine.registry.algorithm_catalog import (
     BUILTIN_ALGORITHM_CONTRACTS,
     BUILTIN_TYPE_ADAPTERS,
@@ -29,20 +43,24 @@ from src.features.code_engine.registry.algorithm_catalog import (
 class DatabaseMigrationRunner:
     def __init__(self, db_url: Optional[str] = None) -> None:
         self.db_url = db_url or os.environ.get("DATABASE_URL", "sqlite:///:memory:")
-        
-        # Single Source of Truth for migrations: database/migrations/ at sub-package root
         self.migrations_dir = Path(__file__).resolve().parents[4] / "database" / "migrations"
 
     def is_postgres(self) -> bool:
         return self.db_url.startswith("postgres://") or self.db_url.startswith("postgresql://")
 
-    def run_migrations(self, conn: Optional[Any] = None) -> None:
+    def run_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
         if self.is_postgres():
-            self._run_postgres_migrations(conn)
+            return self._run_postgres_migrations(conn)
         else:
-            self._run_sqlite_migrations(conn)
+            return self._run_sqlite_migrations(conn)
 
-    def _run_sqlite_migrations(self, conn: Optional[sqlite3.Connection] = None) -> None:
+    def rollback_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
+        if self.is_postgres():
+            return self._rollback_postgres_migrations(conn)
+        else:
+            return self._rollback_sqlite_migrations(conn)
+
+    def _run_sqlite_migrations(self, conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
         close_conn = False
         if conn is None:
             db_path = self.db_url.replace("sqlite:///", "")
@@ -55,12 +73,40 @@ class DatabaseMigrationRunner:
 
         sql = migration_file.read_text(encoding="utf-8")
         conn.executescript(sql)
+
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (?, ?)",
+            ("0001", "create_algorithm_registry_sqlite"),
+        )
         conn.commit()
 
         if close_conn:
             conn.close()
 
-    def _run_postgres_migrations(self, conn: Optional[Any] = None) -> None:
+        return {"status": "success", "applied_version": "0001", "db": "sqlite"}
+
+    def _rollback_sqlite_migrations(self, conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
+        close_conn = False
+        if conn is None:
+            db_path = self.db_url.replace("sqlite:///", "")
+            conn = sqlite3.connect(db_path)
+            close_conn = True
+
+        rollback_file = self.migrations_dir / "0001_create_algorithm_registry_sqlite.rollback.sql"
+        if not rollback_file.exists():
+            raise FileNotFoundError(f"SQLite rollback file missing at: {rollback_file}")
+
+        sql = rollback_file.read_text(encoding="utf-8")
+        conn.executescript(sql)
+        conn.commit()
+
+        if close_conn:
+            conn.close()
+
+        return {"status": "success", "rolled_back_version": "0001", "db": "sqlite"}
+
+    def _run_postgres_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
         import psycopg2
 
         close_conn = False
@@ -76,9 +122,43 @@ class DatabaseMigrationRunner:
 
         with conn.cursor() as cur:
             cur.execute(sql)
+            cur.execute(
+                """
+                INSERT INTO schema_migrations (version, name)
+                VALUES (%s, %s)
+                ON CONFLICT (version) DO NOTHING
+                """,
+                ("0001", "create_algorithm_registry_table"),
+            )
         conn.commit()
+
         if close_conn:
             conn.close()
+
+        return {"status": "success", "applied_version": "0001", "db": "postgres"}
+
+    def _rollback_postgres_migrations(self, conn: Optional[Any] = None) -> Dict[str, Any]:
+        import psycopg2
+
+        close_conn = False
+        if conn is None:
+            conn = psycopg2.connect(self.db_url)
+            close_conn = True
+
+        rollback_file = self.migrations_dir / "0001_create_algorithm_registry_table.rollback.sql"
+        if not rollback_file.exists():
+            raise FileNotFoundError(f"PostgreSQL rollback file missing at: {rollback_file}")
+
+        sql = rollback_file.read_text(encoding="utf-8")
+
+        with conn.cursor() as cur:
+            cur.execute(sql)
+        conn.commit()
+
+        if close_conn:
+            conn.close()
+
+        return {"status": "success", "rolled_back_version": "0001", "db": "postgres"}
 
     def seed_algorithm_catalog(self, conn: Optional[Any] = None) -> int:
         if self.is_postgres():
@@ -286,37 +366,62 @@ class DatabaseMigrationRunner:
 
         return inserted_count
 
+    def get_migration_status(self, conn: Optional[Any] = None) -> Dict[str, Any]:
+        if self.is_postgres():
+            import psycopg2
+            close_conn = False
+            if conn is None:
+                conn = psycopg2.connect(self.db_url)
+                close_conn = True
+            with conn.cursor() as cur:
+                cur.execute("SELECT version, name, applied_at FROM schema_migrations ORDER BY version ASC")
+                rows = cur.fetchall()
+            if close_conn:
+                conn.close()
+            return {"applied": [{"version": r[0], "name": r[1], "applied_at": str(r[2])} for r in rows]}
+        else:
+            close_conn = False
+            if conn is None:
+                db_path = self.db_url.replace("sqlite:///", "")
+                conn = sqlite3.connect(db_path)
+                close_conn = True
+            cursor = conn.cursor()
+            cursor.execute("SELECT version, name, applied_at FROM schema_migrations ORDER BY version ASC")
+            rows = cursor.fetchall()
+            if close_conn:
+                conn.close()
+            return {"applied": [{"version": r[0], "name": r[1], "applied_at": str(r[2])} for r in rows]}
+
+    def verify_database_parity(self, conn: Optional[Any] = None) -> Dict[str, Any]:
+        if self.is_postgres():
+            from src.infra.adapters.database.alloydb_algorithm_registry_adapter import AlloyDBAlgorithmRegistryAdapter
+            adapter = AlloyDBAlgorithmRegistryAdapter(self.db_url)
+        else:
+            from src.infra.adapters.database.sqlite_algorithm_registry_adapter import SQLiteAlgorithmRegistryAdapter
+            db_path = self.db_url.replace("sqlite:///", "")
+            adapter = SQLiteAlgorithmRegistryAdapter(db_path, auto_migrate=False)
+
+        db_algos = {a.id: a for a in adapter.list_algorithms(is_active=True)}
+        code_algos = {a.id: a for a in BUILTIN_ALGORITHM_CONTRACTS if a.is_active}
+
+        missing_in_db = set(code_algos.keys()) - set(db_algos.keys())
+        extra_in_db = set(db_algos.keys()) - set(code_algos.keys())
+        mismatches = []
+
+        for aid, code_algo in code_algos.items():
+            if aid in db_algos:
+                db_algo = db_algos[aid]
+                if code_algo.name != db_algo.name or code_algo.category != db_algo.category or code_algo.complexity.time != db_algo.complexity.time:
+                    mismatches.append({"id": aid, "reason": "attribute_difference"})
+
+        return {
+            "total_code_algorithms": len(code_algos),
+            "total_db_algorithms": len(db_algos),
+            "parity_matched": len(missing_in_db) == 0 and len(extra_in_db) == 0 and len(mismatches) == 0,
+            "missing_in_db": list(missing_in_db),
+            "extra_in_db": list(extra_in_db),
+            "mismatches": mismatches,
+        }
+
     def seed_catalog(self, conn: Optional[Any] = None) -> int:
         return self.seed_algorithm_catalog(conn)
-
-
-if __name__ == "__main__":
-    import argparse
-    import sys
-
-    parser = argparse.ArgumentParser(description="Database Migration & Catalog Seeder CLI")
-    parser.add_argument(
-        "action",
-        choices=["migrate", "seed", "run-all"],
-        help="Action to execute: migrate schema, seed catalog, or run-all",
-    )
-    parser.add_argument(
-        "--db-url",
-        default=os.environ.get("DATABASE_URL", "sqlite:///:memory:"),
-        help="Target database URL (e.g. postgresql://... or sqlite:///...)",
-    )
-
-    args = parser.parse_args()
-    runner = DatabaseMigrationRunner(db_url=args.db_url)
-
-    if args.action in ["migrate", "run-all"]:
-        print(f"Applying schema migrations from {runner.migrations_dir}...")
-        runner.run_migrations()
-        print("Schema migrations applied successfully.")
-
-    if args.action in ["seed", "run-all"]:
-        print("Seeding builtin algorithm contracts and type adapters...")
-        count = runner.seed_algorithm_catalog()
-        print(f"Successfully seeded {count} algorithm contracts & type adapters.")
-
-    print("Operation completed successfully.")

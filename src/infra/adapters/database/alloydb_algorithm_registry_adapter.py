@@ -9,7 +9,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: ALLOYDB / POSTGRESQL ALGORITHM REGISTRY ADAP
    Layer 1 Algorithm Registry operations.
 
 2. ARCHITECTURAL LOCATION:
-   src/infra/database/adapters/alloydb_algorithm_registry_adapter.py
+   src/infra/adapters/database/alloydb_algorithm_registry_adapter.py
    Adheres to api.structure.working.rule.md Section 3.8.
 ================================================================================
 """
@@ -43,7 +43,10 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
             self._conn = psycopg2.connect(self.db_url)
         return self._conn
 
-    def register_algorithm(self, contract: AlgorithmContract) -> None:
+    def register_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
+        return self.upsert_algorithm(contract)
+
+    def upsert_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:
         conn = self._get_connection()
         try:
             with conn.cursor() as cur:
@@ -78,6 +81,7 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                         compatible_adapters=EXCLUDED.compatible_adapters,
                         is_active=EXCLUDED.is_active,
                         updated_at=NOW()
+                    RETURNING *
                     """,
                     (
                         contract.id,
@@ -103,7 +107,9 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                         contract.is_active,
                     ),
                 )
+                row = cur.fetchone()
             conn.commit()
+            return self._row_to_contract(row, cur.description)
         except Exception:
             conn.rollback()
             raise
@@ -142,12 +148,88 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
             query += " AND capability_tags @> %s"
             params.append(tags)
 
+        query += " ORDER BY id ASC"
+
         with conn.cursor() as cur:
             cur.execute(query, tuple(params))
             rows = cur.fetchall()
             return [self._row_to_contract(r, cur.description) for r in rows]
 
-    def register_adapter(self, adapter: TypeAdapterContract) -> None:
+    def update_algorithm(self, algo_id: str, updates: Dict[str, Any]) -> Optional[AlgorithmContract]:
+        conn = self._get_connection()
+        existing = self.get_algorithm(algo_id)
+        if not existing:
+            return None
+
+        field_mapping = {
+            "name": ("name", lambda v: v),
+            "version": ("version", lambda v: v),
+            "category": ("category", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "capability_tags": ("capability_tags", lambda v: list(v)),
+            "input_schema": ("input_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else v),
+            "output_schema": ("output_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else v),
+            "parameters_schema": ("parameters_schema", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else v),
+            "purity": ("purity", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "determinism": ("determinism", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "idempotency": ("idempotency", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "reversibility": ("reversibility", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "side_effects": ("side_effects", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "concurrency_model": ("concurrency_model", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "hardware_target": ("hardware_target", lambda v: v.value if hasattr(v, "value") else str(v)),
+            "time_complexity": ("time_complexity", lambda v: str(v)),
+            "space_complexity": ("space_complexity", lambda v: str(v)),
+            "preconditions": ("preconditions", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else v),
+            "postconditions": ("postconditions", lambda v: json.dumps(v) if isinstance(v, (dict, list)) else v),
+            "compatible_adapters": ("compatible_adapters", lambda v: list(v)),
+            "is_active": ("is_active", lambda v: bool(v)),
+        }
+
+        set_clauses = []
+        set_params = []
+        for k, val in updates.items():
+            if k in field_mapping:
+                col_name, transform = field_mapping[k]
+                set_clauses.append(f"{col_name} = %s")
+                set_params.append(transform(val))
+
+        if not set_clauses:
+            return existing
+
+        set_clauses.append("updated_at = NOW()")
+        sql = f"UPDATE algorithm_registry SET {', '.join(set_clauses)} WHERE id = %s RETURNING *"
+        set_params.append(algo_id)
+
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(set_params))
+                row = cur.fetchone()
+            conn.commit()
+            if not row:
+                return None
+            return self._row_to_contract(row, cur.description)
+        except Exception:
+            conn.rollback()
+            raise
+
+    def delete_algorithm(self, algo_id: str, hard_delete: bool = False) -> bool:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cur:
+                if hard_delete:
+                    cur.execute("DELETE FROM algorithm_registry WHERE id = %s", (algo_id,))
+                else:
+                    cur.execute("UPDATE algorithm_registry SET is_active = FALSE, updated_at = NOW() WHERE id = %s", (algo_id,))
+                affected = cur.rowcount
+            conn.commit()
+            return affected > 0
+        except Exception:
+            conn.rollback()
+            raise
+
+    def register_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
+        return self.upsert_adapter(adapter)
+
+    def upsert_adapter(self, adapter: TypeAdapterContract) -> TypeAdapterContract:
         conn = self._get_connection()
         try:
             with conn.cursor() as cur:
@@ -163,6 +245,7 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                         algo_id=EXCLUDED.algo_id,
                         is_lossy=EXCLUDED.is_lossy,
                         description=EXCLUDED.description
+                    RETURNING id, name, source_type, target_type, algo_id, is_lossy, description
                     """,
                     (
                         adapter.id,
@@ -174,7 +257,17 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                         adapter.description,
                     ),
                 )
+                r = cur.fetchone()
             conn.commit()
+            return TypeAdapterContract(
+                id=r[0],
+                name=r[1],
+                source_type=r[2],
+                target_type=r[3],
+                algo_id=r[4],
+                is_lossy=bool(r[5]),
+                description=r[6],
+            )
         except Exception:
             conn.rollback()
             raise
@@ -203,7 +296,7 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
     def list_adapters(self) -> List[TypeAdapterContract]:
         conn = self._get_connection()
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, source_type, target_type, algo_id, is_lossy, description FROM type_adapters")
+            cur.execute("SELECT id, name, source_type, target_type, algo_id, is_lossy, description FROM type_adapters ORDER BY id ASC")
             rows = cur.fetchall()
             return [
                 TypeAdapterContract(
@@ -218,6 +311,17 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
                 for r in rows
             ]
 
+    def delete_adapter(self, adapter_id: str) -> bool:
+        conn = self._get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM type_adapters WHERE id = %s", (adapter_id,))
+                affected = cur.rowcount
+            conn.commit()
+            return affected > 0
+        except Exception:
+            conn.rollback()
+            raise
 
     def _row_to_contract(self, row: tuple, description: Any) -> AlgorithmContract:
         col_names = [d[0] for d in description]
@@ -256,4 +360,3 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
 
 
 PostgresAlgorithmRegistryAdapter = AlloyDBAlgorithmRegistryAdapter
-

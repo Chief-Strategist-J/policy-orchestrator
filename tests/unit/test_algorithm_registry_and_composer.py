@@ -44,7 +44,7 @@ def test_registry_fetch_and_filtering(sqlite_registry):
 
     # Filter by category
     obs_algos = sqlite_registry.list_algorithms(category=AlgorithmCategory.OBSERVABILITY)
-    assert len(obs_algos) == 6
+    assert len(obs_algos) == 51
 
     # Filter by capability tags
     multipattern = sqlite_registry.list_algorithms(tags=["search.multipattern"])
