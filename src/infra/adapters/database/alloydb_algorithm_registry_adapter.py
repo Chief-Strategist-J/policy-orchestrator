@@ -255,6 +255,5 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
         )
 
 
-# Zero Vendor Lock-in alias: Standard PostgreSQL and Google AlloyDB Omni share identical SQL/driver contracts
 PostgresAlgorithmRegistryAdapter = AlloyDBAlgorithmRegistryAdapter
 

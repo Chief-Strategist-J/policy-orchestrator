@@ -215,6 +215,10 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
     return 0
 
 from src.features.code_engine.service.code_engine_service import CodeEngineService
+from src.features.code_engine.registry.algorithm_catalog import BUILTIN_ALGORITHM_CONTRACTS, BUILTIN_TYPE_ADAPTERS
+from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
+from src.infra.adapters.database.in_memory_algorithm_registry_adapter import InMemoryAlgorithmRegistryAdapter
+from src.infra.adapters.database.migration_runner import DatabaseMigrationRunner
 
 def handle_algo_command(args: argparse.Namespace) -> int:
     svc = CodeEngineService()
@@ -313,6 +317,62 @@ def handle_algo_command(args: argparse.Namespace) -> int:
         print(diff_res["patch"] if diff_res["has_changes"] else "No differences found.")
         return 0
 
+    elif args.action == "contracts":
+        category_filter = getattr(args, "category", None)
+        contracts = [
+            c for c in BUILTIN_ALGORITHM_CONTRACTS
+            if not category_filter or c.category.value == category_filter
+        ]
+        if args.json:
+            print(json.dumps([asdict(c) for c in contracts], indent=2))
+            return 0
+        print(f"\n{'='*85}")
+        print(f"📋 [ALGORITHM REGISTRY] 24 LAYER 1 CONTRACTS ({len(contracts)} matching)")
+        print(f"{'='*85}")
+        for c in contracts:
+            print(f"  • [{c.id}] {c.name:<32} Category: {c.category.value:<14} Time: {c.complexity.time:<10} Target: {c.hardware_target.value}")
+        return 0
+
+    elif args.action == "compose":
+        algo_ids = [a.strip() for a in getattr(args, "algos", "ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23").split(",") if a.strip()]
+        adapter = InMemoryAlgorithmRegistryAdapter(load_builtins=True)
+        composer = AlgorithmComposerService(adapter)
+        res = composer.compose_pipeline(algo_ids)
+        if args.json:
+            print(json.dumps(res, indent=2))
+            return 0
+        status = "✅ VALID" if res["is_valid"] else "❌ INVALID (Safety Warnings)"
+        print(f"\n{'='*85}")
+        print(f"🧩 [DYNAMIC PIPELINE COMPOSER] {status}")
+        print(f"{'='*85}")
+        print(f"Execution DAG Steps ({res['total_steps']}):")
+        for step in res["pipeline_steps"]:
+            print(f"  {step['step_index']}. ⚡ [{step['algo_id']}] {step['name']:<36} (Time: {step['complexity']['time']})")
+        if res.get("inferred_adapters"):
+            print("\nInjected G4 Type Adapters:")
+            for ad in res["inferred_adapters"]:
+                print(f"  🔧 Steps {ad['between_steps'][0]} -> {ad['between_steps'][1]}: {', '.join(ad['adapter_ids'])}")
+        if res.get("safety_issues"):
+            print("\nSafety Issues:")
+            for w in res["safety_issues"]:
+                print(f"  ⚠️  {w}")
+        return 0 if res["is_valid"] else 1
+
+    return 0
+
+def handle_migrate_command(args: argparse.Namespace) -> int:
+    runner = DatabaseMigrationRunner()
+    if args.action == "run":
+        if args.db == "sqlite":
+            res = runner.run_sqlite_migrations(args.sqlite_path)
+        else:
+            res = runner.run_postgres_migrations(args.postgres_url)
+        print(f"✅ Migration successful: Applied {res.get('applied_migrations')} migrations, Seeded {res.get('seeded_algorithms')} algorithms.")
+        return 0
+    elif args.action == "status":
+        status = runner.get_migration_status(args.sqlite_path if args.db == "sqlite" else None)
+        print(json.dumps(status, indent=2))
+        return 0
     return 0
 
 def handle_serve_command(args: argparse.Namespace) -> int:
@@ -334,7 +394,7 @@ def main() -> None:
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
     algo_parser = subparsers.add_parser("algo", help="Execute Categorized Search, Observability & Update Algorithms")
-    algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff"], help="Algorithm action")
+    algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff", "contracts", "compose"], help="Algorithm action")
     algo_parser.add_argument("--root", default=".", help="Root directory")
     algo_parser.add_argument("--patterns", default="TODO,FIXME,error,critical", help="Comma-separated patterns")
     algo_parser.add_argument("--file", default="src/api/cli/main.py", help="File to inspect or patch")
@@ -343,7 +403,15 @@ def main() -> None:
     algo_parser.add_argument("--replace", default="", help="Replacement string for update/diff/patch")
     algo_parser.add_argument("--regex", action="store_true", help="Treat find pattern as regex")
     algo_parser.add_argument("--apply", action="store_true", help="Apply patch modifications to disk")
+    algo_parser.add_argument("--category", default=None, help="Filter contracts by category (search, observability, update)")
+    algo_parser.add_argument("--algos", default="ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23", help="Comma-separated algorithm IDs to compose")
     algo_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
+    migrate_parser = subparsers.add_parser("migrate", help="Run database migrations and seed algorithm contracts")
+    migrate_parser.add_argument("action", choices=["run", "status"], default="run", nargs="?", help="Migration action")
+    migrate_parser.add_argument("--db", choices=["sqlite", "alloydb", "postgres"], default="sqlite", help="Target database")
+    migrate_parser.add_argument("--sqlite-path", default="policy_registry.db", help="SQLite database path")
+    migrate_parser.add_argument("--postgres-url", default="postgresql://postgres:postgres@localhost:5432/postgres", help="PostgreSQL connection string")
 
     rag_parser = subparsers.add_parser("rag", help="Retrieve or index grounded policy rules")
     rag_parser.add_argument("action", choices=["search", "index"], help="RAG action")
@@ -387,6 +455,7 @@ def main() -> None:
     dispatch = {
         "audit": handle_audit_command,
         "algo": handle_algo_command,
+        "migrate": handle_migrate_command,
         "rag": handle_rag_command,
         "agent": handle_agent_command,
         "refactor": handle_refactor_command,
