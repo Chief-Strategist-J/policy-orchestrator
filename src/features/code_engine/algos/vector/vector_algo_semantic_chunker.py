@@ -22,7 +22,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: VECTOR SEMANTIC CHUNKER (ALGO-VEC-09)
 from __future__ import annotations
 import math
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclass(frozen=True)

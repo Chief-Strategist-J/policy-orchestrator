@@ -22,7 +22,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: SCALAR QUANTIZATION SQ8 & SQ4 (ALGO-VEC-06)
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Any, List, Optional, Tuple
 
 
 @dataclass(frozen=True)

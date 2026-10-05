@@ -20,7 +20,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: MATRYOSHKA EMBEDDING SLICING (ALGO-VEC-05)
 """
 
 from __future__ import annotations
-from typing import List
+from typing import Any, List, Optional
 from src.features.code_engine.algos.vector.vector_algo_l2_normalization import VectorAlgoL2Normalization
 
 
