@@ -27,9 +27,9 @@ from src.features.code_engine.registry.algorithm_catalog import (
 
 
 def test_builtin_algorithms_count_and_uniqueness():
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 71
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 76
     ids = [algo.id for algo in BUILTIN_ALGORITHM_CONTRACTS]
-    assert len(set(ids)) == 71, "All algorithm IDs must be unique"
+    assert len(set(ids)) == 76, "All algorithm IDs must be unique"
 
 
 def test_all_algorithms_have_all_16_properties():
@@ -63,12 +63,14 @@ def test_category_distribution():
     update_algos = [a for a in BUILTIN_ALGORITHM_CONTRACTS if a.category == AlgorithmCategory.UPDATE]
     vector_algos = [a for a in BUILTIN_ALGORITHM_CONTRACTS if a.category == AlgorithmCategory.VECTOR]
     graph_algos = [a for a in BUILTIN_ALGORITHM_CONTRACTS if a.category == AlgorithmCategory.GRAPH]
+    filter_algos = [a for a in BUILTIN_ALGORITHM_CONTRACTS if a.category == AlgorithmCategory.FILTER]
 
     assert len(search_algos) == 15
     assert len(obs_algos) == 6
     assert len(update_algos) == 3
     assert len(vector_algos) == 38
     assert len(graph_algos) == 9
+    assert len(filter_algos) == 5
 
 
 def test_type_adapters_catalog():

@@ -77,9 +77,14 @@ def test_cli_all_42_algorithms_execute():
         "ALGO-VEC-SRCH-77": {"vectors": [[1.0, 0.0], [0.0, 1.0]], "query": [1.0, 0.0], "k": 1, "num_bits": 2, "num_tables": 2},
         "ALGO-VEC-SRCH-78": {"vectors": [[1.0, 0.0], [0.0, 1.0]], "query": [1.0, 0.0], "k": 1, "num_bits": 2, "probe_budget": 2},
         "ALGO-VEC-SRCH-79": {"vectors": [[0.0, 0.0], [1.0, 1.0]], "query": [0.0, 0.0], "k": 1, "slot_width_w": 2.0, "num_projections_m": 2, "num_tables_l": 2},
+        "ALGO-VEC-FLTR-80": {"vectors": [[0.0, 0.0], [1.0, 1.0]], "metadata": [{"tenant": "alpha"}, {"tenant": "beta"}], "query": [0.1, 0.1], "filters": {"tenant": "alpha"}, "k": 1},
+        "ALGO-VEC-FLTR-81": {"vectors": [[0.0, 0.0], [1.0, 1.0]], "metadata": [{"lang": "en"}, {"lang": "fr"}], "query": [0.1, 0.1], "filters": {"lang": "en"}, "k": 1, "oversample_factor": 2.0},
+        "ALGO-VEC-FLTR-82": {"vectors": [[0.0, 0.0], [1.0, 0.0]], "metadata": [{"status": "active"}, {"status": "inactive"}], "adjacency": {"0": [1], "1": []}, "entry_point": 0, "query": [0.9, 0.0], "filters": {"status": "active"}, "k": 1, "ef_search": 4},
+        "ALGO-VEC-FLTR-83": {"total_vectors": 1000, "metadata_sample": [{"tenant": "T1"}, {"tenant": "T2"}], "filters": {"tenant": "T1"}, "is_security_filter": True},
+        "ALGO-VEC-FLTR-84": {"partitions": {"tenant_A": [{"id": "d1", "vector": [1.0, 0.0], "metadata": {}}]}, "target_partition": "tenant_A", "query": [0.9, 0.1], "k": 1},
     }
 
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 71
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 76
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:
         algo_id = contract.id

@@ -90,6 +90,12 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
      • POST /api/v1/algos/vector-search/random-hyperplane-lsh: Random-Hyperplane Cosine LSH.
      • POST /api/v1/algos/vector-search/multi-probe-lsh: Multi-Probe Perturbation Sequence LSH.
      • POST /api/v1/algos/vector-search/e2lsh: Exact 2-Stable Gaussian L2 Locality-Sensitive Hashing.
+   - Vector Filter Algorithms (ALGO-VEC-FLTR-80..84):
+     • POST /api/v1/algos/vector-filter/pre-filter: Metadata Pre-Filtering (ALGO-VEC-FLTR-80).
+     • POST /api/v1/algos/vector-filter/post-filter: Oversampled Post-Filtering (ALGO-VEC-FLTR-81).
+     • POST /api/v1/algos/vector-filter/in-graph: ACORN-Style In-Graph Filtering (ALGO-VEC-FLTR-82).
+     • POST /api/v1/algos/vector-filter/selectivity-plan: Cost-Based Selectivity Query Planner (ALGO-VEC-FLTR-83).
+     • POST /api/v1/algos/vector-filter/partitioned: Partitioned Multi-Tenant Index Search (ALGO-VEC-FLTR-84).
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
@@ -622,6 +628,48 @@ class VecSearchE2LshDTO(BaseModel):
     num_projections_m: int = Field(default=4, description="Number of projections m")
     num_tables_l: int = Field(default=3, description="Number of tables L")
     seed: int = Field(default=42, description="Random seed")
+
+
+class VecFilterPreFilterDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    metadata: List[Dict[str, Any]] = Field(..., description="Metadata dictionaries per vector")
+    query: List[float] = Field(..., description="Query vector")
+    filters: Dict[str, Any] = Field(..., description="Filter predicate criteria")
+    k: int = Field(default=5, description="Top-k matching candidates")
+
+
+class VecFilterPostFilterDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    metadata: List[Dict[str, Any]] = Field(..., description="Metadata dictionaries per vector")
+    query: List[float] = Field(..., description="Query vector")
+    filters: Dict[str, Any] = Field(..., description="Filter predicate criteria")
+    k: int = Field(default=5, description="Top-k matching candidates")
+    oversample_factor: float = Field(default=4.0, description="Oversampling multiplier")
+
+
+class VecFilterInGraphDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    metadata: List[Dict[str, Any]] = Field(..., description="Metadata dictionaries per vector")
+    adjacency: Dict[str, List[int]] = Field(..., description="Graph adjacency structure")
+    entry_point: int = Field(default=0, description="Start traversal entry point node ID")
+    query: List[float] = Field(..., description="Query vector")
+    filters: Dict[str, Any] = Field(..., description="Filter predicate criteria")
+    k: int = Field(default=5, description="Top-k matching candidates")
+    ef_search: int = Field(default=16, description="Beam search width")
+
+
+class VecFilterSelectivityPlanDTO(BaseModel):
+    total_vectors: int = Field(..., description="Total size of vector dataset")
+    metadata_sample: List[Dict[str, Any]] = Field(default_factory=list, description="Sample of metadata records")
+    filters: Dict[str, Any] = Field(..., description="Filter predicate criteria")
+    is_security_filter: bool = Field(default=False, description="Whether filter enforces strict security/tenant boundary")
+
+
+class VecFilterPartitionedDTO(BaseModel):
+    partitions: Dict[str, List[Dict[str, Any]]] = Field(..., description="Partition map keyed by tenant/collection")
+    target_partition: str = Field(..., description="Partition key to query")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matching candidates")
 
 
 def get_orchestrator_services() -> Dict[str, Any]:
@@ -1578,6 +1626,46 @@ def vector_search_e2lsh_endpoint(payload: VecSearchE2LshDTO, request: Request) -
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
     res = svc.execute_algorithm("ALGO-VEC-SRCH-79", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-filter/pre-filter")
+def vector_filter_pre_filter_endpoint(payload: VecFilterPreFilterDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-FLTR-80", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-filter/post-filter")
+def vector_filter_post_filter_endpoint(payload: VecFilterPostFilterDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-FLTR-81", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-filter/in-graph")
+def vector_filter_in_graph_endpoint(payload: VecFilterInGraphDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-FLTR-82", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-filter/selectivity-plan")
+def vector_filter_selectivity_plan_endpoint(payload: VecFilterSelectivityPlanDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-FLTR-83", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-filter/partitioned")
+def vector_filter_partitioned_endpoint(payload: VecFilterPartitionedDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-FLTR-84", payload.model_dump())
     return build_success_envelope(data=res, trace_id=trace_id)
 
 

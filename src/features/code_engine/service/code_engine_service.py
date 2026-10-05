@@ -169,6 +169,14 @@ from src.features.code_engine.algos.vector_search import (
     VectorSearchAlgoE2LSH,
 )
 
+from src.features.code_engine.algos.vector_filter import (
+    VectorFilterAlgoPreFilter,
+    VectorFilterAlgoPostFilter,
+    VectorFilterAlgoInGraphFilter,
+    VectorFilterAlgoSelectivityPlanner,
+    VectorFilterAlgoPartitionedIndex,
+)
+
 
 class CodeEngineService:
     def __init__(self) -> None:
@@ -961,6 +969,48 @@ class CodeEngineService:
             l_tables = merged.get("num_tables_l", 3)
             seed = merged.get("seed", 42)
             return VectorSearchAlgoE2LSH.build_and_search(vecs, query=q, k=k, slot_width_w=w, num_projections_m=m, num_tables_l=l_tables, seed=seed)
+
+        elif algo_id == "ALGO-VEC-FLTR-80":
+            vecs = merged.get("vectors", [])
+            meta = merged.get("metadata", [])
+            q = merged.get("query", [])
+            fltrs = merged.get("filters", {})
+            k = merged.get("k", 5)
+            return VectorFilterAlgoPreFilter.search_filtered(vecs, meta, q, fltrs, k=k)
+
+        elif algo_id == "ALGO-VEC-FLTR-81":
+            vecs = merged.get("vectors", [])
+            meta = merged.get("metadata", [])
+            q = merged.get("query", [])
+            fltrs = merged.get("filters", {})
+            k = merged.get("k", 5)
+            factor = merged.get("oversample_factor", 4.0)
+            return VectorFilterAlgoPostFilter.search_with_oversampling(vecs, meta, q, fltrs, k=k, oversample_factor=factor)
+
+        elif algo_id == "ALGO-VEC-FLTR-82":
+            vecs = merged.get("vectors", [])
+            meta = merged.get("metadata", [])
+            adj = merged.get("adjacency", {})
+            ep = merged.get("entry_point", 0)
+            q = merged.get("query", [])
+            fltrs = merged.get("filters", {})
+            k = merged.get("k", 5)
+            ef = merged.get("ef_search", 16)
+            return VectorFilterAlgoInGraphFilter.search(vecs, meta, adj, ep, q, fltrs, k=k, ef_search=ef)
+
+        elif algo_id == "ALGO-VEC-FLTR-83":
+            total = merged.get("total_vectors", 0)
+            sample = merged.get("metadata_sample", [])
+            fltrs = merged.get("filters", {})
+            is_sec = merged.get("is_security_filter", False)
+            return VectorFilterAlgoSelectivityPlanner.plan(total, sample, fltrs, is_security_filter=is_sec)
+
+        elif algo_id == "ALGO-VEC-FLTR-84":
+            parts = merged.get("partitions", {})
+            target = merged.get("target_partition", "")
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            return VectorFilterAlgoPartitionedIndex.search_partition(parts, target, q, k=k)
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

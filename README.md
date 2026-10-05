@@ -6,7 +6,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## 🎯 Purpose & Capabilities
 
-- **56 Production Algorithm Engines:** Complete suite of Graph, Vector (Preprocessing + Search & Indexing), Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
+- **76 Production Algorithm Engines:** Complete suite of Graph, Vector (Preprocessing + Search & Indexing + Filtering), Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
 - **3-Tier Command Architecture:** Seamless interaction via **Normal Commands** (human-friendly aliases for beginners), **Developer Commands** (CLI power tools & catalog IDs for CI/CD), and **Code Commands** (REST API & Python SDK for services).
 - **Repository Invariant Auditing (`audit`):** Multi-vector static analysis detecting naked sleeps, race conditions, SQL injection risks, unsafe deserializers, deep `OFFSET` pagination, and Redis blocking commands.
 - **Safe Batch Refactoring (`refactor` / `patch`):** Deterministic, dry-run-verified search-and-replace across multi-language codebases (Go, TypeScript, JavaScript, Python, SQL, Prisma) using Concrete Syntax Tree (CST) analysis.
@@ -16,7 +16,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## ⚡ 3-Tier Command System
 
-Every one of the 56 algorithms supports three access tiers designed for different audiences and workflows:
+Every one of the 76 algorithms supports three access tiers designed for different audiences and workflows:
 
 | Tier | Target Audience | Syntax Style | Primary Use Case | Output Format |
 |---|---|---|---|---|
@@ -158,6 +158,18 @@ eval "$(policy-orchestrator completion bash)"
 
 ---
 
+### 6. Vector Filter Algorithms (5 Algorithms — #80 to #84)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 72 | `ALGO-VEC-FLTR-80` | `policy-orchestrator run vec-filter-pre` | `policy-orchestrator exec ALGO-VEC-FLTR-80` | `POST /api/v1/algos/vector-filter/pre-filter` | Evaluates metadata predicates first to ensure zero security leaks |
+| 73 | `ALGO-VEC-FLTR-81` | `policy-orchestrator run vec-filter-post` | `policy-orchestrator exec ALGO-VEC-FLTR-81` | `POST /api/v1/algos/vector-filter/post-filter` | Searches with oversampling and discards items failing soft filters |
+| 74 | `ALGO-VEC-FLTR-82` | `policy-orchestrator run vec-filter-in-graph` | `policy-orchestrator exec ALGO-VEC-FLTR-82` | `POST /api/v1/algos/vector-filter/in-graph` | Traverses graph using ACORN bridges without breaking connectivity |
+| 75 | `ALGO-VEC-FLTR-83` | `policy-orchestrator run vec-filter-plan` | `policy-orchestrator exec ALGO-VEC-FLTR-83` | `POST /api/v1/algos/vector-filter/selectivity-plan` | Dynamically plans pre-, in-graph, or post-filtering by selectivity |
+| 76 | `ALGO-VEC-FLTR-84` | `policy-orchestrator run vec-filter-partition` | `policy-orchestrator exec ALGO-VEC-FLTR-84` | `POST /api/v1/algos/vector-filter/partitioned` | Routes query strictly into isolated physical tenant partition |
+
+---
+
 ## 🏗️ Architecture & Module Structure
 
 ```
@@ -179,9 +191,11 @@ packages/policy-orchestrator/
 │   │   └── ports/                # Abstract domain interfaces
 │   ├── features/
 │   │   ├── code_engine/
-│   │   │   ├── algos/            # 42 Pure Algorithm Implementations
+│   │   │   ├── algos/            # 76 Pure Algorithm Implementations
 │   │   │   │   ├── graph/        # 9 Graph algorithms (BFS, DFS, Dijkstra, A*, etc.)
 │   │   │   │   ├── vector/       # 9 Vector algorithms (L2 Norm, Scaling, Quantize, etc.)
+│   │   │   │   ├── vector_search/# 29 Vector Search & Indexing algorithms (#51-#79)
+│   │   │   │   ├── vector_filter/# 5 Vector Filter algorithms (#80-#84)
 │   │   │   │   ├── search/       # 15 Search algorithms (Walkers, Trigram, DFA, etc.)
 │   │   │   │   ├── observability/# 6 Observability algorithms (AST, Outline, Linter, etc.)
 │   │   │   │   └── update/       # 3 Update algorithms (CST Matcher, Patch, Diff)

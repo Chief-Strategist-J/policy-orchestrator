@@ -74,6 +74,13 @@ from src.features.code_engine.algos.graph import (
     GraphAlgoTarjanScc,
     GraphAlgoSubgraphIsomorphism,
 )
+from src.features.code_engine.algos.vector_filter import (
+    VectorFilterAlgoPreFilter,
+    VectorFilterAlgoPostFilter,
+    VectorFilterAlgoInGraphFilter,
+    VectorFilterAlgoSelectivityPlanner,
+    VectorFilterAlgoPartitionedIndex,
+)
 
 __all__ = [
     "SearchEngineRecursiveWalkAlgo",
@@ -134,4 +141,9 @@ __all__ = [
     "GraphAlgoConnectedComponents",
     "GraphAlgoTarjanScc",
     "GraphAlgoSubgraphIsomorphism",
+    "VectorFilterAlgoPreFilter",
+    "VectorFilterAlgoPostFilter",
+    "VectorFilterAlgoInGraphFilter",
+    "VectorFilterAlgoSelectivityPlanner",
+    "VectorFilterAlgoPartitionedIndex",
 ]

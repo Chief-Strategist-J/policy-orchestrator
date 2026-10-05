@@ -5,7 +5,7 @@ info:
   description: >-
     Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
     grounded hybrid GraphRAG, autonomous AI Agent orchestration, and direct execution
-    of all 71 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
+    of all 76 Layer 1 algorithms across Search, Observability, Update, Vector, and Filter categories.
     Strictly conforms to the RFC API Request & Response Structure Specification (v5.0).
 servers:
   - url: http://localhost:8000
@@ -1750,6 +1750,161 @@ paths:
       responses:
         '200':
           description: E2LSH search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-filter/pre-filter:
+    post:
+      summary: Vector Metadata Pre-Filtering (ALGO-VEC-FLTR-80)
+      operationId: vectorFilterPreFilter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, metadata, query, filters]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                metadata:
+                  type: array
+                  items: { type: object }
+                query:
+                  type: array
+                  items: { type: number }
+                filters:
+                  type: object
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Pre-filtered search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-filter/post-filter:
+    post:
+      summary: Vector Post-Filtering with Oversampling (ALGO-VEC-FLTR-81)
+      operationId: vectorFilterPostFilter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, metadata, query, filters]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                metadata:
+                  type: array
+                  items: { type: object }
+                query:
+                  type: array
+                  items: { type: number }
+                filters:
+                  type: object
+                k: { type: integer, default: 5 }
+                oversample_factor: { type: number, default: 4.0 }
+      responses:
+        '200':
+          description: Post-filtered search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-filter/in-graph:
+    post:
+      summary: ACORN In-Graph Filtering (ALGO-VEC-FLTR-82)
+      operationId: vectorFilterInGraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, metadata, adjacency, entry_point, query, filters]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                metadata:
+                  type: array
+                  items: { type: object }
+                adjacency:
+                  type: object
+                entry_point: { type: integer, default: 0 }
+                query:
+                  type: array
+                  items: { type: number }
+                filters:
+                  type: object
+                k: { type: integer, default: 5 }
+                ef_search: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: In-graph filtered search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-filter/selectivity-plan:
+    post:
+      summary: Selectivity-Based Query Planner (ALGO-VEC-FLTR-83)
+      operationId: vectorFilterSelectivityPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [total_vectors, filters]
+              properties:
+                total_vectors: { type: integer }
+                metadata_sample:
+                  type: array
+                  items: { type: object }
+                filters:
+                  type: object
+                is_security_filter: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Recommended filtering execution strategy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-filter/partitioned:
+    post:
+      summary: Partitioned Multi-Tenant Index Search (ALGO-VEC-FLTR-84)
+      operationId: vectorFilterPartitioned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [partitions, target_partition, query]
+              properties:
+                partitions:
+                  type: object
+                target_partition: { type: string }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Partition search results
           content:
             application/json:
               schema:

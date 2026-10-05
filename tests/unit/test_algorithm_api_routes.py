@@ -30,7 +30,7 @@ def test_api_list_algorithm_contracts(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["statusCode"] == 200
-    assert json_data["data"]["total_contracts"] == 71
+    assert json_data["data"]["total_contracts"] == 76
 
 
 def test_api_filter_contracts_by_category(client):
@@ -177,3 +177,81 @@ def test_api_vector_chunk_endpoint(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["data"]["total_chunks"] >= 1
+
+
+def test_api_vector_filter_pre_filter_endpoint(client):
+    payload = {
+        "vectors": [[0.0, 0.0], [1.0, 1.0]],
+        "metadata": [{"tenant": "alpha"}, {"tenant": "beta"}],
+        "query": [0.1, 0.1],
+        "filters": {"tenant": "alpha"},
+        "k": 1,
+    }
+    response = client.post("/api/v1/algos/vector-filter/pre-filter", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["passed_filter_count"] == 1
+    assert len(json_data["data"]["matches"]) == 1
+
+
+def test_api_vector_filter_post_filter_endpoint(client):
+    payload = {
+        "vectors": [[0.0, 0.0], [1.0, 1.0]],
+        "metadata": [{"lang": "en"}, {"lang": "fr"}],
+        "query": [0.1, 0.1],
+        "filters": {"lang": "en"},
+        "k": 1,
+        "oversample_factor": 2.0,
+    }
+    response = client.post("/api/v1/algos/vector-filter/post-filter", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["surviving_count"] == 1
+
+
+def test_api_vector_filter_in_graph_endpoint(client):
+    payload = {
+        "vectors": [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]],
+        "metadata": [{"status": "active"}, {"status": "inactive"}, {"status": "active"}],
+        "adjacency": {"0": [1], "1": [2], "2": []},
+        "entry_point": 0,
+        "query": [1.9, 0.0],
+        "filters": {"status": "active"},
+        "k": 1,
+        "ef_search": 4,
+    }
+    response = client.post("/api/v1/algos/vector-filter/in-graph", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert len(json_data["data"]["neighbors"]) >= 1
+
+
+def test_api_vector_filter_selectivity_plan_endpoint(client):
+    payload = {
+        "total_vectors": 5000,
+        "metadata_sample": [{"tenant": "T1"}, {"tenant": "T2"}],
+        "filters": {"tenant": "T1"},
+        "is_security_filter": True,
+    }
+    response = client.post("/api/v1/algos/vector-filter/selectivity-plan", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["selected_strategy"] == "pre_filter_isolated"
+
+
+def test_api_vector_filter_partitioned_endpoint(client):
+    payload = {
+        "partitions": {"tenant_A": [{"id": "doc1", "vector": [1.0, 0.0], "metadata": {}}]},
+        "target_partition": "tenant_A",
+        "query": [0.9, 0.1],
+        "k": 1,
+    }
+    response = client.post("/api/v1/algos/vector-filter/partitioned", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["partition_size"] == 1

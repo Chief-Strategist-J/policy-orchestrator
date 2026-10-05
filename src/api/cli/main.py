@@ -613,6 +613,46 @@ ALGO_ALIASES: dict = {
         "example": '{"vectors": [[1,2],[3,4],[5,6]], "query": [1,2], "k": 1, "slot_width_w": 4.0}',
         "category": "vector",
     },
+    "vec-filter-pre": {
+        "id": "ALGO-VEC-FLTR-80",
+        "algo_name": "Vector Metadata Pre-Filtering",
+        "plain_name": "Filter candidates before scoring vectors",
+        "what_it_does": "Evaluates metadata predicates first to ensure zero security leaks before distance computation.",
+        "example": '{"vectors": [[0,0],[1,1]], "metadata": [{"tenant":"A"},{"tenant":"B"}], "query": [0.1,0.1], "filters": {"tenant":"A"}, "k": 1}',
+        "category": "filter",
+    },
+    "vec-filter-post": {
+        "id": "ALGO-VEC-FLTR-81",
+        "algo_name": "Vector Post-Filtering with Oversampling",
+        "plain_name": "Search first with extra items then remove non-matching",
+        "what_it_does": "Retrieves k * f candidates from index and rejects records that fail soft non-security filters.",
+        "example": '{"vectors": [[0,0],[1,1]], "metadata": [{"lang":"en"},{"lang":"fr"}], "query": [0.1,0.1], "filters": {"lang":"en"}, "k": 1, "oversample_factor": 2.0}',
+        "category": "filter",
+    },
+    "vec-filter-in-graph": {
+        "id": "ALGO-VEC-FLTR-82",
+        "algo_name": "ACORN In-Graph Filtering",
+        "plain_name": "Hop across filtered graph nodes without breaking connectivity",
+        "what_it_does": "Traverses graph routing paths while strictly admitting only allowed nodes into top-k candidates.",
+        "example": '{"vectors": [[0,0],[1,0],[2,0]], "metadata": [{"status":"active"},{"status":"disabled"},{"status":"active"}], "adjacency": {"0":[1],"1":[2],"2":[]}, "entry_point": 0, "query": [1.9,0.0], "filters": {"status":"active"}, "k": 1}',
+        "category": "filter",
+    },
+    "vec-filter-plan": {
+        "id": "ALGO-VEC-FLTR-83",
+        "algo_name": "Selectivity-Based Query Planner",
+        "plain_name": "Choose best search strategy from filter selectivity",
+        "what_it_does": "Estimates match ratio and picks pre-filtering, in-graph ACORN traversal, or post-filtering.",
+        "example": '{"total_vectors": 10000, "metadata_sample": [{"tenant":"T1"},{"tenant":"T2"}], "filters": {"tenant":"T1"}, "is_security_filter": true}',
+        "category": "filter",
+    },
+    "vec-filter-partition": {
+        "id": "ALGO-VEC-FLTR-84",
+        "algo_name": "Partitioned Multi-Tenant Index Search",
+        "plain_name": "Route query strictly into tenant or collection slice",
+        "what_it_does": "Directs search exclusively into the isolated physical partition with zero cross-tenant contamination.",
+        "example": '{"partitions": {"tenant_A": [{"id":"d1","vector":[1,0],"metadata":{}}]}, "target_partition": "tenant_A", "query": [0.9,0.1], "k": 1}',
+        "category": "filter",
+    },
 }
 import os
 import re
@@ -1021,7 +1061,7 @@ def handle_completion_command(args: argparse.Namespace) -> int:
     algo_ids = [c.id for c in BUILTIN_ALGORITHM_CONTRACTS]
     alias_names = list(ALGO_ALIASES.keys())
     subcmds = ["search", "scan", "outline", "lint", "deps", "diff", "patch", "exec", "run", "list", "contracts", "compose", "audit", "rag", "agent", "refactor", "policy-check", "migrate", "serve", "completion", "algo"]
-    categories = ["search", "observability", "update", "vector", "graph"]
+    categories = ["search", "observability", "update", "vector", "graph", "filter"]
 
     if shell == "bash":
         script = f"""# Bash completion for policy-orchestrator
