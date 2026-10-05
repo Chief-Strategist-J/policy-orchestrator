@@ -137,6 +137,23 @@ from src.features.code_engine.algos.graph import (
     GraphAlgoSubgraphIsomorphism,
 )
 
+from src.features.code_engine.algos.vector_search import (
+    VectorSearchAlgoBruteForceGemm,
+    VectorSearchAlgoSimdDistance,
+    VectorSearchAlgoHeapTopK,
+    VectorSearchAlgoRadixTopK,
+    VectorSearchAlgoEarlyAbandoning,
+    VectorSearchAlgoPivotPruning,
+    VectorSearchAlgoKdTree,
+    VectorSearchAlgoBallTree,
+    VectorSearchAlgoVpTree,
+    VectorSearchAlgoRpForest,
+    VectorSearchAlgoIvf,
+    VectorSearchAlgoIvfPq,
+    VectorSearchAlgoNprobeTuner,
+    VectorSearchAlgoInvertedMultiIndex,
+)
+
 
 class CodeEngineService:
     def __init__(self) -> None:
@@ -679,6 +696,128 @@ class CodeEngineService:
             pg = merged.get("pattern_graph", {})
             max_m = merged.get("max_matches", 100)
             return GraphAlgoSubgraphIsomorphism.match(tg, pattern_graph=pg, max_matches=max_m)
+
+        elif algo_id == "ALGO-VEC-SRCH-51":
+            db = merged.get("database_vectors", [])
+            q = merged.get("query_vectors", [])
+            k = merged.get("k", 10)
+            metric = merged.get("metric", "l2")
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoBruteForceGemm.search(db, q, k=k, metric=metric, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-52":
+            va = merged.get("vector_a", [])
+            vb = merged.get("vector_b", [])
+            metric = merged.get("metric", "l2")
+            return VectorSearchAlgoSimdDistance.compute_distance(va, vb, metric=metric)
+
+        elif algo_id == "ALGO-VEC-SRCH-53":
+            cands = merged.get("candidates", [])
+            k = merged.get("k", 10)
+            score_k = merged.get("score_key", "score")
+            order = merged.get("order", "desc")
+            id_k = merged.get("id_key", "id")
+            return VectorSearchAlgoHeapTopK.select_top_k(cands, k=k, score_key=score_k, order=order, id_key=id_k)
+
+        elif algo_id == "ALGO-VEC-SRCH-54":
+            scores = merged.get("scores", [])
+            k = merged.get("k", 10)
+            ids = merged.get("ids")
+            largest = merged.get("largest", True)
+            return VectorSearchAlgoRadixTopK.select_top_k(scores, k=k, ids=ids, largest=largest)
+
+        elif algo_id == "ALGO-VEC-SRCH-55":
+            db = merged.get("database_vectors", [])
+            q = merged.get("query_vector", [])
+            k = merged.get("k", 5)
+            ids = merged.get("vector_ids")
+            order = merged.get("dimension_order")
+            return VectorSearchAlgoEarlyAbandoning.scan_with_early_abandon(db, q, k=k, vector_ids=ids, dimension_order=order)
+
+        elif algo_id == "ALGO-VEC-SRCH-56":
+            db = merged.get("database_vectors", [])
+            pivots = merged.get("pivots", [])
+            q = merged.get("query_vector", [])
+            dists = merged.get("precomputed_pivot_distances")
+            k = merged.get("k", 5)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoPivotPruning.search_with_pivots(db, pivots, q, precomputed_pivot_distances=dists, k=k, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-57":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoKdTree.query_k_nearest(vecs, q, k=k, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-58":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            leaf_size = merged.get("leaf_size", 16)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoBallTree.query_k_nearest(vecs, q, k=k, leaf_size=leaf_size, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-59":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoVpTree.query_k_nearest(vecs, q, k=k, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-60":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            num_trees = merged.get("num_trees", 5)
+            leaf = merged.get("max_leaf_size", 32)
+            search_k = merged.get("search_k", 100)
+            seed = merged.get("seed", 42)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoRpForest.search(vecs, q, k=k, num_trees=num_trees, max_leaf_size=leaf, search_k=search_k, seed=seed, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-61":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            num_c = merged.get("num_clusters", 4)
+            nprobe = merged.get("nprobe", 2)
+            max_iter = merged.get("max_kmeans_iter", 15)
+            seed = merged.get("seed", 42)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoIvf.search(vecs, q, k=k, num_clusters=num_c, nprobe=nprobe, max_kmeans_iter=max_iter, seed=seed, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-62":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            num_c = merged.get("num_clusters", 4)
+            nprobe = merged.get("nprobe", 2)
+            subspaces = merged.get("subspaces", 2)
+            cb_size = merged.get("codebook_size", 4)
+            seed = merged.get("seed", 42)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoIvfPq.search(vecs, q, k=k, num_clusters=num_c, nprobe=nprobe, subspaces=subspaces, codebook_size=cb_size, seed=seed, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-63":
+            db = merged.get("database_vectors", [])
+            queries = merged.get("sample_queries", [])
+            target_rec = merged.get("target_recall", 0.9)
+            k = merged.get("k", 5)
+            num_c = merged.get("num_clusters", 8)
+            probe_cands = merged.get("nprobe_candidates")
+            return VectorSearchAlgoNprobeTuner.tune_nprobe(db, queries, target_recall=target_rec, k=k, num_clusters=num_c, nprobe_candidates=probe_cands)
+
+        elif algo_id == "ALGO-VEC-SRCH-64":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            k1 = merged.get("codebook_k1", 4)
+            k2 = merged.get("codebook_k2", 4)
+            max_cells = merged.get("max_cells_to_probe", 4)
+            seed = merged.get("seed", 42)
+            ids = merged.get("vector_ids")
+            return VectorSearchAlgoInvertedMultiIndex.search(vecs, q, k=k, codebook_k1=k1, codebook_k2=k2, max_cells_to_probe=max_cells, seed=seed, vector_ids=ids)
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

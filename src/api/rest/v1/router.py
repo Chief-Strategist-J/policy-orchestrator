@@ -350,6 +350,122 @@ class GraphSubgraphMatchDTO(BaseModel):
     max_matches: int = Field(default=100, description="Maximum matching mappings to return")
 
 
+class VecSearchBruteForceGemmDTO(BaseModel):
+    database_vectors: List[List[float]] = Field(..., description="Database vectors matrix (N x D)")
+    query_vectors: List[List[float]] = Field(..., description="Query vectors matrix (Q x D)")
+    k: int = Field(default=10, description="Top-k neighbors")
+    metric: str = Field(default="l2", description="Distance metric ('l2', 'dot', 'cosine')")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Optional vector IDs")
+
+
+class VecSearchSimdDistanceDTO(BaseModel):
+    vector_a: List[float] = Field(..., description="First vector")
+    vector_b: List[float] = Field(..., description="Second vector")
+    metric: str = Field(default="l2", description="Metric ('l2', 'dot', 'cosine', 'hamming')")
+
+
+class VecSearchHeapTopKDTO(BaseModel):
+    candidates: List[Dict[str, Any]] = Field(..., description="Candidate objects")
+    k: int = Field(default=10, description="Top-k items")
+    score_key: str = Field(default="score", description="Score dictionary key")
+    order: str = Field(default="desc", description="Sort order ('desc' or 'asc')")
+    id_key: str = Field(default="id", description="ID dictionary key")
+
+
+class VecSearchRadixTopKDTO(BaseModel):
+    scores: List[float] = Field(..., description="Array of scores")
+    k: int = Field(default=10, description="Top-k scores")
+    ids: Optional[List[str]] = Field(default=None, description="Optional element IDs")
+    largest: bool = Field(default=True, description="Pick largest or smallest")
+
+
+class VecSearchEarlyAbandonDTO(BaseModel):
+    database_vectors: List[List[float]] = Field(..., description="Database vectors")
+    query_vector: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchPivotPruneDTO(BaseModel):
+    database_vectors: List[List[float]] = Field(..., description="Database vectors")
+    pivots: List[List[float]] = Field(..., description="Reference pivot vectors")
+    query_vector: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchKdTreeDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Spatial vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchBallTreeDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Spatial vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    leaf_size: int = Field(default=16, description="Leaf size")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchVpTreeDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Metric vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchRpForestDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    num_trees: int = Field(default=5, description="Number of trees")
+    max_leaf_size: int = Field(default=32, description="Max leaf size")
+    search_k: int = Field(default=100, description="Nodes to inspect")
+    seed: int = Field(default=42, description="Random seed")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchIvfDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    num_clusters: int = Field(default=4, description="Coarse clusters")
+    nprobe: int = Field(default=2, description="Centroids to probe")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchIvfPqDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    num_clusters: int = Field(default=4, description="Coarse clusters")
+    nprobe: int = Field(default=2, description="Centroids to probe")
+    subspaces: int = Field(default=2, description="Sub-vector quantizers")
+    codebook_size: int = Field(default=4, description="Codebook centroids")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchNprobeTunerDTO(BaseModel):
+    database_vectors: List[List[float]] = Field(..., description="Database vectors")
+    sample_queries: List[List[float]] = Field(..., description="Sample queries")
+    target_recall: float = Field(default=0.9, description="Target recall")
+    k: int = Field(default=5, description="Top-k")
+    num_clusters: int = Field(default=8, description="Clusters")
+    nprobe_candidates: Optional[List[int]] = Field(default=None, description="Candidates to test")
+
+
+class VecSearchInvertedMultiIndexDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k matches")
+    codebook_k1: int = Field(default=4, description="First codebook size")
+    codebook_k2: int = Field(default=4, description="Second codebook size")
+    max_cells_to_probe: int = Field(default=4, description="Max cells to probe")
+    vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
 def get_orchestrator_services() -> Dict[str, Any]:
     rules_dir = os.environ.get("POLICY_RULES_DIR", "../rules")
     llm_backend = os.environ.get("LLM_BACKEND", "mock")
@@ -1072,6 +1188,118 @@ def graph_subgraph_match_endpoint(payload: GraphSubgraphMatchDTO, request: Reque
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
     res = svc.execute_algorithm("ALGO-GRAPH-09", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/gemm")
+def vector_search_gemm_endpoint(payload: VecSearchBruteForceGemmDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-51", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/simd-dist")
+def vector_search_simd_dist_endpoint(payload: VecSearchSimdDistanceDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-52", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/topk")
+def vector_search_topk_endpoint(payload: VecSearchHeapTopKDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-53", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/radix-topk")
+def vector_search_radix_topk_endpoint(payload: VecSearchRadixTopKDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-54", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/early-abandon")
+def vector_search_early_abandon_endpoint(payload: VecSearchEarlyAbandonDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-55", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/pivot-prune")
+def vector_search_pivot_prune_endpoint(payload: VecSearchPivotPruneDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-56", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/kdtree")
+def vector_search_kdtree_endpoint(payload: VecSearchKdTreeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-57", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/ball-tree")
+def vector_search_ball_tree_endpoint(payload: VecSearchBallTreeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-58", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/vptree")
+def vector_search_vptree_endpoint(payload: VecSearchVpTreeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-59", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/rp-forest")
+def vector_search_rp_forest_endpoint(payload: VecSearchRpForestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-60", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/ivf")
+def vector_search_ivf_endpoint(payload: VecSearchIvfDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-61", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/ivf-pq")
+def vector_search_ivf_pq_endpoint(payload: VecSearchIvfPqDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-62", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/nprobe-tune")
+def vector_search_nprobe_tune_endpoint(payload: VecSearchNprobeTunerDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-63", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/imi")
+def vector_search_imi_endpoint(payload: VecSearchInvertedMultiIndexDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-64", payload.model_dump())
     return build_success_envelope(data=res, trace_id=trace_id)
 
 

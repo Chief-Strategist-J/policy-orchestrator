@@ -6,7 +6,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## 🎯 Purpose & Capabilities
 
-- **42 Production Algorithm Engines:** Complete suite of Graph, Vector, Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
+- **56 Production Algorithm Engines:** Complete suite of Graph, Vector (Preprocessing + Search & Indexing), Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
 - **3-Tier Command Architecture:** Seamless interaction via **Normal Commands** (human-friendly aliases for beginners), **Developer Commands** (CLI power tools & catalog IDs for CI/CD), and **Code Commands** (REST API & Python SDK for services).
 - **Repository Invariant Auditing (`audit`):** Multi-vector static analysis detecting naked sleeps, race conditions, SQL injection risks, unsafe deserializers, deep `OFFSET` pagination, and Redis blocking commands.
 - **Safe Batch Refactoring (`refactor` / `patch`):** Deterministic, dry-run-verified search-and-replace across multi-language codebases (Go, TypeScript, JavaScript, Python, SQL, Prisma) using Concrete Syntax Tree (CST) analysis.
@@ -16,7 +16,7 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 
 ## ⚡ 3-Tier Command System
 
-Every one of the 42 algorithms supports three access tiers designed for different audiences and workflows:
+Every one of the 56 algorithms supports three access tiers designed for different audiences and workflows:
 
 | Tier | Target Audience | Syntax Style | Primary Use Case | Output Format |
 |---|---|---|---|---|
@@ -63,8 +63,9 @@ eval "$(policy-orchestrator completion bash)"
 
 ---
 
-### 2. Vector Algorithms (9 Algorithms)
+### 2. Vector Algorithms (23 Algorithms)
 
+#### A. Preprocessing & Normalization (9 Algorithms)
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
 |---|---|---|---|---|---|
 | 10 | `ALGO-VEC-01` | `policy-orchestrator run normalize` | `policy-orchestrator exec ALGO-VEC-01` | `POST /api/v1/algos/vector/normalize` | Scales vectors to standard length 1.0 (L2 unit norm) |
@@ -76,6 +77,24 @@ eval "$(policy-orchestrator completion bash)"
 | 16 | `ALGO-VEC-07` | `policy-orchestrator run binary-quantize` | `policy-orchestrator exec ALGO-VEC-07` | `POST /api/v1/algos/vector/quantize/binary` | Shrinks vector values into 1s and 0s for fast bitwise search |
 | 17 | `ALGO-VEC-08` | `policy-orchestrator run slice` | `policy-orchestrator exec ALGO-VEC-08` | `POST /api/v1/algos/vector/slice` | Trims big vectors to smaller dimensions (Matryoshka learning) |
 | 18 | `ALGO-VEC-09` | `policy-orchestrator run layer-norm` | `policy-orchestrator exec ALGO-VEC-09` | `POST /api/v1/algos/vector/layer-norm` | Stabilizes vector distributions across AI model layers |
+
+#### B. Vector Search & Indexing (14 Algorithms — #51 to #64)
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 19 | `ALGO-VEC-SRCH-51` | `policy-orchestrator run vec-gemm` | `policy-orchestrator exec ALGO-VEC-SRCH-51` | `POST /api/v1/algos/vector-search/gemm` | Exact nearest neighbor search using matrix multiplication |
+| 20 | `ALGO-VEC-SRCH-52` | `policy-orchestrator run vec-simd` | `policy-orchestrator exec ALGO-VEC-SRCH-52` | `POST /api/v1/algos/vector-search/simd-dist` | Hardware-vectorized SIMD chunked distance kernels |
+| 21 | `ALGO-VEC-SRCH-53` | `policy-orchestrator run vec-topk` | `policy-orchestrator exec ALGO-VEC-SRCH-53` | `POST /api/v1/algos/vector-search/topk` | Heap-based bounded top-k candidate maintainer |
+| 22 | `ALGO-VEC-SRCH-54` | `policy-orchestrator run vec-radix` | `policy-orchestrator exec ALGO-VEC-SRCH-54` | `POST /api/v1/algos/vector-search/radix-topk` | Linear-time bucket radix top-k selection |
+| 23 | `ALGO-VEC-SRCH-55` | `policy-orchestrator run vec-early-abandon` | `policy-orchestrator exec ALGO-VEC-SRCH-55` | `POST /api/v1/algos/vector-search/early-abandon` | Early distance calculation cutoff on threshold breach |
+| 24 | `ALGO-VEC-SRCH-56` | `policy-orchestrator run vec-pivot` | `policy-orchestrator exec ALGO-VEC-SRCH-56` | `POST /api/v1/algos/vector-search/pivot-prune` | Triangle-inequality pruning using reference pivots |
+| 25 | `ALGO-VEC-SRCH-57` | `policy-orchestrator run vec-kdtree` | `policy-orchestrator exec ALGO-VEC-SRCH-57` | `POST /api/v1/algos/vector-search/kdtree` | Orthogonal axis KD-tree spatial partitioning index |
+| 26 | `ALGO-VEC-SRCH-58` | `policy-orchestrator run vec-balltree` | `policy-orchestrator exec ALGO-VEC-SRCH-58` | `POST /api/v1/algos/vector-search/ball-tree` | Hyperspherical metric Ball-tree index |
+| 27 | `ALGO-VEC-SRCH-59` | `policy-orchestrator run vec-vptree` | `policy-orchestrator exec ALGO-VEC-SRCH-59` | `POST /api/v1/algos/vector-search/vptree` | Concentric vantage-point shell metric tree |
+| 28 | `ALGO-VEC-SRCH-60` | `policy-orchestrator run vec-rpforest` | `policy-orchestrator exec ALGO-VEC-SRCH-60` | `POST /api/v1/algos/vector-search/rp-forest` | Annoy-style random projection hyperplane forest |
+| 29 | `ALGO-VEC-SRCH-61` | `policy-orchestrator run vec-ivf` | `policy-orchestrator exec ALGO-VEC-SRCH-61` | `POST /api/v1/algos/vector-search/ivf` | Voronoi inverted file index with cluster routing |
+| 30 | `ALGO-VEC-SRCH-62` | `policy-orchestrator run vec-ivfpq` | `policy-orchestrator exec ALGO-VEC-SRCH-62` | `POST /api/v1/algos/vector-search/ivf-pq` | Inverted file index with Product Quantization (ADC) |
+| 31 | `ALGO-VEC-SRCH-63` | `policy-orchestrator run vec-nprobe` | `policy-orchestrator exec ALGO-VEC-SRCH-63` | `POST /api/v1/algos/vector-search/nprobe-tune` | Automated Pareto frontier nprobe parameter tuner |
+| 32 | `ALGO-VEC-SRCH-64` | `policy-orchestrator run vec-imi` | `policy-orchestrator exec ALGO-VEC-SRCH-64` | `POST /api/v1/algos/vector-search/imi` | Fine dual-codebook Inverted Multi-Index |
 
 ---
 

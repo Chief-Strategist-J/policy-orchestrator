@@ -48,9 +48,23 @@ def test_cli_all_42_algorithms_execute():
         "ALGO-GRAPH-07": {"edges": [["A", "B"], ["C", "D"]]},
         "ALGO-GRAPH-08": {"adjacency_list": {"A": ["B"], "B": ["A"]}},
         "ALGO-GRAPH-09": {"target_graph": {"1": ["2"], "2": []}, "pattern_graph": {"A": ["B"], "B": []}},
+        "ALGO-VEC-SRCH-51": {"database_vectors": [[1.0, 0.0], [0.0, 1.0]], "query_vectors": [[1.0, 0.0]], "k": 2},
+        "ALGO-VEC-SRCH-52": {"vector_a": [1.0, 2.0], "vector_b": [1.0, 3.0], "metric": "l2"},
+        "ALGO-VEC-SRCH-53": {"candidates": [{"id": "1", "score": 5.0}], "k": 1},
+        "ALGO-VEC-SRCH-54": {"scores": [1.0, 5.0, 2.0], "k": 2},
+        "ALGO-VEC-SRCH-55": {"database_vectors": [[0.0, 0.0], [1.0, 1.0]], "query_vector": [0.0, 0.0], "k": 1},
+        "ALGO-VEC-SRCH-56": {"database_vectors": [[0.0, 0.0], [1.0, 1.0]], "pivots": [[0.0, 0.0]], "query_vector": [0.1, 0.1], "k": 1},
+        "ALGO-VEC-SRCH-57": {"vectors": [[1.0, 2.0], [3.0, 4.0]], "query": [1.0, 2.0], "k": 1},
+        "ALGO-VEC-SRCH-58": {"vectors": [[1.0, 2.0], [3.0, 4.0]], "query": [1.0, 2.0], "k": 1},
+        "ALGO-VEC-SRCH-59": {"vectors": [[1.0, 2.0], [3.0, 4.0]], "query": [1.0, 2.0], "k": 1},
+        "ALGO-VEC-SRCH-60": {"vectors": [[1.0, 2.0], [3.0, 4.0]], "query": [1.0, 2.0], "k": 1, "num_trees": 2},
+        "ALGO-VEC-SRCH-61": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], "query": [1.0, 2.0], "k": 1, "num_clusters": 2},
+        "ALGO-VEC-SRCH-62": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], "query": [1.0, 2.0], "k": 1, "num_clusters": 2, "subspaces": 2, "codebook_size": 2},
+        "ALGO-VEC-SRCH-63": {"database_vectors": [[1.0, 2.0], [3.0, 4.0]], "sample_queries": [[1.0, 2.0]], "k": 1, "num_clusters": 2},
+        "ALGO-VEC-SRCH-64": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], "query": [1.0, 2.0], "k": 1, "codebook_k1": 2, "codebook_k2": 2},
     }
 
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 42
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 56
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:
         algo_id = contract.id
