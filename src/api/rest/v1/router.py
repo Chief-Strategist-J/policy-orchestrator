@@ -23,42 +23,42 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 UNIFIED FACADE ROUTER
 """
 
 from fastapi import APIRouter
-from src.api.rest.v1.dependencies import get_services, get_code_engine_service, get_orchestrator_services
+from .dependencies import get_services, get_code_engine_service, get_orchestrator_services
 
 router = APIRouter(prefix="/api/v1")
 
-from src.api.rest.v1.routers.system_router import router as system_router
+from .routers.system_router import router as system_router
 router.include_router(system_router)
 
-from src.api.rest.v1.routers.search_router import router as search_router
+from .routers.search_router import router as search_router
 router.include_router(search_router)
 
-from src.api.rest.v1.routers.observability_router import router as observability_router
+from .routers.observability_router import router as observability_router
 router.include_router(observability_router)
 
-from src.api.rest.v1.routers.update_router import router as update_router
+from .routers.update_router import router as update_router
 router.include_router(update_router)
 
-from src.api.rest.v1.routers.vector_router import router as vector_router
+from .routers.vector_router import router as vector_router
 router.include_router(vector_router)
 
-from src.api.rest.v1.routers.graph_router import router as graph_router
+from .routers.graph_router import router as graph_router
 router.include_router(graph_router)
 
-from src.api.rest.v1.routers.vector_filter_router import router as vector_filter_router
+from .routers.vector_filter_router import router as vector_filter_router
 router.include_router(vector_filter_router)
 
-from src.api.rest.v1.routers.vector_search_router import router as vector_search_router
+from .routers.vector_search_router import router as vector_search_router
 router.include_router(vector_search_router)
 
-from src.api.rest.v1.routers.vector_transform_router import router as vector_transform_router
+from .routers.vector_transform_router import router as vector_transform_router
 router.include_router(vector_transform_router)
 
 # -----------------------------------------------------------------------------
 # RE-EXPORTS FOR FULL BACKWARD COMPATIBILITY
 # -----------------------------------------------------------------------------
 
-from src.api.rest.v1.routers.system_router import (
+from .routers.system_router import (
     GraphQueryDTO,
     AlgoComposeRequestDTO,
     AlgoExecuteRequestDTO,
@@ -79,7 +79,7 @@ from src.api.rest.v1.routers.system_router import (
     compose_algorithm_pipeline,
 )
 
-from src.api.rest.v1.routers.search_router import (
+from .routers.search_router import (
     AlgoScanDTO,
     FilePathDTO,
     DirectoryPathDTO,
@@ -112,7 +112,7 @@ from src.api.rest.v1.routers.search_router import (
     scan_multipattern,
 )
 
-from src.api.rest.v1.routers.observability_router import (
+from .routers.observability_router import (
     ObsSpanTrackDTO,
     ObsAstDTO,
     ObsSymbolsDTO,
@@ -124,7 +124,7 @@ from src.api.rest.v1.routers.observability_router import (
     generate_file_outline,
 )
 
-from src.api.rest.v1.routers.update_router import (
+from .routers.update_router import (
     PatchOperationDTO,
     BatchPatchRequestDTO,
     DiffRequestDTO,
@@ -134,7 +134,7 @@ from src.api.rest.v1.routers.update_router import (
     generate_diff,
 )
 
-from src.api.rest.v1.routers.vector_router import (
+from .routers.vector_router import (
     VectorNormalizeDTO,
     VectorCenterDTO,
     VectorLayerNormDTO,
@@ -155,7 +155,7 @@ from src.api.rest.v1.routers.vector_router import (
     chunk_text_endpoint,
 )
 
-from src.api.rest.v1.routers.graph_router import (
+from .routers.graph_router import (
     GraphBfsDTO,
     GraphDfsDTO,
     GraphDijkstraDTO,
@@ -176,7 +176,7 @@ from src.api.rest.v1.routers.graph_router import (
     graph_subgraph_match_endpoint,
 )
 
-from src.api.rest.v1.routers.vector_filter_router import (
+from .routers.vector_filter_router import (
     VecFilterPreFilterDTO,
     VecFilterPostFilterDTO,
     VecFilterInGraphDTO,
@@ -189,7 +189,7 @@ from src.api.rest.v1.routers.vector_filter_router import (
     vector_filter_partitioned_endpoint,
 )
 
-from src.api.rest.v1.routers.vector_search_router import (
+from .routers.vector_search_router import (
     VecSearchBruteForceGemmDTO,
     VecSearchSimdDistanceDTO,
     VecSearchHeapTopKDTO,
@@ -302,7 +302,7 @@ from src.api.rest.v1.routers.vector_search_router import (
     vector_search_search_autotune_endpoint,
 )
 
-from src.api.rest.v1.routers.vector_transform_router import (
+from .routers.vector_transform_router import (
     VecTransformSubwordTokenizationDTO,
     VecTransformBiEncoderForwardDTO,
     VecTransformMeanPoolingDTO,

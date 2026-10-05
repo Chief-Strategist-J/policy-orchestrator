@@ -23,8 +23,8 @@ from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, Field
 
 from src.api.rest.envelope import build_success_envelope
-from src.api.rest.v1.dependencies import get_code_engine_service
-from src.api.rest.v1.routers.search_router import FilePathDTO, DirectoryPathDTO
+from ..dependencies import get_code_engine_service
+from .search_router import FilePathDTO, DirectoryPathDTO
 
 router = APIRouter()
 

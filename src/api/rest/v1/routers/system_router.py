@@ -24,7 +24,7 @@ from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, Field
 
 from src.api.rest.envelope import build_success_envelope, build_error_envelope
-from src.api.rest.v1.dependencies import get_services, get_code_engine_service
+from ..dependencies import get_services, get_code_engine_service
 from src.features.rag.schema.rag_schema import RAGSearchRequestDTO, IndexingStatusDTO
 from src.features.rag.types.rag_types import RAGQueryRequest
 from src.features.agent.schema.agent_schema import AgentRunRequestDTO
