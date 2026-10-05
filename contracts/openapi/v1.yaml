@@ -5,7 +5,7 @@ info:
   description: >-
     Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
     grounded hybrid GraphRAG, autonomous AI Agent orchestration, and direct execution
-    of all 33 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
+    of all 56 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
     Strictly conforms to the RFC API Request & Response Structure Specification (v5.0).
 servers:
   - url: http://localhost:8000
@@ -903,6 +903,402 @@ paths:
       responses:
         '200':
           description: Subgraph pattern matching solutions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/gemm:
+    post:
+      summary: Exact kNN Brute-Force GEMM Scan (ALGO-VEC-SRCH-51)
+      operationId: vectorSearchGemm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [database_vectors, query_vectors]
+              properties:
+                database_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                k: { type: integer, default: 10 }
+                metric: { type: string, enum: [l2, dot, cosine], default: l2 }
+      responses:
+        '200':
+          description: Top-k nearest neighbors per query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/simd-dist:
+    post:
+      summary: SIMD Chunked Vector Distance Kernels (ALGO-VEC-SRCH-52)
+      operationId: vectorSearchSimdDist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector_a, vector_b]
+              properties:
+                vector_a:
+                  type: array
+                  items: { type: number }
+                vector_b:
+                  type: array
+                  items: { type: number }
+                metric: { type: string, enum: [l2, dot, cosine, hamming], default: l2 }
+      responses:
+        '200':
+          description: Vector distance metric
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/topk:
+    post:
+      summary: Bounded Memory Max/Min-Heap Top-k Selector (ALGO-VEC-SRCH-53)
+      operationId: vectorSearchTopk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidates]
+              properties:
+                candidates:
+                  type: array
+                  items: { type: object }
+                k: { type: integer, default: 10 }
+                score_key: { type: string, default: score }
+                order: { type: string, enum: [asc, desc], default: desc }
+                id_key: { type: string, default: id }
+      responses:
+        '200':
+          description: Top-k selected items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/radix-topk:
+    post:
+      summary: Linear-Time Quickselect/Radix Top-k Partitioner (ALGO-VEC-SRCH-54)
+      operationId: vectorSearchRadixTopk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scores]
+              properties:
+                scores:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 10 }
+                order: { type: string, enum: [asc, desc], default: desc }
+      responses:
+        '200':
+          description: Top-k partitioned scores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/early-abandon:
+    post:
+      summary: Monotonic Distance Accumulator with Early Abandoning (ALGO-VEC-SRCH-55)
+      operationId: vectorSearchEarlyAbandon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [database_vectors, query_vector]
+              properties:
+                database_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query_vector:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 10 }
+                metric: { type: string, enum: [l2, dot, cosine], default: l2 }
+      responses:
+        '200':
+          description: Top-k nearest neighbors with pruned dimension steps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/pivot-prune:
+    post:
+      summary: Metric Pivot Triangle Inequality Filter (ALGO-VEC-SRCH-56)
+      operationId: vectorSearchPivotPrune
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [database_vectors, pivots, query_vector]
+              properties:
+                database_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                pivots:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query_vector:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Pruned top-k search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/kdtree:
+    post:
+      summary: Orthogonal Axis Hyperplane KD-Tree Spatial Index (ALGO-VEC-SRCH-57)
+      operationId: vectorSearchKDTree
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                leaf_size: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: KD-tree kNN search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/ball-tree:
+    post:
+      summary: Hyperspherical Metric Ball Tree Index (ALGO-VEC-SRCH-58)
+      operationId: vectorSearchBallTree
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                leaf_size: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: Ball-tree kNN search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/vptree:
+    post:
+      summary: Concentric Vantage-Point Spherical Shell Tree Index (ALGO-VEC-SRCH-59)
+      operationId: vectorSearchVPTree
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: VP-tree kNN search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/rp-forest:
+    post:
+      summary: Annoy-Style Random Projection Hyperplane Forest (ALGO-VEC-SRCH-60)
+      operationId: vectorSearchRPForest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_trees: { type: integer, default: 10 }
+                max_leaf_size: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: Random projection forest approximate kNN results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/ivf:
+    post:
+      summary: Inverted File Voronoi Coarse Quantizer Index (ALGO-VEC-SRCH-61)
+      operationId: vectorSearchIVF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_clusters: { type: integer, default: 4 }
+                nprobe: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: IVF inverted file query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/ivf-pq:
+    post:
+      summary: Inverted File with Product Quantization and Asymmetric Distance (ALGO-VEC-SRCH-62)
+      operationId: vectorSearchIVFPQ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_clusters: { type: integer, default: 4 }
+                nprobe: { type: integer, default: 2 }
+                subspaces: { type: integer, default: 2 }
+                codebook_size: { type: integer, default: 4 }
+      responses:
+        '200':
+          description: IVF-PQ compressed approximate kNN results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/nprobe-tune:
+    post:
+      summary: Automated Pareto Frontier nprobe Tuner (ALGO-VEC-SRCH-63)
+      operationId: vectorSearchNprobeTune
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [database_vectors, sample_queries]
+              properties:
+                database_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                sample_queries:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                k: { type: integer, default: 5 }
+                num_clusters: { type: integer, default: 4 }
+                target_recall: { type: number, default: 0.9 }
+      responses:
+        '200':
+          description: Automated nprobe tuning frontier and recommendation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/imi:
+    post:
+      summary: Inverted Multi-Index Dual Codebook Coarse Quantizer (ALGO-VEC-SRCH-64)
+      operationId: vectorSearchIMI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                codebook_k1: { type: integer, default: 2 }
+                codebook_k2: { type: integer, default: 2 }
+                nprobe_cells: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: Inverted multi-index kNN query results
           content:
             application/json:
               schema:

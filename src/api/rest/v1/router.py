@@ -60,6 +60,21 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
      • POST /api/v1/algos/vector/quantize/binary: 1-Bit Binary Quantization.
      • POST /api/v1/algos/vector/pool: Token Pooling Engine.
      • POST /api/v1/algos/vector/chunk: Text Chunking and Semantic Breakpoints.
+   - Vector Search Algorithms (ALGO-VEC-SRCH-51..64):
+     • POST /api/v1/algos/vector-search/gemm: Exact kNN Brute-Force GEMM Scan.
+     • POST /api/v1/algos/vector-search/simd-dist: SIMD Chunked Vector Distance Kernels.
+     • POST /api/v1/algos/vector-search/topk: Bounded Memory Max/Min-Heap Top-k Selector.
+     • POST /api/v1/algos/vector-search/radix-topk: Linear-Time Quickselect/Radix Top-k Partitioner.
+     • POST /api/v1/algos/vector-search/early-abandon: Monotonic Distance Accumulator with Early Abandoning.
+     • POST /api/v1/algos/vector-search/pivot-prune: Metric Pivot Triangle Inequality Filter.
+     • POST /api/v1/algos/vector-search/kdtree: Orthogonal Axis Hyperplane KD-Tree Spatial Index.
+     • POST /api/v1/algos/vector-search/ball-tree: Hyperspherical Metric Ball Tree Index.
+     • POST /api/v1/algos/vector-search/vptree: Concentric Vantage-Point Spherical Shell Tree Index.
+     • POST /api/v1/algos/vector-search/rp-forest: Annoy-Style Random Projection Hyperplane Forest.
+     • POST /api/v1/algos/vector-search/ivf: Inverted File Voronoi Coarse Quantizer Index.
+     • POST /api/v1/algos/vector-search/ivf-pq: Inverted File with Product Quantization and Asymmetric Distance.
+     • POST /api/v1/algos/vector-search/nprobe-tune: Automated Pareto Frontier nprobe Tuner.
+     • POST /api/v1/algos/vector-search/imi: Inverted Multi-Index Dual Codebook Coarse Quantizer.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
