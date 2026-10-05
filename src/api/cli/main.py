@@ -13,17 +13,22 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: POLICY ORCHESTRATOR CLI ENTRYPOINT
    - `refactor`: Batch AST / regex code refactoring.
    - `policy-check`: Engineering contract verification.
    - `serve`: Launches Uvicorn REST API server.
+   - `algo`: Executes all 33 Layer 1 algorithms directly or lists contracts / pipelines.
+   - `migrate`: Runs database schema migrations and seeds algorithm contracts.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Zero-Inline-Comment Doctrine: All subcommand dispatch logic, arguments,
      and terminal formatting routines are documented solely in this top-side header.
      Functions and loops remain 100% comment-free and pure.
+   - Direct Algorithm Execution: `algo execute --id <algo_id> --input '<json>'`
+     enables direct invocation of all 33 Search, Observability, Update, and Vector algos.
    - Posix Exit Codes: 0 for success, 1 for violations/errors.
 ================================================================================
 """
 
 import sys
 import os
+import re
 from pathlib import Path
 
 REPO_ROOT = str(Path(__file__).resolve().parent.parent.parent.parent)
@@ -33,7 +38,7 @@ if REPO_ROOT not in sys.path:
 import json
 import argparse
 from dataclasses import asdict
-from typing import List
+from typing import List, Dict, Any
 
 from src.features.audit.service.audit_service import AuditService
 from src.features.refactor.service.refactor_service import RefactorService
@@ -46,6 +51,12 @@ from src.infra.adapters.knowledge.policy_rules_loader import PolicyRulesMarkdown
 from src.infra.adapters.vector.in_memory_vector_adapter import InMemoryCosineVectorAdapter
 from src.infra.adapters.llm.openai_compatible_adapter import OpenAICompatibleAdapter
 from src.infra.adapters.llm.mock_llm_adapter import MockLLMAdapter
+from src.features.code_engine.service.code_engine_service import CodeEngineService
+from src.features.code_engine.registry.algorithm_catalog import BUILTIN_ALGORITHM_CONTRACTS, BUILTIN_TYPE_ADAPTERS
+from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
+from src.infra.adapters.database.in_memory_algorithm_registry_adapter import InMemoryAlgorithmRegistryAdapter
+from src.infra.adapters.database.migration_runner import DatabaseMigrationRunner
+
 
 def _init_rag_and_agent(rules_dir: str, backend: str):
     knowledge_source = PolicyRulesMarkdownLoader(base_rules_dir=rules_dir)
@@ -79,6 +90,7 @@ def _init_rag_and_agent(rules_dir: str, backend: str):
     )
     return rag_svc, agent_svc
 
+
 def handle_audit_command(args: argparse.Namespace) -> int:
     service = AuditService()
     findings = service.audit_repository(args.root)
@@ -107,6 +119,7 @@ def handle_audit_command(args: argparse.Namespace) -> int:
 
     return 1 if any(f.severity in {"CRITICAL", "HIGH"} for f in findings) else 0
 
+
 def handle_rag_command(args: argparse.Namespace) -> int:
     rag_svc, _ = _init_rag_and_agent(args.rules_dir, args.backend)
     
@@ -132,6 +145,7 @@ def handle_rag_command(args: argparse.Namespace) -> int:
     print(f"{'='*75}\n")
     print(res.formatted_context_block)
     return 0
+
 
 def handle_agent_command(args: argparse.Namespace) -> int:
     _, agent_svc = _init_rag_and_agent(args.rules_dir, args.backend)
@@ -162,6 +176,7 @@ def handle_agent_command(args: argparse.Namespace) -> int:
     print(f"\n--- Final Answer ---\n{result.final_response}\n")
     return 0
 
+
 def handle_refactor_command(args: argparse.Namespace) -> int:
     service = RefactorService()
     exts = set(e.strip().lower() for e in args.ext.split(","))
@@ -185,6 +200,7 @@ def handle_refactor_command(args: argparse.Namespace) -> int:
         print(f"  - {d.file_path}: {d.occurrences} matches ({state})")
 
     return 0
+
 
 def handle_policy_check_command(args: argparse.Namespace) -> int:
     service = PolicySyncService()
@@ -214,11 +230,6 @@ def handle_policy_check_command(args: argparse.Namespace) -> int:
     print("✅ All algorithm entries strictly conform to the engineering contract standard.")
     return 0
 
-from src.features.code_engine.service.code_engine_service import CodeEngineService
-from src.features.code_engine.registry.algorithm_catalog import BUILTIN_ALGORITHM_CONTRACTS, BUILTIN_TYPE_ADAPTERS
-from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
-from src.infra.adapters.database.in_memory_algorithm_registry_adapter import InMemoryAlgorithmRegistryAdapter
-from src.infra.adapters.database.migration_runner import DatabaseMigrationRunner
 
 def handle_algo_command(args: argparse.Namespace) -> int:
     svc = CodeEngineService()
@@ -324,13 +335,13 @@ def handle_algo_command(args: argparse.Namespace) -> int:
             if not category_filter or c.category.value == category_filter
         ]
         if args.json:
-            print(json.dumps([asdict(c) for c in contracts], indent=2))
+            print(json.dumps([c.model_dump() for c in contracts], indent=2))
             return 0
         print(f"\n{'='*85}")
-        print(f"📋 [ALGORITHM REGISTRY] 24 LAYER 1 CONTRACTS ({len(contracts)} matching)")
+        print(f"📋 [ALGORITHM REGISTRY] 33 LAYER 1 CONTRACTS ({len(contracts)} matching)")
         print(f"{'='*85}")
         for c in contracts:
-            print(f"  • [{c.id}] {c.name:<32} Category: {c.category.value:<14} Time: {c.complexity.time:<10} Target: {c.hardware_target.value}")
+            print(f"  • [{c.id}] {c.name:<34} Category: {c.category.value:<14} Time: {c.complexity.time:<10} Target: {c.hardware_target.value}")
         return 0
 
     elif args.action == "compose":
@@ -358,7 +369,40 @@ def handle_algo_command(args: argparse.Namespace) -> int:
                 print(f"  ⚠️  {w}")
         return 0 if res["is_valid"] else 1
 
+    elif args.action == "execute":
+        algo_id = getattr(args, "id", None)
+        if not algo_id:
+            print("Error: --id <algo_id> is required for 'execute'")
+            return 1
+
+        input_str = getattr(args, "input", "{}")
+        try:
+            if input_str.startswith("@") or os.path.isfile(input_str):
+                path = input_str.removeprefix("@")
+                with open(path, "r", encoding="utf-8") as f:
+                    inputs = json.load(f)
+            else:
+                inputs = json.loads(input_str)
+        except Exception as e:
+            print(f"Error parsing input JSON: {e}")
+            return 1
+
+        try:
+            result = svc.execute_algorithm(algo_id=algo_id, inputs=inputs)
+            if args.json:
+                print(json.dumps({"algo_id": algo_id, "result": result}, indent=2))
+            else:
+                print(f"\n{'='*75}")
+                print(f"⚡ [ALGORITHM ENGINE] EXECUTED: {algo_id}")
+                print(f"{'='*75}\n")
+                print(json.dumps(result, indent=2))
+            return 0
+        except Exception as e:
+            print(f"Execution failed: {e}")
+            return 1
+
     return 0
+
 
 def handle_migrate_command(args: argparse.Namespace) -> int:
     runner = DatabaseMigrationRunner()
@@ -375,12 +419,14 @@ def handle_migrate_command(args: argparse.Namespace) -> int:
         return 0
     return 0
 
+
 def handle_serve_command(args: argparse.Namespace) -> int:
     import uvicorn
     os.environ["POLICY_RULES_DIR"] = args.rules_dir
     os.environ["LLM_BACKEND"] = args.backend
     uvicorn.run("src.api.rest.app:app", host=args.host, port=args.port, reload=args.reload)
     return 0
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -393,8 +439,10 @@ def main() -> None:
     audit_parser.add_argument("--root", default=".", help="Root directory")
     audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
-    algo_parser = subparsers.add_parser("algo", help="Execute Categorized Search, Observability & Update Algorithms")
-    algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff", "contracts", "compose"], help="Algorithm action")
+    algo_parser = subparsers.add_parser("algo", help="Execute Categorized Search, Observability, Update & Vector Algorithms")
+    algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff", "contracts", "compose", "execute"], help="Algorithm action")
+    algo_parser.add_argument("--id", default=None, help="Algorithm ID to execute (e.g. ALGO-VEC-01, ALGO-SRCH-11)")
+    algo_parser.add_argument("--input", default="{}", help="Input payload JSON string or @filepath")
     algo_parser.add_argument("--root", default=".", help="Root directory")
     algo_parser.add_argument("--patterns", default="TODO,FIXME,error,critical", help="Comma-separated patterns")
     algo_parser.add_argument("--file", default="src/api/cli/main.py", help="File to inspect or patch")
@@ -403,7 +451,7 @@ def main() -> None:
     algo_parser.add_argument("--replace", default="", help="Replacement string for update/diff/patch")
     algo_parser.add_argument("--regex", action="store_true", help="Treat find pattern as regex")
     algo_parser.add_argument("--apply", action="store_true", help="Apply patch modifications to disk")
-    algo_parser.add_argument("--category", default=None, help="Filter contracts by category (search, observability, update)")
+    algo_parser.add_argument("--category", default=None, help="Filter contracts by category (search, observability, update, vector)")
     algo_parser.add_argument("--algos", default="ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23", help="Comma-separated algorithm IDs to compose")
     algo_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
@@ -466,6 +514,7 @@ def main() -> None:
     handler = dispatch.get(args.subcommand)
     if handler:
         sys.exit(handler(args))
+
 
 if __name__ == "__main__":
     main()

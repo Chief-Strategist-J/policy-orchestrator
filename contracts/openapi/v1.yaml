@@ -1,10 +1,12 @@
 openapi: 3.1.0
 info:
-  title: Policy Orchestrator & AI Meta-Agent API
+  title: Policy Orchestrator & Algorithm Execution API
   version: 1.0.0
   description: >-
     Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
-    grounded hybrid GraphRAG, autonomous AI Agent orchestration, and safe AST refactoring.
+    grounded hybrid GraphRAG, autonomous AI Agent orchestration, and direct execution
+    of all 33 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
+    Strictly conforms to the RFC API Request & Response Structure Specification (v5.0).
 servers:
   - url: http://localhost:8000
     description: Local development orchestrator
@@ -130,6 +132,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope_AgentRunResponse'
+
+  /api/v1/algos/contracts:
+    get:
+      summary: List and Filter All 33 Layer 1 Algorithm Contracts
+      operationId: listAlgorithmContracts
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [search, observability, update, vector, graph, reasoning]
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: purity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PURE, IMPURE]
+        - name: side_effects
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [READ_ONLY, IN_MEMORY, DISK_WRITE, NETWORK_IO]
+      responses:
+        '200':
+          description: List of registered Layer 1 Algorithm Contracts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgorithmContractListResponse'
+
+  /api/v1/algos/contracts/{algo_id}:
+    get:
+      summary: Get Specific Layer 1 Algorithm Contract by ID
+      operationId: getAlgorithmContract
+      parameters:
+        - name: algo_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "ALGO-VEC-01"
+      responses:
+        '200':
+          description: Full Layer 1 Algorithm Contract specification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgorithmContractResponse'
+
+  /api/v1/algos/adapters:
+    get:
+      summary: List All G4 Type Conversion Adapters
+      operationId: listTypeAdapters
+      responses:
+        '200':
+          description: List of registered type conversion adapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_TypeAdapterListResponse'
+
+  /api/v1/algos/compose:
+    post:
+      summary: Validate and Compose Dynamic Multi-Algorithm Pipeline
+      operationId: composeAlgorithmPipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlgoComposeRequest'
+      responses:
+        '200':
+          description: Validated execution pipeline DAG and inferred G4 adapters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoComposeResponse'
+
+  /api/v1/algos/execute/{algo_id}:
+    post:
+      summary: Execute Any Layer 1 Algorithm Directly by ID
+      operationId: executeAlgorithmDirect
+      parameters:
+        - name: algo_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "ALGO-VEC-01"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlgoExecuteRequest'
+      responses:
+        '200':
+          description: Algorithm execution outcome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoExecuteResponse'
 
   /api/v1/algos/search/scan:
     post:
@@ -284,161 +396,340 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'
 
-  /api/v1/graph/build:
+  /api/v1/algos/vector/normalize:
     post:
-      summary: Build Semantic Knowledge Graph from Markdown Contracts
-      operationId: buildKnowledgeGraph
-      responses:
-        '200':
-          description: Knowledge graph summary
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Envelope_GraphBuildResponse'
-
-  /api/v1/graph/query:
-    post:
-      summary: Execute Declarative Cypher Query on Knowledge Graph
-      operationId: queryKnowledgeGraph
+      summary: L2 Vector Unit Normalization (ALGO-VEC-01)
+      operationId: normalizeVector
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GraphQueryRequest'
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+                eps:
+                  type: number
+                  default: 1e-12
       responses:
         '200':
-          description: Cypher query result records
+          description: L2 normalized unit vector
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope_GraphQueryResponse'
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
 
-  /api/v1/graph/impact/{rule_id}:
-    get:
-      summary: Query Topological Invariant Dependencies and Failure Impact
-      operationId: getRuleImpact
-      parameters:
-        - name: rule_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Connected architecture patterns and failure modes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Envelope_RuleImpactResponse'
-
-  /api/v1/algos/contracts:
-    get:
-      summary: List and Filter All 24 Layer 1 Algorithm Contracts
-      operationId: listAlgorithmContracts
-      parameters:
-        - name: category
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [search, observability, update, graph, reasoning]
-        - name: tag
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: purity
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [PURE, IMPURE]
-        - name: side_effects
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [READ_ONLY, IN_MEMORY, DISK_WRITE, NETWORK_IO]
-      responses:
-        '200':
-          description: List of registered Layer 1 Algorithm Contracts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Envelope_AlgorithmContractListResponse'
-
-  /api/v1/algos/contracts/{algo_id}:
-    get:
-      summary: Get Specific Layer 1 Algorithm Contract by ID
-      operationId: getAlgorithmContract
-      parameters:
-        - name: algo_id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "ALGO-SRCH-11"
-      responses:
-        '200':
-          description: Full Layer 1 Algorithm Contract specification
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Envelope_AlgorithmContractResponse'
-
-  /api/v1/algos/adapters:
-    get:
-      summary: List All G4 Type Conversion Adapters
-      operationId: listTypeAdapters
-      responses:
-        '200':
-          description: List of registered type conversion adapters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Envelope_TypeAdapterListResponse'
-
-  /api/v1/algos/compose:
+  /api/v1/algos/vector/center:
     post:
-      summary: Validate and Compose Dynamic Multi-Algorithm Pipeline (Layer 1-3)
-      operationId: composeAlgorithmPipeline
+      summary: Corpus Mean Centering & Anisotropy Removal (ALGO-VEC-02)
+      operationId: centerVectors
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AlgoComposeRequest'
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items:
+                    type: array
+                    items: { type: number }
       responses:
         '200':
-          description: Validated execution pipeline DAG and inferred G4 adapters
+          description: Centered batch vectors
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope_AlgoComposeResponse'
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/layer-norm:
+    post:
+      summary: Layer Normalization & Dimension Standardization (ALGO-VEC-03)
+      operationId: layerNormVector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+                gamma:
+                  type: array
+                  items: { type: number }
+                beta:
+                  type: array
+                  items: { type: number }
+                eps:
+                  type: number
+                  default: 1e-5
+      responses:
+        '200':
+          description: Layer normalized vector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/scale:
+    post:
+      summary: Min-Max and Z-Score Vector Scaling (ALGO-VEC-04)
+      operationId: scaleVector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+                min_val:
+                  type: number
+                  default: 0.0
+                max_val:
+                  type: number
+                  default: 1.0
+                method:
+                  type: string
+                  enum: [minmax, zscore]
+                  default: minmax
+      responses:
+        '200':
+          description: Scaled feature vector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/slice:
+    post:
+      summary: Matryoshka Representation Learning Slicing (ALGO-VEC-05)
+      operationId: sliceVector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+                target_dim:
+                  type: integer
+                  default: 64
+                renormalize:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Sliced and renormalized lower-dimensional vector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/quantize/scalar:
+    post:
+      summary: Uniform Scalar Quantization SQ8/SQ4 (ALGO-VEC-06)
+      operationId: quantizeScalar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+                bits:
+                  type: integer
+                  enum: [4, 8]
+                  default: 8
+      responses:
+        '200':
+          description: Quantized integer values and scaling metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/quantize/binary:
+    post:
+      summary: 1-Bit Binary Quantization (ALGO-VEC-07)
+      operationId: quantizeBinary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vector]
+              properties:
+                vector:
+                  type: array
+                  items: { type: number }
+      responses:
+        '200':
+          description: 1-bit binary representation and packed byte hex
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/pool:
+    post:
+      summary: Sequence Token Pooling Engine (ALGO-VEC-08)
+      operationId: poolTokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token_embeddings]
+              properties:
+                token_embeddings:
+                  type: array
+                  items:
+                    type: array
+                    items: { type: number }
+                attention_mask:
+                  type: array
+                  items: { type: integer }
+                pooling_strategy:
+                  type: string
+                  enum: [mean, cls, last]
+                  default: mean
+      responses:
+        '200':
+          description: Pooled sequence representation vector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector/chunk:
+    post:
+      summary: Text Chunking and Semantic Breakpoints (ALGO-VEC-09)
+      operationId: chunkText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                max_chunk_size:
+                  type: integer
+                  default: 200
+                overlap:
+                  type: integer
+                  default: 40
+      responses:
+        '200':
+          description: Segmented text chunks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
 
 components:
   schemas:
     ResponseMeta:
       type: object
       required:
-        - trace_id
+        - requestId
+        - correlationId
         - timestamp
-        - version
+        - apiVersion
         - status
+        - trace_id
       properties:
-        trace_id:
+        requestId:
           type: string
-          example: "0af7651916cd43dd8448eb211c80319c"
+          example: "req-1700000000000-a1b2c3"
+        correlationId:
+          type: string
+          example: "corr-1700000000000-x9y8z7"
+        causationId:
+          type: string
+          nullable: true
         timestamp:
           type: string
-          example: "2026-10-01T12:00:00Z"
-        version:
+          example: "2026-10-05T14:00:00.000Z"
+        executionTimeMs:
+          type: integer
+          example: 12
+        apiVersion:
           type: string
           example: "v1"
         status:
           type: string
           enum: [success, error]
+        trace_id:
+          type: string
+          example: "0af7651916cd43dd8448eb211c80319c"
+        auditLogId:
+          type: string
+          nullable: true
+        operationId:
+          type: string
+          nullable: true
+        deprecatedFields:
+          type: array
+          items: { type: string }
+          nullable: true
+        supportedVersions:
+          type: array
+          items: { type: string }
+        staleness:
+          type: object
+          nullable: true
+        pagination:
+          type: object
+          nullable: true
+        links:
+          type: object
+          nullable: true
+
+    ErrorContainer:
+      type: object
+      required:
+        - code
+        - message
+        - retryable
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_FAILED"
+        message:
+          type: string
+          example: "One or more payload validation checks failed."
+        retryable:
+          type: boolean
+          default: false
+        details:
+          type: array
+          items:
+            type: object
 
     ErrorItem:
       type: object
@@ -451,7 +742,7 @@ components:
           example: "VALIDATION_FAILED"
         message:
           type: string
-          example: "Field 'prompt' is required."
+          example: "One or more payload validation checks failed."
         details:
           type: object
 
@@ -492,147 +783,6 @@ components:
         session_id:
           type: string
 
-    GraphQueryRequest:
-      type: object
-      required:
-        - query
-      properties:
-        query:
-          type: string
-          example: "MATCH (r:Rule)-[:ENFORCES]->(p:ArchitecturePattern) RETURN r, p"
-        parameters:
-          type: object
-
-    Envelope_HealthResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_AlgoResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_AuditResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_IndexingResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_RAGSearchResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_AgentRunResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_AgentListResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_GraphBuildResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_GraphQueryResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
-    Envelope_RuleImpactResponse:
-      type: object
-      required: [meta, data]
-      properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
     AlgoComposeRequest:
       type: object
       required: [algo_ids]
@@ -646,86 +796,163 @@ components:
           type: boolean
           default: true
 
-    Envelope_AlgorithmContractListResponse:
+    AlgoExecuteRequest:
       type: object
-      required: [meta, data]
       properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
+        inputs:
+          type: object
+          description: Input payload matching algorithm contract input_schema
+        parameters:
+          type: object
+          description: Optional execution parameters
+
+    Envelope_HealthResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AlgoResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AlgoExecuteResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
         data:
           type: object
           properties:
-            total_contracts:
-              type: integer
-            contracts:
-              type: array
-              items:
-                type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
+            algo_id: { type: string }
+            result: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AuditResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_IndexingResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_RAGSearchResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AgentRunResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AgentListResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
+
+    Envelope_AlgorithmContractListResponse:
+      type: object
+      required: [success, statusCode, meta, data]
+      properties:
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data:
+          type: object
+          properties:
+            total_contracts: { type: integer }
+            contracts: { type: array, items: { type: object } }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
 
     Envelope_AlgorithmContractResponse:
       type: object
-      required: [meta, data]
+      required: [success, statusCode, meta, data]
       properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
-        data:
-          type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
+        data: { type: object }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
 
     Envelope_TypeAdapterListResponse:
       type: object
-      required: [meta, data]
+      required: [success, statusCode, meta, data]
       properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
         data:
           type: object
           properties:
-            total_adapters:
-              type: integer
-            adapters:
-              type: array
-              items:
-                type: object
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
+            total_adapters: { type: integer }
+            adapters: { type: array, items: { type: object } }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }
 
     Envelope_AlgoComposeResponse:
       type: object
-      required: [meta, data]
+      required: [success, statusCode, meta, data]
       properties:
-        meta:
-          $ref: '#/components/schemas/ResponseMeta'
+        success: { type: boolean, example: true }
+        statusCode: { type: integer, example: 200 }
         data:
           type: object
           properties:
-            total_steps:
-              type: integer
-            pipeline_steps:
-              type: array
-              items:
-                type: object
-            inferred_adapters:
-              type: array
-              items:
-                type: object
-            safety_issues:
-              type: array
-              items:
-                type: string
-            is_valid:
-              type: boolean
-        errors:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorItem'
-
+            total_steps: { type: integer }
+            pipeline_steps: { type: array, items: { type: object } }
+            inferred_adapters: { type: array, items: { type: object } }
+            safety_issues: { type: array, items: { type: string } }
+            is_valid: { type: boolean }
+        meta: { $ref: '#/components/schemas/ResponseMeta' }
+        error: { $ref: '#/components/schemas/ErrorContainer' }
+        errors: { type: array, items: { $ref: '#/components/schemas/ErrorItem' }, nullable: true }

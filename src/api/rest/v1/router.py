@@ -9,23 +9,45 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
    - POST /api/v1/rag/search: Grounded semantic search over policy markdown rules.
    - POST /api/v1/rag/index: Trigger full re-indexing of policy knowledge base.
    - POST /api/v1/agent/run: Execute autonomous AI Agent policy reasoning workflow.
-   - GET  /api/v1/agents: List all 1000+ declarative specialized agent manifests.
-   - POST /api/v1/agents/{agent_id}/run: Execute a specific declarative specialized agent.
+   - GET  /api/v1/agents: List all declarative specialized agent manifests.
+   - POST /api/v1/agents/{agent_id}/run: Execute a specific declarative agent.
    - POST /api/v1/audit/scan: Execute deterministic invariant repository audit.
    - POST /api/v1/graph/build: Extract & build semantic policy knowledge graph.
    - POST /api/v1/graph/query: Execute declarative Cypher/pattern queries.
    - GET  /api/v1/graph/impact/{rule_id}: Query topological rule dependencies.
+   - GET  /api/v1/algos/contracts: List and filter all 33 Layer 1 algorithm contracts.
+   - GET  /api/v1/algos/contracts/{algo_id}: Get specific algorithm contract by ID.
+   - GET  /api/v1/algos/adapters: List all 11 G4 Type Conversion Adapters.
+   - POST /api/v1/algos/compose: Validate and compose dynamic multi-algorithm pipeline.
+   - POST /api/v1/algos/execute/{algo_id}: Execute any of the 33 algorithms directly.
+   - POST /api/v1/algos/search/scan: Multi-pattern fast directory scan.
+   - POST /api/v1/algos/observability/outline: Hierarchical symbol outline generation.
+   - POST /api/v1/algos/observability/dependencies: Module import dependency grapher.
+   - POST /api/v1/algos/observability/lint-comments: Zero-inline-comment doctrine linter.
+   - POST /api/v1/algos/update/patch: Deterministic atomic multi-file patching.
+   - POST /api/v1/algos/update/diff: Unified GNU/Git context diff engine.
+   - POST /api/v1/algos/vector/normalize: Vector L2 Normalization.
+   - POST /api/v1/algos/vector/center: Corpus Mean Centering.
+   - POST /api/v1/algos/vector/layer-norm: Layer Normalization & Standardization.
+   - POST /api/v1/algos/vector/scale: Min-Max and Z-Score Scaling.
+   - POST /api/v1/algos/vector/slice: Matryoshka Representation Learning (MRL) Slicing.
+   - POST /api/v1/algos/vector/quantize/scalar: Uniform Scalar Quantization (SQ8/SQ4).
+   - POST /api/v1/algos/vector/quantize/binary: 1-Bit Binary Quantization.
+   - POST /api/v1/algos/vector/pool: Token Pooling Engine.
+   - POST /api/v1/algos/vector/chunk: Text Chunking and Semantic Breakpoints.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
-   - Zero-Inline-Comment Doctrine: Route declarations, dependency injections,
-     and payload wrapping procedures are articulated in this header.
-   - Standard Envelope: All routes return data encapsulated in `{meta, data, errors}`.
-   - Open Standards & Pluggable Adapters: Configurable backends for LLM (OpenAI,
-     Ollama, Mock), Vector (Qdrant, In-Memory), Graph (Neo4j, In-Memory), and Search.
+   - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
+     conforming to `policies/rules/folderStructure/api-request-response-structure.md` (v5.0).
+   - Zero-Inline-Comment Doctrine: All router signatures, parameter mappings, dependency
+     injections, and validation pipelines are articulated solely in this blueprint header.
+     Router handler functions remain 100% comment-free and pure.
+   - W3C Trace Context: Request traces and span contexts propagated across all envelopes.
 ================================================================================
 """
 
 import os
+import time
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Request, HTTPException
@@ -71,14 +93,108 @@ from src.infra.adapters.database import (
     DatabaseMigrationRunner,
 )
 from src.features.code_engine.service.algorithm_composer_service import AlgorithmComposerService
+from src.features.code_engine.service.code_engine_service import CodeEngineService
 
 router = APIRouter(prefix="/api/v1")
-
 
 
 class GraphQueryDTO(BaseModel):
     query: str = Field(..., description="Cypher or pattern matching query")
     parameters: Optional[Dict[str, Any]] = Field(default=None, description="Query parameters")
+
+
+class AlgoScanDTO(BaseModel):
+    root_dir: str = Field(default=".", description="Root directory to scan")
+    patterns: List[str] = Field(..., description="Patterns to search for")
+    max_files: int = Field(default=1000, description="Max files to scan")
+
+
+class FilePathDTO(BaseModel):
+    file_path: str = Field(..., description="File path to analyze")
+
+
+class DirectoryPathDTO(BaseModel):
+    directory: str = Field(default=".", description="Directory path to analyze")
+
+
+class PatchOperationDTO(BaseModel):
+    file_path: str = Field(..., description="File to patch")
+    find_pattern: str = Field(..., description="Target pattern")
+    replace_text: str = Field(..., description="Replacement text")
+    expected_sha256: Optional[str] = Field(default=None, description="Precondition SHA-256")
+    is_regex: bool = Field(default=False, description="Is regex pattern")
+
+
+class BatchPatchRequestDTO(BaseModel):
+    operations: List[PatchOperationDTO] = Field(..., description="List of patch operations")
+    dry_run: bool = Field(default=False, description="Simulate patch without disk write")
+
+
+class DiffRequestDTO(BaseModel):
+    original_content: str = Field(..., description="Original text")
+    modified_content: str = Field(..., description="Modified text")
+    file_path: str = Field(default="file", description="File path identifier")
+
+
+class AlgoComposeRequestDTO(BaseModel):
+    algo_ids: List[str] = Field(..., description="Ordered list of algorithm IDs to compose")
+    strict_check: bool = Field(default=True, description="Enforce strict contract safety checks")
+
+
+class AlgoExecuteRequestDTO(BaseModel):
+    inputs: Dict[str, Any] = Field(default_factory=dict, description="Algorithm input parameters")
+    parameters: Optional[Dict[str, Any]] = Field(default=None, description="Optional algorithm execution parameters")
+
+
+class VectorNormalizeDTO(BaseModel):
+    vector: List[float] = Field(..., description="Dense float vector to normalize")
+    eps: float = Field(default=1e-12, description="Zero-division guard epsilon")
+
+
+class VectorCenterDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Batch of vectors for corpus mean centering")
+
+
+class VectorLayerNormDTO(BaseModel):
+    vector: List[float] = Field(..., description="Dense input vector")
+    gamma: Optional[List[float]] = Field(default=None, description="Learned scale parameter")
+    beta: Optional[List[float]] = Field(default=None, description="Learned shift parameter")
+    eps: float = Field(default=1e-5, description="Epsilon stability factor")
+
+
+class VectorScaleDTO(BaseModel):
+    vector: List[float] = Field(..., description="Input feature vector")
+    min_val: float = Field(default=0.0, description="Target minimum range")
+    max_val: float = Field(default=1.0, description="Target maximum range")
+    method: str = Field(default="minmax", description="Scaling method ('minmax' or 'zscore')")
+
+
+class VectorSliceDTO(BaseModel):
+    vector: List[float] = Field(..., description="High-dimensional embedding vector")
+    target_dim: int = Field(default=64, description="Target lower dimension prefix")
+    renormalize: bool = Field(default=True, description="Apply L2 normalization after slicing")
+
+
+class VectorScalarQuantizeDTO(BaseModel):
+    vector: List[float] = Field(..., description="Dense float vector")
+    bits: int = Field(default=8, description="Quantization bit depth (8 or 4)")
+
+
+class VectorBinaryQuantizeDTO(BaseModel):
+    vector: List[float] = Field(..., description="Dense float vector")
+
+
+class VectorPoolDTO(BaseModel):
+    token_embeddings: List[List[float]] = Field(..., description="Sequence token embeddings (seq_len x dim)")
+    attention_mask: Optional[List[int]] = Field(default=None, description="Attention mask (1 for token, 0 for pad)")
+    pooling_strategy: str = Field(default="mean", description="Pooling method ('mean', 'cls', 'last')")
+
+
+class VectorChunkDTO(BaseModel):
+    text: str = Field(..., description="Document text to chunk")
+    max_chunk_size: int = Field(default=200, description="Maximum characters/tokens per chunk")
+    overlap: int = Field(default=40, description="Overlap between consecutive chunks")
+
 
 def get_orchestrator_services() -> Dict[str, Any]:
     rules_dir = os.environ.get("POLICY_RULES_DIR", "../rules")
@@ -148,7 +264,7 @@ def get_orchestrator_services() -> Dict[str, Any]:
                 pass
 
     composer_svc = AlgorithmComposerService(algo_registry)
-
+    code_engine_svc = CodeEngineService()
 
     if llm_backend == "openai":
         llm_provider = OpenAICompatibleAdapter(
@@ -192,15 +308,23 @@ def get_orchestrator_services() -> Dict[str, Any]:
         "tool_registry": tool_registry,
         "algo_registry": algo_registry,
         "composer": composer_svc,
+        "code_engine": code_engine_svc,
     }
 
+
 _SERVICES = None
+
 
 def get_services() -> Dict[str, Any]:
     global _SERVICES
     if _SERVICES is None:
         _SERVICES = get_orchestrator_services()
     return _SERVICES
+
+
+def get_code_engine_service() -> CodeEngineService:
+    return get_services()["code_engine"]
+
 
 @router.get("/health")
 def health_check(request: Request) -> Dict[str, Any]:
@@ -209,6 +333,7 @@ def health_check(request: Request) -> Dict[str, Any]:
         data={"status": "healthy", "service": "policy-orchestrator", "version": "0.1.0"},
         trace_id=trace_id,
     )
+
 
 @router.post("/rag/index")
 def index_policies(request: Request) -> Dict[str, Any]:
@@ -219,6 +344,7 @@ def index_policies(request: Request) -> Dict[str, Any]:
         data={"indexed_documents": count, "status": "COMPLETED"},
         trace_id=trace_id,
     )
+
 
 @router.post("/rag/search")
 def search_policies(payload: RAGSearchRequestDTO, request: Request) -> Dict[str, Any]:
@@ -231,7 +357,6 @@ def search_policies(payload: RAGSearchRequestDTO, request: Request) -> Dict[str,
         min_relevance_score=payload.min_score,
     )
     res = svcs["rag"].retrieve_context(rag_req)
-    
     docs_data = [
         {
             "id": d.id,
@@ -255,6 +380,7 @@ def search_policies(payload: RAGSearchRequestDTO, request: Request) -> Dict[str,
         trace_id=trace_id,
     )
 
+
 @router.post("/agent/run")
 def run_agent(payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -267,7 +393,6 @@ def run_agent(payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
         session_id=payload.session_id,
     )
     result = svcs["agent"].execute_agent_loop(agent_req)
-    
     steps_data = [
         {
             "step_number": s.step_number,
@@ -301,6 +426,7 @@ def run_agent(payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
         trace_id=trace_id,
     )
 
+
 @router.get("/agents")
 def list_declarative_agents(request: Request, category: Optional[str] = None) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -326,6 +452,7 @@ def list_declarative_agents(request: Request, category: Optional[str] = None) ->
         trace_id=trace_id,
     )
 
+
 @router.post("/agents/{agent_id}/run")
 def run_specialized_agent(agent_id: str, payload: AgentRunRequestDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -342,7 +469,6 @@ def run_specialized_agent(agent_id: str, payload: AgentRunRequestDTO, request: R
         session_id=payload.session_id,
     )
     result = svcs["agent"].execute_agent_loop(agent_req, manifest=manifest)
-    
     steps_data = [
         {
             "step_number": s.step_number,
@@ -378,6 +504,7 @@ def run_specialized_agent(agent_id: str, payload: AgentRunRequestDTO, request: R
         trace_id=trace_id,
     )
 
+
 @router.post("/audit/scan")
 def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
@@ -401,42 +528,6 @@ def scan_repository(request: Request, target_directory: str = ".") -> Dict[str, 
         trace_id=trace_id,
     )
 
-from src.features.code_engine.service.code_engine_service import CodeEngineService
-
-class AlgoScanDTO(BaseModel):
-    root_dir: str = Field(default=".", description="Root directory to scan")
-    patterns: List[str] = Field(..., description="Patterns to search for")
-    max_files: int = Field(default=1000, description="Max files to scan")
-
-class FilePathDTO(BaseModel):
-    file_path: str = Field(..., description="File path to analyze")
-
-class DirectoryPathDTO(BaseModel):
-    directory: str = Field(default=".", description="Directory path to analyze")
-
-_code_engine_service: Optional[CodeEngineService] = None
-
-def get_code_engine_service() -> CodeEngineService:
-    global _code_engine_service
-    if _code_engine_service is None:
-        _code_engine_service = CodeEngineService()
-    return _code_engine_service
-
-class PatchOperationDTO(BaseModel):
-    file_path: str = Field(..., description="File to patch")
-    find_pattern: str = Field(..., description="Target pattern")
-    replace_text: str = Field(..., description="Replacement text")
-    expected_sha256: Optional[str] = Field(default=None, description="Precondition SHA-256")
-    is_regex: bool = Field(default=False, description="Is regex pattern")
-
-class BatchPatchRequestDTO(BaseModel):
-    operations: List[PatchOperationDTO] = Field(..., description="List of patch operations")
-    dry_run: bool = Field(default=False, description="Simulate patch without disk write")
-
-class DiffRequestDTO(BaseModel):
-    original_content: str = Field(..., description="Original text")
-    modified_content: str = Field(..., description="Modified text")
-    file_path: str = Field(default="file", description="File path identifier")
 
 @router.post("/algos/search/scan")
 @router.post("/algos/scan")
@@ -453,6 +544,7 @@ def scan_multipattern(payload: AlgoScanDTO, request: Request) -> Dict[str, Any]:
         trace_id=trace_id,
     )
 
+
 @router.post("/algos/observability/outline")
 @router.post("/algos/outline")
 def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
@@ -463,6 +555,7 @@ def generate_file_outline(payload: FilePathDTO, request: Request) -> Dict[str, A
     outline = svc.inspect_file_outline(payload.file_path)
     return build_success_envelope(data=outline, trace_id=trace_id)
 
+
 @router.post("/algos/observability/dependencies")
 @router.post("/algos/dependencies")
 def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[str, Any]:
@@ -470,6 +563,7 @@ def analyze_dependencies(payload: DirectoryPathDTO, request: Request) -> Dict[st
     svc = get_code_engine_service()
     report = svc.analyze_module_dependencies(payload.directory)
     return build_success_envelope(data=report, trace_id=trace_id)
+
 
 @router.post("/algos/observability/lint-comments")
 @router.post("/algos/lint-comments")
@@ -481,16 +575,18 @@ def lint_comments(payload: FilePathDTO, request: Request) -> Dict[str, Any]:
     report = svc.lint_zero_inline_comments(payload.file_path)
     return build_success_envelope(data=report, trace_id=trace_id)
 
+
 @router.post("/algos/update/patch")
 def apply_patch(payload: BatchPatchRequestDTO, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
-    raw_ops = [op.dict() for op in payload.operations]
+    raw_ops = [op.model_dump() for op in payload.operations]
     results = svc.apply_batch_patch(raw_ops, dry_run=payload.dry_run)
     return build_success_envelope(
         data={"total_operations": len(results), "dry_run": payload.dry_run, "results": results},
         trace_id=trace_id,
     )
+
 
 @router.post("/algos/update/diff")
 def generate_diff(payload: DiffRequestDTO, request: Request) -> Dict[str, Any]:
@@ -503,12 +599,124 @@ def generate_diff(payload: DiffRequestDTO, request: Request) -> Dict[str, Any]:
     )
     return build_success_envelope(data=diff, trace_id=trace_id)
 
+
+@router.post("/algos/vector/normalize")
+def normalize_vector_endpoint(payload: VectorNormalizeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    normalized = svc.normalize_vector(payload.vector, eps=payload.eps)
+    return build_success_envelope(
+        data={"original_dimension": len(payload.vector), "normalized_vector": normalized},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/center")
+def center_vectors_endpoint(payload: VectorCenterDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    centered = svc.center_vectors(payload.vectors)
+    return build_success_envelope(
+        data={"total_vectors": len(payload.vectors), "centered_vectors": centered},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/layer-norm")
+def layer_norm_endpoint(payload: VectorLayerNormDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    norm = svc.layer_norm_vector(payload.vector, gamma=payload.gamma, beta=payload.beta, eps=payload.eps)
+    return build_success_envelope(
+        data={"dimension": len(payload.vector), "normalized_vector": norm},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/scale")
+def scale_vector_endpoint(payload: VectorScaleDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    scaled = svc.scale_vector(payload.vector, min_val=payload.min_val, max_val=payload.max_val, method=payload.method)
+    return build_success_envelope(
+        data={"scaled_vector": scaled, "method": payload.method},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/slice")
+def slice_vector_endpoint(payload: VectorSliceDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    sliced = svc.slice_vector(payload.vector, target_dim=payload.target_dim, renormalize=payload.renormalize)
+    return build_success_envelope(
+        data={"original_dimension": len(payload.vector), "target_dimension": payload.target_dim, "sliced_vector": sliced},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/quantize/scalar")
+def quantize_scalar_endpoint(payload: VectorScalarQuantizeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.quantize_scalar(payload.vector, bits=payload.bits)
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector/quantize/binary")
+def quantize_binary_endpoint(payload: VectorBinaryQuantizeDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.quantize_binary(payload.vector)
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector/pool")
+def pool_tokens_endpoint(payload: VectorPoolDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.pool_tokens(payload.token_embeddings, attention_mask=payload.attention_mask, pooling_strategy=payload.pooling_strategy)
+    return build_success_envelope(
+        data={"pooling_strategy": payload.pooling_strategy, "pooled_vector": res},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/vector/chunk")
+def chunk_text_endpoint(payload: VectorChunkDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    chunks = svc.chunk_text(
+        text=payload.text,
+        max_chunk_size=payload.max_chunk_size,
+        overlap=payload.overlap,
+    )
+    return build_success_envelope(
+        data={"total_chunks": len(chunks), "chunks": chunks},
+        trace_id=trace_id,
+    )
+
+
+@router.post("/algos/execute/{algo_id}")
+def execute_algorithm_direct(algo_id: str, payload: AlgoExecuteRequestDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    try:
+        res = svc.execute_algorithm(algo_id=algo_id, inputs=payload.inputs, parameters=payload.parameters)
+        return build_success_envelope(data={"algo_id": algo_id, "result": res}, trace_id=trace_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/graph/build")
 def build_graph(request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svcs = get_services()
     summary = svcs["graph"].build_graph_from_rules()
     return build_success_envelope(data=summary, trace_id=trace_id)
+
 
 @router.post("/graph/query")
 def query_graph(payload: GraphQueryDTO, request: Request) -> Dict[str, Any]:
@@ -524,17 +732,13 @@ def query_graph(payload: GraphQueryDTO, request: Request) -> Dict[str, Any]:
         trace_id=trace_id,
     )
 
+
 @router.get("/graph/impact/{rule_id}")
 def get_rule_impact(rule_id: str, request: Request) -> Dict[str, Any]:
     trace_id = request.headers.get("x-trace-id")
     svcs = get_services()
     impact = svcs["graph"].get_rule_impact(rule_id)
     return build_success_envelope(data={"rule_id": rule_id, "impact": impact}, trace_id=trace_id)
-
-
-class AlgoComposeRequestDTO(BaseModel):
-    algo_ids: List[str] = Field(..., description="Ordered list of algorithm IDs to compose")
-    strict_check: bool = Field(default=True, description="Enforce strict contract safety checks")
 
 
 @router.get("/algos/contracts")
@@ -598,4 +802,3 @@ def compose_algorithm_pipeline(payload: AlgoComposeRequestDTO, request: Request)
         return build_success_envelope(data=plan, trace_id=trace_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
