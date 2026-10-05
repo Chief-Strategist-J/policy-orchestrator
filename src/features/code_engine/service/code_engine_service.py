@@ -257,6 +257,54 @@ from src.features.code_engine.algos.vector_transform import (
     VectorTransformAlgoSparseVectorRepresentation,
     VectorTransformAlgoEmbeddingCache,
 )
+from src.features.code_engine.algos.vector_update import (
+    VectorUpdateAlgoUpsertStableId,
+    VectorUpdateAlgoWal,
+    VectorUpdateAlgoFreshBuffer,
+    VectorUpdateAlgoLsmStorage,
+    VectorUpdateAlgoSegmentCompaction,
+    VectorUpdateAlgoTombstoneDeletion,
+    VectorUpdateAlgoHnswDeletionRepair,
+    VectorUpdateAlgoFreshDiskannUpdate,
+    VectorUpdateAlgoIncrementalIvf,
+    VectorUpdateAlgoCentroidDrift,
+    VectorUpdateAlgoReembeddingPipeline,
+    VectorUpdateAlgoDualWrite,
+    VectorUpdateAlgoBlueGreenSwap,
+    VectorUpdateAlgoIdempotentIngestion,
+    VectorUpdateAlgoCdc,
+    VectorUpdateAlgoTransactionalOutbox,
+    VectorUpdateAlgoMerkleTreeSync,
+    VectorUpdateAlgoWatermarksFreshness,
+    VectorUpdateAlgoIdempotencyKeys,
+    VectorUpdateAlgoBackfillCheckpoints,
+    VectorUpdateAlgoMicroBatching,
+    VectorUpdateAlgoBackpressurePriority,
+    VectorUpdateAlgoMvccSnapshots,
+    VectorUpdateAlgoConsistencyLevels,
+    VectorUpdateAlgoLeaderFollower,
+    VectorUpdateAlgoRaftConsensus,
+    VectorUpdateAlgoQuorumReadsWrites,
+    VectorUpdateAlgoSnapshotReplayRecovery,
+    VectorUpdateAlgoConsistentHashing,
+    VectorUpdateAlgoVersionVectors,
+    VectorUpdateAlgoSchemaVersioning,
+    VectorUpdateAlgoMultiTenantIsolation,
+    VectorUpdateAlgoTtlExpiry,
+    VectorUpdateAlgoOrphanGc,
+    VectorUpdateAlgoNearDuplicateDedupe,
+    VectorUpdateAlgoRebuildScheduling,
+    VectorUpdateAlgoOnlineIndexBuild,
+    VectorUpdateAlgoBulkLoading,
+    VectorUpdateAlgoRequantizationMigration,
+    VectorUpdateAlgoDeletionVerification,
+    VectorUpdateAlgoBackwardCompatibleTraining,
+    VectorUpdateAlgoLazyReembedding,
+    VectorUpdateAlgoCodebookRetraining,
+    VectorUpdateAlgoMetadataIndexMaintenance,
+    VectorUpdateAlgoAtomicCommit,
+)
+
 
 
 
@@ -1425,6 +1473,141 @@ class CodeEngineService:
 
         elif algo_id == "ALGO-VEC-TRFM-50":
             return VectorTransformAlgoEmbeddingCache.get_or_set(merged.get("cache_store"), merged.get("text"), model_version=merged.get("model_version", 'v1.0.0'), prefix=merged.get("prefix", ''), vector_to_cache=merged.get("vector_to_cache", None), max_entries=merged.get("max_entries", 1000))
+
+        elif algo_id == "ALGO-VEC-UPD-111":
+            return VectorUpdateAlgoUpsertStableId.execute(merged.get("source_id", ""), merged.get("chunk_id", ""), merged.get("model_version", "1.0.0"), merged.get("content", ""), metadata=merged.get("metadata"), existing_index=merged.get("existing_index"))
+
+        elif algo_id == "ALGO-VEC-UPD-112":
+            return VectorUpdateAlgoWal.append_and_replay(merged.get("operations", []), last_sequence_num=merged.get("last_sequence_num", 0), checkpoint_sequence_num=merged.get("checkpoint_sequence_num"), replay_from_seq=merged.get("replay_from_seq"), existing_log=merged.get("existing_log"))
+
+        elif algo_id == "ALGO-VEC-UPD-113":
+            return VectorUpdateAlgoFreshBuffer.process(merged.get("buffer_records", []), merged.get("new_records", []), max_buffer_size=merged.get("max_buffer_size", 1000), query_vector=merged.get("query_vector"), top_k=merged.get("top_k", 5))
+
+        elif algo_id == "ALGO-VEC-UPD-114":
+            return VectorUpdateAlgoLsmStorage.evaluate(merged.get("segments", []), query_vector=merged.get("query_vector"), top_k=merged.get("top_k", 10), fragmentation_threshold=merged.get("fragmentation_threshold", 0.25))
+
+        elif algo_id == "ALGO-VEC-UPD-115":
+            return VectorUpdateAlgoSegmentCompaction.compact(merged.get("segments_to_merge", []), target_tier=merged.get("target_tier", "L1"))
+
+        elif algo_id == "ALGO-VEC-UPD-116":
+            return VectorUpdateAlgoTombstoneDeletion.apply(merged.get("active_tombstones", []), merged.get("delete_ids", []), candidate_ids=merged.get("candidate_ids"), total_index_size=merged.get("total_index_size", 100), alert_threshold=merged.get("alert_threshold", 0.20))
+
+        elif algo_id == "ALGO-VEC-UPD-117":
+            return VectorUpdateAlgoHnswDeletionRepair.repair(merged.get("adjacency_list", {}), merged.get("deleted_nodes", []), max_edges=merged.get("max_edges", 16))
+
+        elif algo_id == "ALGO-VEC-UPD-118":
+            return VectorUpdateAlgoFreshDiskannUpdate.execute(merged.get("disk_graph_nodes", []), merged.get("mem_graph_nodes", []), merged.get("deleted_nodes", []), merged.get("new_records", []), mem_threshold=merged.get("mem_threshold", 500))
+
+        elif algo_id == "ALGO-VEC-UPD-119":
+            return VectorUpdateAlgoIncrementalIvf.assign(merged.get("centroids", []), merged.get("vectors_to_insert", []), inverted_lists=merged.get("inverted_lists"))
+
+        elif algo_id == "ALGO-VEC-UPD-120":
+            return VectorUpdateAlgoCentroidDrift.evaluate(merged.get("baseline_quantization_error", 0.0), merged.get("current_quantization_error", 0.0), merged.get("inverted_list_lengths", []), max_error_increase_ratio=merged.get("max_error_increase_ratio", 0.25))
+
+        elif algo_id == "ALGO-VEC-UPD-121":
+            return VectorUpdateAlgoReembeddingPipeline.evaluate(merged.get("total_chunks", 100), merged.get("completed_chunks", 0), merged.get("elapsed_seconds", 1.0), merged.get("target_model_version", "v2.0"), shadow_recall_score=merged.get("shadow_recall_score"), min_required_recall=merged.get("min_required_recall", 0.90))
+
+        elif algo_id == "ALGO-VEC-UPD-122":
+            return VectorUpdateAlgoDualWrite.dispatch(merged.get("mutation_events", []), merged.get("primary_ids", []), merged.get("shadow_ids", []), simulate_shadow_failure_rate=merged.get("simulate_shadow_failure_rate", 0.0))
+
+        elif algo_id == "ALGO-VEC-UPD-123":
+            return VectorUpdateAlgoBlueGreenSwap.execute(merged.get("current_alias_target", "blue"), merged.get("candidate_target", "green"), is_candidate_warmed=merged.get("is_candidate_warmed", True), candidate_error_rate=merged.get("candidate_error_rate", 0.001), max_allowed_error_rate=merged.get("max_allowed_error_rate", 0.01), rollback_requested=merged.get("rollback_requested", False), previous_target=merged.get("previous_target"))
+
+        elif algo_id == "ALGO-VEC-UPD-124":
+            return VectorUpdateAlgoIdempotentIngestion.filter_batch(merged.get("incoming_chunks", []), merged.get("stored_hash_map", {}), active_source_ids=merged.get("active_source_ids"))
+
+        elif algo_id == "ALGO-VEC-UPD-125":
+            return VectorUpdateAlgoCdc.process_stream(merged.get("cdc_raw_events", []), partition_count=merged.get("partition_count", 4), current_consumer_offset=merged.get("current_consumer_offset", 0))
+
+        elif algo_id == "ALGO-VEC-UPD-126":
+            return VectorUpdateAlgoTransactionalOutbox.reconcile(merged.get("pending_outbox_rows", []), merged.get("published_event_ids", []), max_retry_attempts=merged.get("max_retry_attempts", 5))
+
+        elif algo_id == "ALGO-VEC-UPD-127":
+            return VectorUpdateAlgoMerkleTreeSync.compare_trees(merged.get("source_records", []), merged.get("target_records", []))
+
+        elif algo_id == "ALGO-VEC-UPD-128":
+            return VectorUpdateAlgoWatermarksFreshness.evaluate(merged.get("stage_watermarks", {}), max_allowed_lag_seconds=merged.get("max_allowed_lag_seconds", 300.0), current_time=merged.get("current_time"))
+
+        elif algo_id == "ALGO-VEC-UPD-129":
+            return VectorUpdateAlgoIdempotencyKeys.evaluate(merged.get("record_id", ""), merged.get("incoming_version", 1), merged.get("idempotency_token", ""), stored_version=merged.get("stored_version"), seen_tokens=merged.get("seen_tokens"))
+
+        elif algo_id == "ALGO-VEC-UPD-130":
+            return VectorUpdateAlgoBackfillCheckpoints.update_checkpoint(merged.get("job_id", ""), merged.get("last_cursor", ""), merged.get("processed_count", 0), merged.get("total_count", 100), merged.get("last_item_id", ""))
+
+        elif algo_id == "ALGO-VEC-UPD-131":
+            return VectorUpdateAlgoMicroBatching.evaluate(merged.get("incoming_items", []), max_batch_size=merged.get("max_batch_size", 32), batch_timeout_ms=merged.get("batch_timeout_ms", 100.0), oldest_buffered_timestamp=merged.get("oldest_buffered_timestamp"), current_time_ms=merged.get("current_time_ms"))
+
+        elif algo_id == "ALGO-VEC-UPD-132":
+            return VectorUpdateAlgoBackpressurePriority.process_queue(merged.get("queue_items", []), max_queue_capacity=merged.get("max_queue_capacity", 1000), drain_limit=merged.get("drain_limit", 50))
+
+        elif algo_id == "ALGO-VEC-UPD-133":
+            return VectorUpdateAlgoMvccSnapshots.reconcile(merged.get("active_versions", []), merged.get("pinned_version_ids", []), new_commit_version=merged.get("new_commit_version"), max_retention_seconds=merged.get("max_retention_seconds", 3600.0), current_time=merged.get("current_time"))
+
+        elif algo_id == "ALGO-VEC-UPD-134":
+            return VectorUpdateAlgoConsistencyLevels.check_read_eligibility(consistency_level=merged.get("consistency_level", "READ_YOUR_WRITES"), replica_sequence_num=merged.get("replica_sequence_num", 100), client_write_token_seq=merged.get("client_write_token_seq"), max_staleness_allowed=merged.get("max_staleness_allowed", 5), leader_sequence_num=merged.get("leader_sequence_num", 105))
+
+        elif algo_id == "ALGO-VEC-UPD-135":
+            return VectorUpdateAlgoLeaderFollower.evaluate_replicas(merged.get("leader_sequence_num", 100), merged.get("followers", []), max_tolerable_lag=merged.get("max_tolerable_lag", 2))
+
+        elif algo_id == "ALGO-VEC-UPD-136":
+            return VectorUpdateAlgoRaftConsensus.evaluate(merged.get("current_term", 1), merged.get("cluster_size", 3), merged.get("vote_responses", []), log_match_counts=merged.get("log_match_counts"), current_commit_index=merged.get("current_commit_index", 0))
+
+        elif algo_id == "ALGO-VEC-UPD-137":
+            return VectorUpdateAlgoQuorumReadsWrites.evaluate_quorum(merged.get("total_replicas_n", 3), merged.get("write_ack_count_w", 2), merged.get("read_responses", []))
+
+        elif algo_id == "ALGO-VEC-UPD-138":
+            return VectorUpdateAlgoSnapshotReplayRecovery.recover(merged.get("snapshot_records", {}), merged.get("snapshot_seq", 0), merged.get("wal_log", []))
+
+        elif algo_id == "ALGO-VEC-UPD-139":
+            return VectorUpdateAlgoConsistentHashing.assign_keys(merged.get("active_nodes", []), virtual_nodes_per_node=merged.get("virtual_nodes_per_node", 16), keys_to_assign=merged.get("keys_to_assign"))
+
+        elif algo_id == "ALGO-VEC-UPD-140":
+            return VectorUpdateAlgoVersionVectors.compare_and_merge(merged.get("vector_a", {}), merged.get("vector_b", {}))
+
+        elif algo_id == "ALGO-VEC-UPD-141":
+            return VectorUpdateAlgoSchemaVersioning.migrate_record(merged.get("metadata", {}), current_schema_version=merged.get("current_schema_version", 1), target_schema_version=merged.get("target_schema_version", 2), field_migration_map=merged.get("field_migration_map"))
+
+        elif algo_id == "ALGO-VEC-UPD-142":
+            return VectorUpdateAlgoMultiTenantIsolation.enforce(merged.get("authenticated_tenant_id", ""), merged.get("records", []), tenant_vector_quota=merged.get("tenant_vector_quota", 100000), current_tenant_vector_count=merged.get("current_tenant_vector_count", 0))
+
+        elif algo_id == "ALGO-VEC-UPD-143":
+            return VectorUpdateAlgoTtlExpiry.filter_expired(merged.get("records", []), current_time=merged.get("current_time"))
+
+        elif algo_id == "ALGO-VEC-UPD-144":
+            return VectorUpdateAlgoOrphanGc.identify_orphans(merged.get("index_vectors", []), merged.get("authoritative_source_ids", []), safety_max_orphan_ratio=merged.get("safety_max_orphan_ratio", 0.15))
+
+        elif algo_id == "ALGO-VEC-UPD-145":
+            return VectorUpdateAlgoNearDuplicateDedupe.cluster_and_dedupe(merged.get("candidates", []), similarity_threshold=merged.get("similarity_threshold", 0.98))
+
+        elif algo_id == "ALGO-VEC-UPD-146":
+            return VectorUpdateAlgoRebuildScheduling.evaluate(merged.get("tombstone_ratio", 0.0), merged.get("measured_recall", 0.9), target_recall=merged.get("target_recall", 0.90), segment_count=merged.get("segment_count", 4), unreachable_nodes_count=merged.get("unreachable_nodes_count", 0))
+
+        elif algo_id == "ALGO-VEC-UPD-147":
+            return VectorUpdateAlgoOnlineIndexBuild.execute_build(merged.get("snapshot_records", []), merged.get("mutation_wal_entries", []), max_tolerable_lag_entries=merged.get("max_tolerable_lag_entries", 10))
+
+        elif algo_id == "ALGO-VEC-UPD-148":
+            return VectorUpdateAlgoBulkLoading.load_dataset(merged.get("vectors", []), target_segment_size=merged.get("target_segment_size", 1000))
+
+        elif algo_id == "ALGO-VEC-UPD-149":
+            return VectorUpdateAlgoRequantizationMigration.requantize(merged.get("full_precision_vectors", []), target_format=merged.get("target_format", "INT8"))
+
+        elif algo_id == "ALGO-VEC-UPD-150":
+            return VectorUpdateAlgoDeletionVerification.verify(merged.get("source_id", ""), merged.get("index_contains_id", False), cache_contains_id=merged.get("cache_contains_id", False), shadow_index_contains_id=merged.get("shadow_index_contains_id", False))
+
+        elif algo_id == "ALGO-VEC-UPD-151":
+            return VectorUpdateAlgoBackwardCompatibleTraining.evaluate_compatibility(merged.get("new_query_vectors", []), merged.get("legacy_doc_vectors", []), ground_truth_relevance_pairs=merged.get("ground_truth_relevance_pairs"), min_acceptable_compatibility_recall=merged.get("min_acceptable_compatibility_recall", 0.85))
+
+        elif algo_id == "ALGO-VEC-UPD-152":
+            return VectorUpdateAlgoLazyReembedding.process_reads(merged.get("accessed_records", []), target_model_version=merged.get("target_model_version", "v2.0"))
+
+        elif algo_id == "ALGO-VEC-UPD-153":
+            return VectorUpdateAlgoCodebookRetraining.train(merged.get("sample_vectors", []), num_subvectors_m=merged.get("num_subvectors_m", 2), centroids_per_subvector_k=merged.get("centroids_per_subvector_k", 4))
+
+        elif algo_id == "ALGO-VEC-UPD-154":
+            return VectorUpdateAlgoMetadataIndexMaintenance.apply_mutation(merged.get("current_inverted_index", {}), merged.get("mutation_type", "UPSERT"), merged.get("record_id", ""), metadata=merged.get("metadata"))
+
+        elif algo_id == "ALGO-VEC-UPD-155":
+            return VectorUpdateAlgoAtomicCommit.commit_record(merged.get("vector", []), merged.get("metadata", {}), required_security_fields=merged.get("required_security_fields"))
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

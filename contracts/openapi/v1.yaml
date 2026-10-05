@@ -5,7 +5,7 @@ info:
   description: >-
     Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
     grounded hybrid GraphRAG, autonomous AI Agent orchestration, and direct execution
-    of all 152 Layer 1 algorithms across Search, Observability, Update, Vector, Graph, Filter, and Transform categories.
+    of all 197 Layer 1 algorithms across Search, Observability, Update, Vector, Graph, Filter, and Transform categories.
     Strictly conforms to the RFC API Request & Response Structure Specification (v5.0).
 servers:
   - url: http://localhost:8000
@@ -3673,6 +3673,772 @@ paths:
       responses:
         '200':
           description: Caches computed embeddings keyed by SHA-256 text hashes to avoid redundant inference calls.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-update/upsert-stable-id:
+    post:
+      summary: Upsert by Stable ID (ALGO-VEC-UPD-111)
+      operationId: vectorUpdateUpsertStableId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Deterministic upsert key derivation and deduplication engine avoiding duplicate entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/wal:
+    post:
+      summary: Write-Ahead Log (ALGO-VEC-UPD-112)
+      operationId: vectorUpdateWal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Append-only durable transaction log with group commits, truncation, and crash recovery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/fresh-buffer:
+    post:
+      summary: Fresh Buffer (ALGO-VEC-UPD-113)
+      operationId: vectorUpdateFreshBuffer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Low-latency in-memory write segment searchable via brute-force prior to flush.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/lsm-storage:
+    post:
+      summary: LSM Segment Storage (ALGO-VEC-UPD-114)
+      operationId: vectorUpdateLsmStorage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Multi-segment LSM storage coordinator with deletion bitmaps and fragmentation metrics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/segment-compaction:
+    post:
+      summary: Segment Compaction (ALGO-VEC-UPD-115)
+      operationId: vectorUpdateSegmentCompaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Merges vector segments and permanently purges tombstoned records into compacted tiers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/tombstone-deletion:
+    post:
+      summary: Tombstone Deletion (ALGO-VEC-UPD-116)
+      operationId: vectorUpdateTombstoneDeletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Bitmask deletion marking mechanism filtering out deleted vectors instantly.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/hnsw-deletion-repair:
+    post:
+      summary: HNSW Deletion Repair (ALGO-VEC-UPD-117)
+      operationId: vectorUpdateHnswDeletionRepair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Re-wires and repairs HNSW graph adjacency lists after soft node deletions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/fresh-diskann-update:
+    post:
+      summary: FreshDiskANN Update (ALGO-VEC-UPD-118)
+      operationId: vectorUpdateFreshDiskannUpdate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Maintains dual disk-memory graph structure with periodic streaming merges.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/incremental-ivf:
+    post:
+      summary: Incremental IVF (ALGO-VEC-UPD-119)
+      operationId: vectorUpdateIncrementalIvf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Assigns new vectors to nearest existing IVF centroids without retraining codebooks.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/centroid-drift:
+    post:
+      summary: Centroid Drift Detection (ALGO-VEC-UPD-120)
+      operationId: vectorUpdateCentroidDrift
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Monitors quantization error drift and cluster imbalance over time.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/reembedding-pipeline:
+    post:
+      summary: Re-Embedding Pipeline (ALGO-VEC-UPD-121)
+      operationId: vectorUpdateReembeddingPipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Coordinates partition-based backfill and golden set recall validation for model upgrades.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/dual-write:
+    post:
+      summary: Dual-Write Shadow Index (ALGO-VEC-UPD-122)
+      operationId: vectorUpdateDualWrite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Replicates live mutation events simultaneously to primary and shadow indexes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/blue-green-swap:
+    post:
+      summary: Blue-Green Index Swap (ALGO-VEC-UPD-123)
+      operationId: vectorUpdateBlueGreenSwap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Executes zero-downtime atomic alias pointer swaps between Blue and Green indexes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/idempotent-ingestion:
+    post:
+      summary: Idempotent Ingestion (ALGO-VEC-UPD-124)
+      operationId: vectorUpdateIdempotentIngestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Skips redundant embeddings and index writes when source content hashes match.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/cdc:
+    post:
+      summary: Change Data Capture (ALGO-VEC-UPD-125)
+      operationId: vectorUpdateCdc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Streams database replication log records into partitioned vector mutation queues.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/transactional-outbox:
+    post:
+      summary: Transactional Outbox (ALGO-VEC-UPD-126)
+      operationId: vectorUpdateTransactionalOutbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Stages outbox events atomically with business writes for reliable streaming.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/merkle-tree-sync:
+    post:
+      summary: Merkle-Tree Sync (ALGO-VEC-UPD-127)
+      operationId: vectorUpdateMerkleTreeSync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Anti-entropy hash tree comparison identifying out-of-sync key intervals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/watermarks-freshness:
+    post:
+      summary: Watermarks & Freshness (ALGO-VEC-UPD-128)
+      operationId: vectorUpdateWatermarksFreshness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Monitors event-time watermarks and end-to-end data freshness latency.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/idempotency-keys:
+    post:
+      summary: Idempotency Keys (ALGO-VEC-UPD-129)
+      operationId: vectorUpdateIdempotencyKeys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Enforces exactly-once vector mutations using monotonic versions and dedup tokens.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/backfill-checkpoints:
+    post:
+      summary: Backfill Checkpoints (ALGO-VEC-UPD-130)
+      operationId: vectorUpdateBackfillCheckpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Manages partition cursor progression and resumable checkpoints during backfills.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/micro-batching:
+    post:
+      summary: Streaming Micro-Batching (ALGO-VEC-UPD-131)
+      operationId: vectorUpdateMicroBatching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Buffers incoming vectors into dynamic micro-batches by count and latency boundaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/backpressure-priority:
+    post:
+      summary: Backpressure & Prioritization (ALGO-VEC-UPD-132)
+      operationId: vectorUpdateBackpressurePriority
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Prioritizes mutation queues (DELETES > UPDATES > BACKFILL) with load shedding.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/mvcc-snapshots:
+    post:
+      summary: MVCC Snapshots (ALGO-VEC-UPD-133)
+      operationId: vectorUpdateMvccSnapshots
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Pins multi-version snapshots for long-running queries while isolating writes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/consistency-levels:
+    post:
+      summary: Consistency Levels (ALGO-VEC-UPD-134)
+      operationId: vectorUpdateConsistencyLevels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Evaluates read consistency modes (EVENTUAL, READ_YOUR_WRITES, STRONG).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/leader-follower:
+    post:
+      summary: Leader-Follower Replication (ALGO-VEC-UPD-135)
+      operationId: vectorUpdateLeaderFollower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Streams WAL to followers and routes queries to caught-up read replicas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/raft-consensus:
+    post:
+      summary: Raft Consensus (ALGO-VEC-UPD-136)
+      operationId: vectorUpdateRaftConsensus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Implements Raft consensus protocol logic for distributed vector log commits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/quorum-reads-writes:
+    post:
+      summary: Quorum Reads & Writes (ALGO-VEC-UPD-137)
+      operationId: vectorUpdateQuorumReadsWrites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Evaluates strict quorum invariants (R + W > N) and performs read-repair.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/snapshot-replay-recovery:
+    post:
+      summary: Snapshot + Log Replay (ALGO-VEC-UPD-138)
+      operationId: vectorUpdateSnapshotReplayRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Rebuilds state from base checkpoints and sequential WAL replays.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/consistent-hashing:
+    post:
+      summary: Consistent Hashing (ALGO-VEC-UPD-139)
+      operationId: vectorUpdateConsistentHashing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Distributes partition keys across hash rings with virtual node balancing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/version-vectors:
+    post:
+      summary: Version Vectors (ALGO-VEC-UPD-140)
+      operationId: vectorUpdateVersionVectors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Tracks per-replica causality vectors to detect concurrent conflicting mutations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/schema-versioning:
+    post:
+      summary: Schema Versioning (ALGO-VEC-UPD-141)
+      operationId: vectorUpdateSchemaVersioning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Enforces metadata field migrations and expand-and-contract schema evolution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/multi-tenant-isolation:
+    post:
+      summary: Multi-Tenant Isolation (ALGO-VEC-UPD-142)
+      operationId: vectorUpdateMultiTenantIsolation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Enforces strict tenant boundaries and validates per-tenant capacity quotas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/ttl-expiry:
+    post:
+      summary: TTL Expiry (ALGO-VEC-UPD-143)
+      operationId: vectorUpdateTtlExpiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Filters out expired records from queries and collects IDs for tombstone purging.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/orphan-gc:
+    post:
+      summary: Orphan Garbage Collection (ALGO-VEC-UPD-144)
+      operationId: vectorUpdateOrphanGc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Identifies and purges index vectors whose source documents have been deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/near-duplicate-dedupe:
+    post:
+      summary: Near-Duplicate Deduplication (ALGO-VEC-UPD-145)
+      operationId: vectorUpdateNearDuplicateDedupe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Clusters vectors with high semantic cosine similarity into canonical records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/rebuild-scheduling:
+    post:
+      summary: Rebuild Scheduling (ALGO-VEC-UPD-146)
+      operationId: vectorUpdateRebuildScheduling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Evaluates index decay telemetry to schedule off-peak full rebuilds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/online-index-build:
+    post:
+      summary: Online Index Build (ALGO-VEC-UPD-147)
+      operationId: vectorUpdateOnlineIndexBuild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Constructs new index concurrently and replays mutation logs until lag is minimal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/bulk-loading:
+    post:
+      summary: Bulk Loading (ALGO-VEC-UPD-148)
+      operationId: vectorUpdateBulkLoading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Partitions and builds sorted bottom-up index segments in parallel.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/requantization-migration:
+    post:
+      summary: Requantization Migration (ALGO-VEC-UPD-149)
+      operationId: vectorUpdateRequantizationMigration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Converts full-precision vectors to updated quantization formats.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/deletion-verification:
+    post:
+      summary: Deletion Verification (ALGO-VEC-UPD-150)
+      operationId: vectorUpdateDeletionVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Cryptographically audits erasure of vectors to satisfy GDPR Article 17.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/backward-compatible-training:
+    post:
+      summary: Backward-Compatible Training (ALGO-VEC-UPD-151)
+      operationId: vectorUpdateBackwardCompatibleTraining
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Evaluates cross-model retrieval compatibility between new and legacy embeddings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/lazy-reembedding:
+    post:
+      summary: Lazy Re-Embedding (ALGO-VEC-UPD-152)
+      operationId: vectorUpdateLazyReembedding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Migrates vectors to new model versions gradually upon read or update access.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/codebook-retraining:
+    post:
+      summary: Codebook Retraining (ALGO-VEC-UPD-153)
+      operationId: vectorUpdateCodebookRetraining
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Re-trains Product Quantization codebooks when data distribution shifts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/metadata-index-maintenance:
+    post:
+      summary: Metadata Index Maintenance (ALGO-VEC-UPD-154)
+      operationId: vectorUpdateMetadataIndexMaintenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Synchronizes secondary categorical and range indexes with vector mutations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+  /api/v1/algos/vector-update/atomic-commit:
+    post:
+      summary: Atomic Vector & Metadata Commit (ALGO-VEC-UPD-155)
+      operationId: vectorUpdateAtomicCommit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Two-phase atomic commit ensuring vectors and security ACLs become visible simultaneously.
           content:
             application/json:
               schema:
