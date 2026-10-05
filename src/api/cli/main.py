@@ -1,32 +1,387 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-ALGORITHM & ARCHITECTURE BLUEPRINT: POLICY ORCHESTRATOR CLI ENTRYPOINT
+ALGORITHM & ARCHITECTURE BLUEPRINT: ERGONOMIC POLICY ORCHESTRATOR CLI
 ================================================================================
 
 1. OVERVIEW & OBJECTIVE:
-   This module provides the unified command-line interface for the
-   policy-orchestrator system. It dispatches commands for:
-   - `audit`: Scans repository invariants and architecture rules.
-   - `rag`: Grounded semantic retrieval over policy markdown rules.
-   - `agent`: Autonomous AI agent execution for analysis and safe refactoring.
-   - `refactor`: Batch AST / regex code refactoring.
-   - `policy-check`: Engineering contract verification.
-   - `serve`: Launches Uvicorn REST API server.
-   - `algo`: Executes all 33 Layer 1 algorithms directly or lists contracts / pipelines.
-   - `migrate`: Runs database schema migrations and seeds algorithm contracts.
+   Provides a clean, intuitive, Single Responsibility Principle (SRP) compliant CLI
+   with consistent argument conventions, beginner-friendly shortcuts, JSON outputs,
+   and shell auto-completion generation (bash/zsh/fish).
 
-2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
-   - Zero-Inline-Comment Doctrine: All subcommand dispatch logic, arguments,
-     and terminal formatting routines are documented solely in this top-side header.
-     Functions and loops remain 100% comment-free and pure.
-   - Direct Algorithm Execution: `algo execute --id <algo_id> --input '<json>'`
-     enables direct invocation of all 33 Search, Observability, Update, and Vector algos.
-   - Posix Exit Codes: 0 for success, 1 for violations/errors.
+2. SINGLE RESPONSIBILITY SUBCOMMANDS:
+   - `search <patterns> [dir]`: Fast multi-pattern search (ALGO-SRCH-03 + 11 + 14).
+   - `scan [dir]`: Recursive repository file tree discovery (ALGO-SRCH-01/02).
+   - `outline <file>`: Hierarchical AST symbol tree generator (ALGO-OBS-17 + 21).
+   - `lint <file>`: Zero-Inline-Comment doctrine compliance linter (ALGO-OBS-19).
+   - `deps [dir]`: Module import dependency graph & cycle detector (ALGO-OBS-20).
+   - `diff <file> <find> <replace>`: Unified context diff generator (ALGO-UPD-24).
+   - `patch <file> <find> <replace> [--apply]`: AST/CST atomic patcher (ALGO-UPD-22/23).
+   - `exec <algo_id> [input_json]`: Direct universal algorithm execution (All 42 algos).
+   - `contracts [--category]`: Layer 1 algorithm contract discovery.
+   - `compose <algo_ids...>`: Dynamic pipeline execution DAG composer.
+   - `completion <bash|zsh|fish>`: Generates shell tab-completion scripts.
+   - `algo <action>`: Legacy backwards-compatible unified dispatcher.
+   - `audit`: Multi-vector invariant and architecture scanner.
+   - `rag`: Grounded semantic policy retrieval.
+   - `agent`: Autonomous AI agent execution.
+   - `migrate`: Database migrations and catalog seeding.
+   - `serve`: FastAPI Uvicorn REST server.
+
+3. ARCHITECTURAL INVARIANTS:
+   - Zero-Inline-Comment Doctrine: 100% pure method/function bodies.
+   - Standardized Posix Exit Codes: 0 on success, 1 on error/violation.
 ================================================================================
 """
 
 import sys
+
+ALGO_ALIASES: dict = {
+    "bfs": {
+        "id": "ALGO-GRAPH-01",
+        "algo_name": "BFS Traversal",
+        "plain_name": "Level-by-level graph walk",
+        "what_it_does": "Visits every node starting from a point, layer by layer — like ripples spreading in water.",
+        "example": '{"graph": {"A":["B","C"],"B":["D"],"C":[],"D":[]}, "start_node": "A"}',
+        "category": "graph",
+    },
+    "dfs": {
+        "id": "ALGO-GRAPH-02",
+        "algo_name": "DFS Traversal",
+        "plain_name": "Deep-dive graph walk",
+        "what_it_does": "Goes as deep as possible down one path before backtracking — like exploring a maze by hugging one wall.",
+        "example": '{"graph": {"A":["B","C"],"B":["D"],"C":[],"D":[]}, "start_node": "A"}',
+        "category": "graph",
+    },
+    "dijkstra": {
+        "id": "ALGO-GRAPH-03",
+        "algo_name": "Dijkstra Shortest Path",
+        "plain_name": "Find cheapest route between two points",
+        "what_it_does": "Finds the least-cost path between two nodes in a network — like a GPS choosing the fastest road.",
+        "example": '{"graph": {"A":{"B":1,"C":4},"B":{"C":2,"D":5},"C":{"D":1},"D":{}}, "source": "A", "target": "D"}',
+        "category": "graph",
+    },
+    "shortest-path": {
+        "id": "ALGO-GRAPH-03",
+        "algo_name": "Dijkstra Shortest Path",
+        "plain_name": "Find cheapest route between two points",
+        "what_it_does": "Finds the least-cost path between two nodes in a network — like a GPS choosing the fastest road.",
+        "example": '{"graph": {"A":{"B":1,"C":4},"B":{"C":2,"D":5},"C":{"D":1},"D":{}}, "source": "A", "target": "D"}',
+        "category": "graph",
+    },
+    "astar": {
+        "id": "ALGO-GRAPH-04",
+        "algo_name": "A* Search",
+        "plain_name": "Smart guided route finder",
+        "what_it_does": "Finds the fastest path using a hint about the direction of the goal — smarter than plain shortest-path.",
+        "example": '{"graph": {"A":{"B":1},"B":{"C":1},"C":{}}, "start": "A", "goal": "C", "heuristic": {"A":2,"B":1,"C":0}}',
+        "category": "graph",
+    },
+    "pagerank": {
+        "id": "ALGO-GRAPH-05",
+        "algo_name": "PageRank Centrality",
+        "plain_name": "Rank nodes by importance",
+        "what_it_does": "Scores nodes by how many important nodes point to them — the same idea Google uses to rank web pages.",
+        "example": '{"graph": {"A":["B","C"],"B":["C"],"C":["A"]}, "damping": 0.85, "iterations": 100}',
+        "category": "graph",
+    },
+    "centrality": {
+        "id": "ALGO-GRAPH-06",
+        "algo_name": "Degree Centrality",
+        "plain_name": "Who is the most connected node?",
+        "what_it_does": "Ranks each node by how many direct connections it has — the more connections, the more central.",
+        "example": '{"graph": {"A":["B","C"],"B":["A","C"],"C":["A","B"]}}',
+        "category": "graph",
+    },
+    "components": {
+        "id": "ALGO-GRAPH-07",
+        "algo_name": "Connected Components",
+        "plain_name": "Find isolated groups in a graph",
+        "what_it_does": "Finds all groups of nodes that are connected to each other but completely separate from other groups.",
+        "example": '{"graph": {"A":["B"],"B":["A"],"C":["D"],"D":["C"],"E":[]}}',
+        "category": "graph",
+    },
+    "tarjan": {
+        "id": "ALGO-GRAPH-08",
+        "algo_name": "Tarjan SCC",
+        "plain_name": "Find circular dependency groups",
+        "what_it_does": "Finds groups where every node can reach every other — catches circular imports, deadlock candidates.",
+        "example": '{"graph": {"A":["B"],"B":["C"],"C":["A"],"D":["B"]}}',
+        "category": "graph",
+    },
+    "pattern-match": {
+        "id": "ALGO-GRAPH-09",
+        "algo_name": "Subgraph Isomorphism",
+        "plain_name": "Does this pattern exist in the graph?",
+        "what_it_does": "Checks whether a small graph pattern exists inside a larger graph — like searching for a shape inside a diagram.",
+        "example": '{"graph": {"A":["B","C"],"B":["C"],"C":[]}, "pattern": {"X":["Y"],"Y":[]}}',
+        "category": "graph",
+    },
+    "normalize": {
+        "id": "ALGO-VEC-01",
+        "algo_name": "L2 Normalization",
+        "plain_name": "Scale all vectors to the same size",
+        "what_it_does": "Adjusts number lists so each has the same total size — like converting different speeds into directions.",
+        "example": '{"vectors": [[1,2,3],[4,5,6]]}',
+        "category": "vector",
+    },
+    "mean-center": {
+        "id": "ALGO-VEC-02",
+        "algo_name": "Mean Centering",
+        "plain_name": "Remove average bias from data",
+        "what_it_does": "Shifts all values so the average becomes zero — removes any dataset-wide offset before comparison.",
+        "example": '{"vectors": [[1,2,3],[4,5,6]]}',
+        "category": "vector",
+    },
+    "scale": {
+        "id": "ALGO-VEC-03",
+        "algo_name": "MinMax / ZScore Normalization",
+        "plain_name": "Rescale numbers into a standard range",
+        "what_it_does": "Squishes all values into 0–1 (minmax) or standard-deviation units (zscore) so they're comparable.",
+        "example": '{"vectors": [[1,2,3]], "method": "minmax"}',
+        "category": "vector",
+    },
+    "token-pool": {
+        "id": "ALGO-VEC-04",
+        "algo_name": "Token Pooling",
+        "plain_name": "Collapse many token vectors into one summary",
+        "what_it_does": "Combines many small vectors (one per word/token) into a single summary vector using mean, max, or first.",
+        "example": '{"token_embeddings": [[0.1,0.2],[0.3,0.4]], "strategy": "mean"}',
+        "category": "vector",
+    },
+    "chunk": {
+        "id": "ALGO-VEC-05",
+        "algo_name": "Semantic Chunker",
+        "plain_name": "Split long text by topic",
+        "what_it_does": "Breaks a long document into chunks where each chunk stays on the same topic — not just by word count.",
+        "example": '{"sentences": ["Hello world.", "This is a test."], "threshold": 0.8}',
+        "category": "vector",
+    },
+    "quantize": {
+        "id": "ALGO-VEC-06",
+        "algo_name": "Scalar Quantization",
+        "plain_name": "Compress vectors to save memory",
+        "what_it_does": "Reduces floating point precision in vectors — dramatically cuts memory use with minimal accuracy loss.",
+        "example": '{"vectors": [[1.5,2.5,3.5]], "bits": 8}',
+        "category": "vector",
+    },
+    "binary-quantize": {
+        "id": "ALGO-VEC-07",
+        "algo_name": "Binary Quantization",
+        "plain_name": "Shrink vectors to just 0s and 1s",
+        "what_it_does": "Converts each vector value to a single bit — extreme compression for very fast similarity search.",
+        "example": '{"vectors": [[0.5,-0.3,1.2,-0.8]]}',
+        "category": "vector",
+    },
+    "slice": {
+        "id": "ALGO-VEC-08",
+        "algo_name": "Matryoshka Slicing",
+        "plain_name": "Trim big vectors to smaller useful sizes",
+        "what_it_does": "Cuts a large embedding to smaller sizes (like 128 or 256 dims) that still work well for search.",
+        "example": '{"vector": [0.1,0.2,0.3,0.4,0.5,0.6], "dimensions": [2,4]}',
+        "category": "vector",
+    },
+    "layer-norm": {
+        "id": "ALGO-VEC-09",
+        "algo_name": "Layer Normalization",
+        "plain_name": "Stabilize vector values for AI models",
+        "what_it_does": "Normalizes values within each individual vector — keeps AI model inputs in a stable, consistent range.",
+        "example": '{"vectors": [[1.0,2.0,3.0]]}',
+        "category": "vector",
+    },
+    "file-walk": {
+        "id": "ALGO-SRCH-01",
+        "algo_name": "Recursive File Walker",
+        "plain_name": "List all files in a folder",
+        "what_it_does": "Walks through every folder and subfolder and returns a list of every file it finds.",
+        "example": '{"root_dir": "."}',
+        "category": "search",
+    },
+    "git-walk": {
+        "id": "ALGO-SRCH-02",
+        "algo_name": "Work-Stealing Parallel Walker",
+        "plain_name": "List files using multiple CPU cores",
+        "what_it_does": "Walks directory trees across multiple CPU threads simultaneously — much faster in large repos.",
+        "example": '{"root_dir": ".", "num_workers": 4}',
+        "category": "search",
+    },
+    "git-ignore-walk": {
+        "id": "ALGO-SRCH-03",
+        "algo_name": "Git-Aware Walker",
+        "plain_name": "List files respecting .gitignore",
+        "what_it_does": "Lists files but automatically skips everything your .gitignore file says to ignore.",
+        "example": '{"root_dir": ".", "respect_gitignore": true}',
+        "category": "search",
+    },
+    "glob": {
+        "id": "ALGO-SRCH-04",
+        "algo_name": "Glob Matcher",
+        "plain_name": "Match files by wildcard pattern",
+        "what_it_does": "Filters file paths using wildcards like *.py, src/**/*.ts — like a smart filename filter.",
+        "example": '{"pattern": "**/*.py", "paths": ["src/main.py","src/test.go"]}',
+        "category": "search",
+    },
+    "trigram": {
+        "id": "ALGO-SRCH-05",
+        "algo_name": "Trigram Index Search",
+        "plain_name": "Fast fuzzy text search using 3-letter chunks",
+        "what_it_does": "Builds a 3-letter (trigram) index for extremely fast substring and fuzzy text searches.",
+        "example": '{"documents": ["hello world","foo bar"], "query": "hello"}',
+        "category": "search",
+    },
+    "mmap-scan": {
+        "id": "ALGO-SRCH-06",
+        "algo_name": "Memory-Mapped File Scanner",
+        "plain_name": "Scan huge files without loading them fully",
+        "what_it_does": "Reads files directly from disk memory — searches gigabyte-sized files instantly without RAM issues.",
+        "example": '{"file_path": "src/api/cli/main.py", "pattern": "def handle"}',
+        "category": "search",
+    },
+    "stream-scan": {
+        "id": "ALGO-SRCH-07",
+        "algo_name": "Streaming Chunk Scanner",
+        "plain_name": "Scan large files in small pieces",
+        "what_it_does": "Reads files piece-by-piece so even enormous files can be searched without using too much memory.",
+        "example": '{"file_path": "src/api/cli/main.py", "pattern": "policy"}',
+        "category": "search",
+    },
+    "size-filter": {
+        "id": "ALGO-SRCH-08",
+        "algo_name": "Size/Line Bouncer",
+        "plain_name": "Skip files that are too big or too long",
+        "what_it_does": "Checks if a file exceeds a size or line-count limit before wasting time scanning it.",
+        "example": '{"file_path": "src/api/cli/main.py", "max_size_bytes": 1000000, "max_lines": 50000}',
+        "category": "search",
+    },
+    "regex-scan": {
+        "id": "ALGO-SRCH-09",
+        "algo_name": "Lazy DFA Regex Engine",
+        "plain_name": "Search using a regex pattern (no backtracking)",
+        "what_it_does": "Runs regular expressions efficiently using a deterministic finite automaton — never hangs on bad patterns.",
+        "example": '{"pattern": "def \\\\w+", "text": "def foo(): pass"}',
+        "category": "search",
+    },
+    "snippet": {
+        "id": "ALGO-SRCH-10",
+        "algo_name": "Context Snippet Collector",
+        "plain_name": "Show lines around a match",
+        "what_it_does": "Returns the lines before and after a match so you can read results in context, not just the hit line.",
+        "example": '{"file_path": "src/api/cli/main.py", "pattern": "def main", "context_lines": 3}',
+        "category": "search",
+    },
+    "byte-search": {
+        "id": "ALGO-SRCH-11",
+        "algo_name": "SIMD Memchr Byte Search",
+        "plain_name": "Ultra-fast single-byte or character search",
+        "what_it_does": "Finds a specific byte or character using CPU hardware acceleration — fastest possible byte scan.",
+        "example": '{"text": "hello world", "byte_value": 32}',
+        "category": "search",
+    },
+    "is-binary": {
+        "id": "ALGO-SRCH-12",
+        "algo_name": "Binary File Classifier",
+        "plain_name": "Check if a file is binary or text",
+        "what_it_does": "Quickly determines whether a file is binary (image, executable) or plain text — so you know if it's readable.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "search",
+    },
+    "content-type": {
+        "id": "ALGO-SRCH-13",
+        "algo_name": "Content-Type Prober",
+        "plain_name": "Detect what type of file this is",
+        "what_it_does": "Sniffs a file's content to identify its type (Python, JSON, Markdown, etc.) — like a file-type detector.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "search",
+    },
+    "is-generated": {
+        "id": "ALGO-SRCH-14",
+        "algo_name": "Generated Code Classifier",
+        "plain_name": "Was this file auto-generated?",
+        "what_it_does": "Detects files created by code generators (protobuf, swagger, etc.) that you should never edit by hand.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "search",
+    },
+    "parallel-walk": {
+        "id": "ALGO-SRCH-15",
+        "algo_name": "Aho-Corasick Multi-Pattern Search",
+        "plain_name": "Search for many words at once",
+        "what_it_does": "Scans text for multiple words simultaneously — much faster than searching one pattern at a time.",
+        "example": '{"patterns": ["TODO","FIXME"], "text": "TODO: fix this FIXME"}',
+        "category": "search",
+    },
+    "ast-parse": {
+        "id": "ALGO-OBS-16",
+        "algo_name": "Tree-Sitter AST Parser",
+        "plain_name": "Parse source code into a structured tree",
+        "what_it_does": "Converts source code into a tree of functions, classes, and expressions — the foundation for all code analysis.",
+        "example": '{"file_path": "src/api/cli/main.py", "language": "python"}',
+        "category": "observability",
+    },
+    "outline": {
+        "id": "ALGO-OBS-17",
+        "algo_name": "Code Outline Generator",
+        "plain_name": "Show a file's structure at a glance",
+        "what_it_does": "Extracts all functions, classes, and methods from a file — like a table of contents for source code.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "observability",
+    },
+    "extract-comments": {
+        "id": "ALGO-OBS-18",
+        "algo_name": "Comment Extractor",
+        "plain_name": "Pull out every comment and docstring",
+        "what_it_does": "Collects every comment, inline note, and docstring from a source file into one list.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "observability",
+    },
+    "no-inline": {
+        "id": "ALGO-OBS-19",
+        "algo_name": "Zero-Inline-Comment Linter",
+        "plain_name": "Check for banned inline comments in code",
+        "what_it_does": "Flags code that has inline comments — enforces the rule that all docs must be in the file header, not inline.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "observability",
+    },
+    "dep-graph": {
+        "id": "ALGO-OBS-20",
+        "algo_name": "Import Dependency Grapher",
+        "plain_name": "Map what each module imports from what",
+        "what_it_does": "Builds a graph of all module imports in a codebase and detects circular dependencies that can break builds.",
+        "example": '{"directory": "src"}',
+        "category": "observability",
+    },
+    "symbols": {
+        "id": "ALGO-OBS-21",
+        "algo_name": "Symbol Scope Resolver",
+        "plain_name": "Find where variables and functions are defined",
+        "what_it_does": "Traces every variable and function name back to where it was defined — for understanding code ownership.",
+        "example": '{"file_path": "src/api/cli/main.py"}',
+        "category": "observability",
+    },
+    "smart-patch": {
+        "id": "ALGO-UPD-22",
+        "algo_name": "CST Matcher / Patcher",
+        "plain_name": "Edit code without breaking its structure",
+        "what_it_does": "Edits code using the syntax tree so renames and replacements are structure-aware — no accidental breakage.",
+        "example": '{"file_path": "src/api/cli/main.py", "find_pattern": "old_name", "replace_text": "new_name", "dry_run": true}',
+        "category": "update",
+    },
+    "batch-patch": {
+        "id": "ALGO-UPD-23",
+        "algo_name": "Batch Patcher",
+        "plain_name": "Edit many files at once safely",
+        "what_it_does": "Applies find-and-replace across many files at once with a SHA-256 checksum and rollback on any failure.",
+        "example": '{"operations": [{"file_path": "src/api/cli/main.py", "find_pattern": "TODO", "replace_text": "DONE", "is_regex": false}], "dry_run": true}',
+        "category": "update",
+    },
+    "show-diff": {
+        "id": "ALGO-UPD-24",
+        "algo_name": "Unified Diff Engine",
+        "plain_name": "Show exactly what changed between two versions",
+        "what_it_does": "Generates a standard unified diff (+/-) showing every line added or removed between two texts.",
+        "example": '{"original": "hello world", "modified": "hello earth", "file_path": "test.py"}',
+        "category": "update",
+    },
+}
 import os
 import re
 from pathlib import Path
@@ -38,7 +393,7 @@ if REPO_ROOT not in sys.path:
 import json
 import argparse
 from dataclasses import asdict
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from src.features.audit.service.audit_service import AuditService
 from src.features.refactor.service.refactor_service import RefactorService
@@ -63,358 +418,629 @@ def _init_rag_and_agent(rules_dir: str, backend: str):
     vector_store = InMemoryCosineVectorAdapter()
 
     if backend == "openai":
-        llm_provider = OpenAICompatibleAdapter(
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required for openai backend")
+        llm = OpenAICompatibleAdapter(
+            api_key=api_key,
             base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-            api_key=os.environ.get("OPENAI_API_KEY", ""),
             model_name=os.environ.get("OPENAI_MODEL", "gpt-4o"),
         )
     elif backend == "ollama":
-        llm_provider = OpenAICompatibleAdapter(
+        llm = OpenAICompatibleAdapter(
+            api_key="ollama",
             base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
-            api_key="EMPTY",
-            model_name=os.environ.get("OLLAMA_MODEL", "llama3.2"),
+            model_name=os.environ.get("OLLAMA_MODEL", "llama3"),
         )
     else:
-        llm_provider = MockLLMAdapter()
+        llm = MockLLMAdapter()
 
-    rag_svc = RAGService(
-        knowledge_source=knowledge_source,
-        vector_store=vector_store,
-        llm_provider=llm_provider,
-    )
-    audit_svc = AuditService()
-    agent_svc = AgentService(
-        llm_provider=llm_provider,
-        rag_service=rag_svc,
-        audit_service=audit_svc,
-    )
-    return rag_svc, agent_svc
+    rag_service = RAGService(knowledge_source, vector_store, llm)
+    agent_service = AgentService(rag_service, llm)
+    return rag_service, agent_service
 
 
-def handle_audit_command(args: argparse.Namespace) -> int:
-    service = AuditService()
-    findings = service.audit_repository(args.root)
+def handle_search_command(args: argparse.Namespace) -> int:
+    svc = CodeEngineService()
+    raw_patterns = getattr(args, "patterns", None) or "TODO,FIXME,error,critical"
+    patterns = [p.strip() for p in raw_patterns.split(",") if p.strip()]
+    target_dir = getattr(args, "directory", None) or getattr(args, "root", ".")
+    results = svc.scan_directory_multipattern(target_dir, patterns)
 
-    if args.json:
-        print(json.dumps([asdict(f) for f in findings], indent=2))
-        return 1 if any(f.severity in {"CRITICAL", "HIGH"} for f in findings) else 0
-
-    print(f"\n{'='*75}")
-    print(f"🔍 POLICY ORCHESTRATOR AUDIT: {len(findings)} Total Findings")
-    print(f"{'='*75}\n")
-
-    if not findings:
-        print("✅ Repository is 100% clean. Zero invariant violations detected.")
-        return 0
-
-    for sev in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-        matched = [f for f in findings if f.severity == sev]
-        if matched:
-            print(f"\n--- [{sev}] ({len(matched)} issues) ---")
-            for item in matched:
-                print(f"  [{item.rule_id}] {item.file}:{item.line}")
-                print(f"     Description: {item.description}")
-                print(f"     Snippet    : {item.snippet}")
-                print(f"     Fix        : {item.recommendation}\n")
-
-    return 1 if any(f.severity in {"CRITICAL", "HIGH"} for f in findings) else 0
-
-
-def handle_rag_command(args: argparse.Namespace) -> int:
-    rag_svc, _ = _init_rag_and_agent(args.rules_dir, args.backend)
-    
-    if args.action == "index":
-        count = rag_svc.index_all_rules()
-        print(f"✅ Indexed {count} policy chunks into vector index.")
-        return 0
-
-    res = rag_svc.retrieve_context(
-        RAGQueryRequest(
-            query=args.query,
-            top_k=args.top_k,
-            category_filter=args.category,
-        )
-    )
-
-    if args.json:
-        print(json.dumps(asdict(res), indent=2))
+    if getattr(args, "json", False):
+        print(json.dumps(results, indent=2))
         return 0
 
     print(f"\n{'='*75}")
-    print(f"📚 GROUNDED POLICY RETRIEVAL: {res.total_found} Matches ({res.latency_ms} ms)")
+    print(f"🔎 [SEARCH ENGINE] {len(results)} Files Matched in '{target_dir}'")
     print(f"{'='*75}\n")
-    print(res.formatted_context_block)
+    for res in results:
+        print(f"📁 {res['file']} ({res['match_count']} matches)")
+        for m in res["matches"][:3]:
+            print(f"   Line {m['line']} [{m['pattern']}]: {m['context']}")
     return 0
 
 
-def handle_agent_command(args: argparse.Namespace) -> int:
-    _, agent_svc = _init_rag_and_agent(args.rules_dir, args.backend)
-    req = AgentExecutionRequest(
-        prompt=args.prompt,
-        target_directory=args.target_dir,
-        max_steps=args.max_steps,
-    )
-    result = agent_svc.execute_agent_loop(req)
+def handle_scan_command(args: argparse.Namespace) -> int:
+    target_dir = getattr(args, "root", None) or getattr(args, "directory", ".")
+    svc = CodeEngineService()
+    files = svc.execute_algorithm("ALGO-SRCH-01", {"root_dir": target_dir})
 
-    if args.json:
-        print(json.dumps(asdict(result), indent=2))
+    if getattr(args, "json", False):
+        print(json.dumps(files, indent=2))
         return 0
 
+    file_list = files.get("files", [])
     print(f"\n{'='*75}")
-    print(f"🤖 AI POLICY AGENT EXECUTION: {result.status} ({result.duration_ms} ms)")
+    print(f"📂 [SCAN ENGINE] Discovered {len(file_list)} files under '{target_dir}'")
     print(f"{'='*75}\n")
-    print(f"Session ID : {result.session_id}")
-    print(f"Steps Taken: {result.total_steps}")
-    print(f"Sources    : {', '.join(result.grounded_sources) if result.grounded_sources else 'None'}\n")
-
-    for step in result.steps:
-        print(f"Step {step.step_number}: {step.thought}")
-        if step.tool_calls:
-            for tc in step.tool_calls:
-                print(f"  🔧 Tool: {tc.tool_name} -> {tc.status}")
-
-    print(f"\n--- Final Answer ---\n{result.final_response}\n")
+    for f in file_list[:30]:
+        print(f"  • {f}")
+    if len(file_list) > 30:
+        print(f"  ... and {len(file_list) - 30} more files.")
     return 0
 
 
-def handle_refactor_command(args: argparse.Namespace) -> int:
-    service = RefactorService()
-    exts = set(e.strip().lower() for e in args.ext.split(","))
-    result = service.execute_batch_replace(
-        root_dir=args.root,
-        find_pattern=args.find,
-        replace_text=args.replace,
-        extensions=exts,
-        is_regex=args.regex,
-        dry_run=not args.apply,
-    )
-
-    if args.json:
-        print(json.dumps(asdict(result), indent=2))
-        return 0
-
-    status = "[APPLIED]" if args.apply else "[DRY-RUN]"
-    print(f"\n⚡ BATCH REFACTOR {status}: {result.total_occurrences} occurrences in {result.modified_files} files.\n")
-    for d in result.details:
-        state = "Modified" if d.modified else "Would modify"
-        print(f"  - {d.file_path}: {d.occurrences} matches ({state})")
-
-    return 0
-
-
-def handle_policy_check_command(args: argparse.Namespace) -> int:
-    service = PolicySyncService()
-    report = service.audit_policy_contract(args.path)
-
-    if args.json:
-        print(json.dumps(asdict(report), indent=2))
-        return 1 if report.non_compliant_count > 0 else 0
-
-    print(f"\n{'='*75}")
-    print(f"📜 POLICY CONTRACT AUDIT REPORT: {report.total_algorithms_found} Total Algorithms")
-    print(f"   Compliant: {report.fully_compliant_count} | Non-Compliant: {report.non_compliant_count}")
-    print(f"{'='*75}\n")
-
-    if report.non_compliant_count > 0:
-        print("Non-compliant algorithm entries requiring optimization:")
-        for a in report.audits:
-            if not a.is_fully_compliant:
-                missing = []
-                if not a.has_definition: missing.append("definition")
-                if not a.has_complexity: missing.append("complexity")
-                if a.step_count < 4: missing.append(f"steps({a.step_count})")
-                if not a.has_agent_role: missing.append("agent_role")
-                print(f"  - [Algorithm {a.algorithm_id}] {a.title} (Missing: {', '.join(missing)})")
+def handle_outline_command(args: argparse.Namespace) -> int:
+    file_path = getattr(args, "file", None)
+    if not file_path:
+        print("Error: file path is required")
         return 1
 
-    print("✅ All algorithm entries strictly conform to the engineering contract standard.")
+    svc = CodeEngineService()
+    res = svc.inspect_file_outline(file_path)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+        return 0
+
+    print(res.get("markdown", "No outline available"))
+    return 0
+
+
+def handle_lint_command(args: argparse.Namespace) -> int:
+    file_path = getattr(args, "file", None)
+    if not file_path:
+        print("Error: file path is required")
+        return 1
+
+    svc = CodeEngineService()
+    res = svc.lint_zero_inline_comments(file_path)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+        return 0 if res["is_compliant"] else 1
+
+    status = "✅ COMPLIANT" if res["is_compliant"] else "❌ VIOLATION"
+    print(f"\n{'='*75}")
+    print(f"🛡️ [ZERO-INLINE-COMMENT DOCTRINE] {status}")
+    print(f"   File: {res['file']}")
+    print(f"   Banned Inline Comments: {res['banned_inline_count']}")
+    print(f"   TODOs/FIXMEs: {res['todos_count']}")
+    print(f"{'='*75}\n")
+    for c in res["banned_comments"]:
+        print(f"   Line {c['line']}: {c['text']}")
+    return 0 if res["is_compliant"] else 1
+
+
+def handle_deps_command(args: argparse.Namespace) -> int:
+    target_dir = getattr(args, "directory", None) or getattr(args, "root", "src")
+    svc = CodeEngineService()
+    res = svc.analyze_module_dependencies(target_dir)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+        return 0
+
+    print(f"\n{'='*75}")
+    print(f"🕸️ [IMPORT GRAPH] {res['total_modules']} Modules, {res['total_edges']} Edges")
+    print(f"   Cycles: {'⚠️ DETECTED' if res['has_cycles'] else '✅ NONE'}")
+    print(f"{'='*75}\n")
+    if res["cycles"]:
+        for cycle in res["cycles"]:
+            print(f"  🔁 {' -> '.join(cycle)}")
+    print(f"\nTopological Build Order ({len(res['topological_order'])} modules):")
+    print(f"  {' -> '.join(res['topological_order'][:10])}{' ...' if len(res['topological_order']) > 10 else ''}")
+    return 0
+
+
+def handle_diff_command(args: argparse.Namespace) -> int:
+    file_path = getattr(args, "file", None)
+    find_str = getattr(args, "find", "")
+    replace_str = getattr(args, "replace", "")
+    is_regex = getattr(args, "regex", False)
+
+    if not file_path or not os.path.isfile(file_path):
+        print(f"File not found: {file_path}")
+        return 1
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        orig = f.read()
+
+    mod = orig.replace(find_str, replace_str) if not is_regex else re.sub(find_str, replace_str, orig)
+    svc = CodeEngineService()
+    diff_res = svc.generate_diff(orig, mod, file_path=file_path)
+
+    if getattr(args, "json", False):
+        print(json.dumps(diff_res, indent=2))
+        return 0
+
+    print(f"\n{'='*75}")
+    print(f"📝 [UNIFIED DIFF] (+{diff_res['added_lines']} / -{diff_res['deleted_lines']})")
+    print(f"{'='*75}\n")
+    print(diff_res["patch"] if diff_res["has_changes"] else "No differences found.")
+    return 0
+
+
+def handle_patch_command(args: argparse.Namespace) -> int:
+    file_path = getattr(args, "file", None)
+    find_str = getattr(args, "find", "")
+    replace_str = getattr(args, "replace", "")
+    is_regex = getattr(args, "regex", False)
+    apply_mutations = getattr(args, "apply", False)
+
+    if not file_path:
+        print("Error: file path is required")
+        return 1
+
+    svc = CodeEngineService()
+    ops = [{
+        "file_path": file_path,
+        "find_pattern": find_str,
+        "replace_text": replace_str,
+        "is_regex": is_regex,
+    }]
+    res = svc.apply_batch_patch(ops, dry_run=not apply_mutations)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+        return 0 if res[0]["success"] else 1
+
+    status = "[APPLIED]" if apply_mutations else "[DRY-RUN]"
+    print(f"\n{'='*75}")
+    print(f"⚡ [ATOMIC PATCH] {status}")
+    print(f"   File: {res[0]['file_path']}")
+    print(f"   Matches: {res[0]['occurrences']}")
+    print(f"   Pre SHA-256 : {res[0]['before_sha256'][:12]}...")
+    print(f"   Post SHA-256: {res[0]['after_sha256'][:12]}...")
+    print(f"{'='*75}\n")
+    return 0 if res[0]["success"] else 1
+
+
+def handle_exec_command(args: argparse.Namespace) -> int:
+    algo_id = getattr(args, "id", None)
+    if not algo_id:
+        print("Error: Algorithm ID is required (e.g. ALGO-VEC-01, ALGO-SRCH-11, ALGO-GRAPH-01)")
+        return 1
+
+    input_str = getattr(args, "input", "{}") or "{}"
+    try:
+        if input_str.startswith("@") or (os.path.isfile(input_str) and not input_str.startswith("{")):
+            path = input_str.removeprefix("@")
+            with open(path, "r", encoding="utf-8") as f:
+                inputs = json.load(f)
+        else:
+            inputs = json.loads(input_str)
+    except Exception as e:
+        print(f"Error parsing input JSON: {e}")
+        return 1
+
+    svc = CodeEngineService()
+    try:
+        result = svc.execute_algorithm(algo_id=algo_id, inputs=inputs)
+        if getattr(args, "json", False):
+            print(json.dumps({"algo_id": algo_id, "result": result}, indent=2))
+        else:
+            print(f"\n{'='*75}")
+            print(f"⚡ [ALGORITHM ENGINE] EXECUTED: {algo_id}")
+            print(f"{'='*75}\n")
+            print(json.dumps(result, indent=2))
+        return 0
+    except Exception as e:
+        print(f"Execution failed: {e}")
+        return 1
+
+
+def handle_contracts_command(args: argparse.Namespace) -> int:
+    category_filter = getattr(args, "category", None)
+    tag_filter = getattr(args, "tag", None)
+    contracts = [
+        c for c in BUILTIN_ALGORITHM_CONTRACTS
+        if (not category_filter or c.category.value == category_filter)
+        and (not tag_filter or tag_filter in c.capability_tags)
+    ]
+
+    if getattr(args, "json", False):
+        print(json.dumps([c.model_dump() for c in contracts], indent=2))
+        return 0
+
+    print(f"\n{'='*95}")
+    print(f"📋 [ALGORITHM REGISTRY] {len(BUILTIN_ALGORITHM_CONTRACTS)} TOTAL CONTRACTS ({len(contracts)} matching)")
+    print(f"{'='*95}")
+    for c in contracts:
+        print(f"  • [{c.id}] {c.name:<32} Category: {c.category.value:<14} Time: {c.complexity.time:<10} Target: {c.hardware_target.value}")
+    return 0
+
+
+def handle_compose_command(args: argparse.Namespace) -> int:
+    raw_algos = getattr(args, "algos", "ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23") or "ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23"
+    algo_ids = [a.strip() for a in raw_algos.split(",") if a.strip()]
+    adapter = InMemoryAlgorithmRegistryAdapter(load_builtins=True)
+    composer = AlgorithmComposerService(adapter)
+    res = composer.compose_pipeline(algo_ids)
+
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+        return 0
+
+    status = "✅ VALID" if res["is_valid"] else "❌ INVALID (Safety Warnings)"
+    print(f"\n{'='*85}")
+    print(f"🧩 [DYNAMIC PIPELINE COMPOSER] {status}")
+    print(f"{'='*85}")
+    print(f"Execution DAG Steps ({res['total_steps']}):")
+    for step in res["pipeline_steps"]:
+        print(f"  {step['step_index']}. ⚡ [{step['algo_id']}] {step['name']:<36} (Time: {step['complexity']['time']})")
+    if res.get("inferred_adapters"):
+        print("\nInjected G4 Type Adapters:")
+        for ad in res["inferred_adapters"]:
+            print(f"  🔧 Steps {ad['between_steps'][0]} -> {ad['between_steps'][1]}: {', '.join(ad['adapter_ids'])}")
+    if res.get("safety_issues"):
+        print("\nSafety Issues:")
+        for w in res["safety_issues"]:
+            print(f"  ⚠️  {w}")
+    return 0 if res["is_valid"] else 1
+
+
+def handle_run_command(args: argparse.Namespace) -> int:
+    alias = getattr(args, "alias", None)
+    if not alias:
+        print("Error: alias name is required. Run `policy-orchestrator list` to see all available names.")
+        return 1
+
+    entry = ALGO_ALIASES.get(alias)
+    if not entry:
+        close = [k for k in ALGO_ALIASES if alias in k or k.startswith(alias[:3])]
+        print(f"Unknown alias: '{alias}'")
+        if close:
+            print(f"Did you mean: {', '.join(close)}")
+        print("Run `policy-orchestrator list` to see every available name.")
+        return 1
+
+    input_str = getattr(args, "input", "{}") or "{}"
+    try:
+        if input_str.startswith("@") or (os.path.isfile(input_str) and not input_str.startswith("{")):
+            path = input_str.removeprefix("@")
+            with open(path, "r", encoding="utf-8") as f:
+                inputs = json.load(f)
+        else:
+            inputs = json.loads(input_str)
+    except Exception as e:
+        print(f"Bad input JSON: {e}")
+        print(f"Example input for '{alias}': {entry['example']}")
+        return 1
+
+    svc = CodeEngineService()
+    try:
+        result = svc.execute_algorithm(algo_id=entry["id"], inputs=inputs)
+    except Exception as e:
+        print(f"Execution error: {e}")
+        return 1
+
+    print(f"\n{'='*75}")
+    print(f"⚡  {entry['algo_name']}  ({entry['id']})")
+    print(f"   {entry['plain_name']}")
+    print(f"{'='*75}\n")
+    print(json.dumps(result, indent=2))
+    print(f"\n{'='*75}")
+    print(f"📦 JSON output above. Add --json for machine-readable only output.")
+    print(f"{'='*75}")
+    return 0
+
+
+def handle_list_command(args: argparse.Namespace) -> int:
+    category_filter = getattr(args, "category", None)
+    entries = {
+        k: v for k, v in ALGO_ALIASES.items()
+        if not category_filter or v["category"] == category_filter
+    }
+
+    if getattr(args, "json", False):
+        print(json.dumps({
+            k: {
+                "id": v["id"],
+                "algo_name": v["algo_name"],
+                "plain_name": v["plain_name"],
+                "what_it_does": v["what_it_does"],
+                "example_input": v["example"],
+                "category": v["category"],
+            }
+            for k, v in entries.items()
+        }, indent=2))
+        return 0
+
+    categories_present = sorted({v["category"] for v in entries.values()})
+    cat_labels = {"graph": "🕸️  Graph", "vector": "🔢 Vector", "search": "🔎 Search", "observability": "🔭 Observability", "update": "✏️  Update"}
+
+    print(f"\n{'='*95}")
+    print(f"  📋  ALGORITHM QUICK-REFERENCE  —  {len(entries)} commands  (filter: --category graph|vector|search|observability|update)")
+    print(f"{'='*95}")
+    print(f"  {'COMMAND NAME':<22} {'ALGO NAME':<32} {'PLAIN ENGLISH — WHAT IT DOES'}")
+    print(f"  {'-'*22} {'-'*32} {'-'*35}")
+
+    for cat in categories_present:
+        print(f"\n  {cat_labels.get(cat, cat.upper())}")
+        for alias, v in entries.items():
+            if v["category"] != cat:
+                continue
+            print(f"  {alias:<22} {v['algo_name']:<32} {v['plain_name']}")
+            print(f"  {'':22} {'':32} ↳ {v['what_it_does'][:72]}")
+
+    print(f"\n{'='*95}")
+    print(f"  HOW TO RUN:  policy-orchestrator run <COMMAND NAME> '<JSON-input>'")
+    print(f"  EXAMPLE:     policy-orchestrator run bfs '{{\"graph\": {{\"A\":[\"B\"]}}, \"start_node\": \"A\"}}'")
+    print(f"  EXAMPLE:     policy-orchestrator run normalize '{{\"vectors\": [[1,2,3]]}}'")
+    print(f"  SEE EXAMPLE: policy-orchestrator list --json   (shows example input for each command)")
+    print(f"{'='*95}\n")
+    return 0
+
+
+def handle_completion_command(args: argparse.Namespace) -> int:
+    shell = getattr(args, "shell", "bash")
+    algo_ids = [c.id for c in BUILTIN_ALGORITHM_CONTRACTS]
+    alias_names = list(ALGO_ALIASES.keys())
+    subcmds = ["search", "scan", "outline", "lint", "deps", "diff", "patch", "exec", "run", "list", "contracts", "compose", "audit", "rag", "agent", "refactor", "policy-check", "migrate", "serve", "completion", "algo"]
+    categories = ["search", "observability", "update", "vector", "graph"]
+
+    if shell == "bash":
+        script = f"""# Bash completion for policy-orchestrator
+_policy_orchestrator_completion() {{
+    local cur prev subcmd
+    COMPREPLY=()
+    cur="${{COMP_WORDS[COMP_CWORD]}}"
+    prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+    subcmd="${{COMP_WORDS[1]}}"
+
+    local subcommands="{' '.join(subcmds)}"
+    local algo_ids="{' '.join(algo_ids)}"
+    local alias_names="{' '.join(alias_names)}"
+    local categories="{' '.join(categories)}"
+
+    if [ $COMP_CWORD -eq 1 ]; then
+        COMPREPLY=( $(compgen -W "$subcommands" -- "$cur") )
+        return 0
+    fi
+
+    case "$subcmd" in
+        exec|execute)
+            if [ $COMP_CWORD -eq 2 ] || [ "$prev" = "--id" ]; then
+                COMPREPLY=( $(compgen -W "$algo_ids" -- "$cur") )
+                return 0
+            fi
+            ;;
+        run)
+            if [ $COMP_CWORD -eq 2 ]; then
+                COMPREPLY=( $(compgen -W "$alias_names" -- "$cur") )
+                return 0
+            fi
+            ;;
+        list)
+            if [ "$prev" = "--category" ]; then
+                COMPREPLY=( $(compgen -W "$categories" -- "$cur") )
+                return 0
+            fi
+            ;;
+        contracts)
+            if [ "$prev" = "--category" ]; then
+                COMPREPLY=( $(compgen -W "$categories" -- "$cur") )
+                return 0
+            fi
+            ;;
+        outline|lint|diff|patch)
+            COMPREPLY=( $(compgen -f -- "$cur") )
+            return 0
+            ;;
+        search|scan|deps)
+            COMPREPLY=( $(compgen -d -- "$cur") )
+            return 0
+            ;;
+    esac
+
+    local opts="--json --help --root --directory --file --find --replace --regex --apply --patterns"
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+}}
+complete -F _policy_orchestrator_completion policy-orchestrator
+"""
+    elif shell == "zsh":
+        script = f"""#compdef policy-orchestrator
+_policy_orchestrator() {{
+    local -a subcommands
+    subcommands=({' '.join([f"'{s}:{s} command'" for s in subcmds])})
+    _arguments '1: :->subcmd' '*: :->args'
+    case $state in
+        subcmd)
+            _describe 'command' subcommands
+            ;;
+        args)
+            case $words[2] in
+                exec|execute)
+                    _values 'algorithm_id' {' '.join(algo_ids)}
+                    ;;
+                contracts)
+                    _values 'category' {' '.join(categories)}
+                    ;;
+                *)
+                    _files
+                    ;;
+            esac
+            ;;
+    esac
+}}
+compdef _policy_orchestrator policy-orchestrator
+"""
+    else:
+        script = f"""# Fish completion for policy-orchestrator
+complete -c policy-orchestrator -f -n '__fish_use_subcommand' -a "{' '.join(subcmds)}"
+"""
+    print(script)
     return 0
 
 
 def handle_algo_command(args: argparse.Namespace) -> int:
-    svc = CodeEngineService()
-
-    if args.action in {"scan", "search"}:
-        patterns = [p.strip() for p in args.patterns.split(",") if p.strip()]
-        results = svc.scan_directory_multipattern(args.root, patterns)
-        if args.json:
-            print(json.dumps(results, indent=2))
-            return 0
-        print(f"\n{'='*75}")
-        print(f"🔎 [SEARCH ALGORITHM ENGINE] MULTI-PATTERN SCAN: {len(results)} Files Matched")
-        print(f"{'='*75}\n")
-        for res in results:
-            print(f"📁 {res['file']} ({res['match_count']} matches)")
-            for m in res["matches"][:3]:
-                print(f"   Line {m['line']} [{m['pattern']}]: {m['context']}")
-        return 0
-
-    elif args.action == "outline":
-        res = svc.inspect_file_outline(args.file)
-        if args.json:
-            print(json.dumps(res, indent=2))
-            return 0
-        print(res["markdown"])
-        return 0
-
-    elif args.action == "lint-comments":
-        res = svc.lint_zero_inline_comments(args.file)
-        if args.json:
-            print(json.dumps(res, indent=2))
-            return 0 if res["is_compliant"] else 1
-        status = "✅ COMPLIANT" if res["is_compliant"] else "❌ VIOLATION"
-        print(f"\n{'='*75}")
-        print(f"🛡️ [OBSERVABILITY ALGORITHM ENGINE] ZERO-INLINE-COMMENT DOCTRINE: {status}")
-        print(f"   File: {res['file']}")
-        print(f"   Banned Inline Comments: {res['banned_inline_count']}")
-        print(f"   TODOs/FIXMEs: {res['todos_count']}")
-        print(f"{'='*75}\n")
-        for c in res["banned_comments"]:
-            print(f"   Line {c['line']}: {c['text']}")
-        return 0 if res["is_compliant"] else 1
-
-    elif args.action == "dependencies":
-        res = svc.analyze_module_dependencies(args.directory)
-        if args.json:
-            print(json.dumps(res, indent=2))
-            return 0
-        print(f"\n{'='*75}")
-        print(f"🕸️ [OBSERVABILITY ALGORITHM ENGINE] IMPORT DEPENDENCY GRAPH: {res['total_modules']} Modules, {res['total_edges']} Edges")
-        print(f"   Has Cycles: {'⚠️ YES' if res['has_cycles'] else '✅ NO'}")
-        print(f"{'='*75}\n")
-        if res["cycles"]:
-            print("Detected Cycles:")
-            for cycle in res["cycles"]:
-                print(f"  🔁 {' -> '.join(cycle)}")
-        print(f"\nTopological Build Order ({len(res['topological_order'])} modules):")
-        print(f"  {' -> '.join(res['topological_order'][:10])}{' ...' if len(res['topological_order']) > 10 else ''}")
-        return 0
-
-    elif args.action == "patch":
-        ops = [{
-            "file_path": args.file,
-            "find_pattern": args.find,
-            "replace_text": args.replace,
-            "is_regex": args.regex,
-        }]
-        res = svc.apply_batch_patch(ops, dry_run=not args.apply)
-        if args.json:
-            print(json.dumps(res, indent=2))
-            return 0 if res[0]["success"] else 1
-        status = "[APPLIED]" if args.apply else "[DRY-RUN]"
-        print(f"\n{'='*75}")
-        print(f"⚡ [UPDATE ALGORITHM ENGINE] ATOMIC PATCH {status}")
-        print(f"   File: {res[0]['file_path']}")
-        print(f"   Matches Modified: {res[0]['occurrences']}")
-        print(f"   Pre SHA-256 : {res[0]['before_sha256'][:12]}...")
-        print(f"   Post SHA-256: {res[0]['after_sha256'][:12]}...")
-        print(f"{'='*75}\n")
-        return 0 if res[0]["success"] else 1
-
-    elif args.action == "diff":
-        if not os.path.isfile(args.file):
-            print(f"File not found: {args.file}")
-            return 1
-        with open(args.file, "r") as f:
-            orig = f.read()
-        mod = orig.replace(args.find, args.replace) if not args.regex else re.sub(args.find, args.replace, orig)
-        diff_res = svc.generate_diff(orig, mod, file_path=args.file)
-        if args.json:
-            print(json.dumps(diff_res, indent=2))
-            return 0
-        print(f"\n{'='*75}")
-        print(f"📝 [UPDATE ALGORITHM ENGINE] UNIFIED DIFF (+{diff_res['added_lines']} / -{diff_res['deleted_lines']})")
-        print(f"{'='*75}\n")
-        print(diff_res["patch"] if diff_res["has_changes"] else "No differences found.")
-        return 0
-
-    elif args.action == "contracts":
-        category_filter = getattr(args, "category", None)
-        contracts = [
-            c for c in BUILTIN_ALGORITHM_CONTRACTS
-            if not category_filter or c.category.value == category_filter
-        ]
-        if args.json:
-            print(json.dumps([c.model_dump() for c in contracts], indent=2))
-            return 0
-        print(f"\n{'='*85}")
-        print(f"📋 [ALGORITHM REGISTRY] 33 LAYER 1 CONTRACTS ({len(contracts)} matching)")
-        print(f"{'='*85}")
-        for c in contracts:
-            print(f"  • [{c.id}] {c.name:<34} Category: {c.category.value:<14} Time: {c.complexity.time:<10} Target: {c.hardware_target.value}")
-        return 0
-
-    elif args.action == "compose":
-        algo_ids = [a.strip() for a in getattr(args, "algos", "ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23").split(",") if a.strip()]
-        adapter = InMemoryAlgorithmRegistryAdapter(load_builtins=True)
-        composer = AlgorithmComposerService(adapter)
-        res = composer.compose_pipeline(algo_ids)
-        if args.json:
-            print(json.dumps(res, indent=2))
-            return 0
-        status = "✅ VALID" if res["is_valid"] else "❌ INVALID (Safety Warnings)"
-        print(f"\n{'='*85}")
-        print(f"🧩 [DYNAMIC PIPELINE COMPOSER] {status}")
-        print(f"{'='*85}")
-        print(f"Execution DAG Steps ({res['total_steps']}):")
-        for step in res["pipeline_steps"]:
-            print(f"  {step['step_index']}. ⚡ [{step['algo_id']}] {step['name']:<36} (Time: {step['complexity']['time']})")
-        if res.get("inferred_adapters"):
-            print("\nInjected G4 Type Adapters:")
-            for ad in res["inferred_adapters"]:
-                print(f"  🔧 Steps {ad['between_steps'][0]} -> {ad['between_steps'][1]}: {', '.join(ad['adapter_ids'])}")
-        if res.get("safety_issues"):
-            print("\nSafety Issues:")
-            for w in res["safety_issues"]:
-                print(f"  ⚠️  {w}")
-        return 0 if res["is_valid"] else 1
-
-    elif args.action == "execute":
-        algo_id = getattr(args, "id", None)
-        if not algo_id:
-            print("Error: --id <algo_id> is required for 'execute'")
-            return 1
-
-        input_str = getattr(args, "input", "{}")
-        try:
-            if input_str.startswith("@") or os.path.isfile(input_str):
-                path = input_str.removeprefix("@")
-                with open(path, "r", encoding="utf-8") as f:
-                    inputs = json.load(f)
-            else:
-                inputs = json.loads(input_str)
-        except Exception as e:
-            print(f"Error parsing input JSON: {e}")
-            return 1
-
-        try:
-            result = svc.execute_algorithm(algo_id=algo_id, inputs=inputs)
-            if args.json:
-                print(json.dumps({"algo_id": algo_id, "result": result}, indent=2))
-            else:
-                print(f"\n{'='*75}")
-                print(f"⚡ [ALGORITHM ENGINE] EXECUTED: {algo_id}")
-                print(f"{'='*75}\n")
-                print(json.dumps(result, indent=2))
-            return 0
-        except Exception as e:
-            print(f"Execution failed: {e}")
-            return 1
-
+    action = getattr(args, "action", None)
+    if action in {"search", "scan"} and hasattr(args, "patterns"):
+        return handle_search_command(args)
+    elif action == "scan":
+        return handle_scan_command(args)
+    elif action == "outline":
+        return handle_outline_command(args)
+    elif action == "lint-comments":
+        return handle_lint_command(args)
+    elif action == "dependencies":
+        return handle_deps_command(args)
+    elif action == "patch":
+        return handle_patch_command(args)
+    elif action == "diff":
+        return handle_diff_command(args)
+    elif action == "contracts":
+        return handle_contracts_command(args)
+    elif action == "compose":
+        return handle_compose_command(args)
+    elif action == "execute":
+        return handle_exec_command(args)
     return 0
+
+
+def handle_audit_command(args: argparse.Namespace) -> int:
+    audit_service = AuditService()
+    summary = audit_service.run_full_audit(args.root)
+
+    if args.json:
+        print(json.dumps(asdict(summary), indent=2))
+    else:
+        print("\n" + "=" * 80)
+        print("REPOSITORY INVARIANT & ARCHITECTURE AUDIT SUMMARY")
+        print("=" * 80)
+        print(f"Total Rules Checked : {summary.total_rules_checked}")
+        print(f"Passed Rules        : {summary.passed_rules}")
+        print(f"Failed Rules        : {summary.failed_rules}")
+        print(f"Total Violations    : {summary.total_violations}")
+        print(f"Audit Status        : {summary.status.upper()}")
+        print("=" * 80)
+        if summary.failed_rules > 0:
+            print("\nRule Breakdown:")
+            for report in summary.rule_reports:
+                if report.status == "fail":
+                    print(f"\n❌ [{report.rule_id}] {report.rule_name}")
+                    for finding in report.findings[:5]:
+                        print(f"   • {finding.file_path}:{finding.line_number} - {finding.message}")
+        print("=" * 80 + "\n")
+    return 0 if summary.failed_rules == 0 else 1
+
+
+def handle_rag_command(args: argparse.Namespace) -> int:
+    rag_service, _ = _init_rag_and_agent(args.rules_dir, args.backend)
+    if args.action == "index":
+        indexed = rag_service.index_policies()
+        print(f"✅ Successfully indexed {indexed} policy rule sections into vector memory.")
+        return 0
+    elif args.action == "search":
+        if not args.query:
+            print("Error: --query is required for rag search")
+            return 1
+        rag_service.index_policies()
+        request = RAGQueryRequest(query=args.query, category=args.category, top_k=args.top_k)
+        response = rag_service.query_policies(request)
+        if args.json:
+            print(json.dumps(asdict(response), indent=2))
+        else:
+            print(f"\n{'='*75}")
+            print(f"🔍 RAG RETRIEVAL: {len(response.results)} matches for '{args.query}'")
+            print(f"{'='*75}\n")
+            for i, match in enumerate(response.results, 1):
+                print(f"[{i}] {match.rule_title} (Similarity: {match.similarity_score:.3f})")
+                print(f"    Source: {match.source_file}")
+                print(f"    Content Preview: {match.content[:150]}...\n")
+        return 0
+    return 0
+
+
+def handle_agent_command(args: argparse.Namespace) -> int:
+    _, agent_service = _init_rag_and_agent(args.rules_dir, args.backend)
+    req = AgentExecutionRequest(task_prompt=args.prompt, target_directory=args.target_dir, max_steps=args.max_steps)
+    res = agent_service.execute_task(req)
+    if args.json:
+        print(json.dumps(asdict(res), indent=2))
+    else:
+        print(f"\n{'='*75}")
+        print(f"🤖 AGENT WORKFLOW COMPLETED: Status = {res.status.upper()}")
+        print(f"{'='*75}")
+        print(f"Summary: {res.summary}\n")
+        print("Reasoning Trajectory:")
+        for step in res.trajectory:
+            print(f"  Step {step.step_number}: {step.action_type} -> Tool: {step.tool_name}")
+            print(f"    Thought: {step.thought}")
+            if step.tool_output:
+                preview = str(step.tool_output)[:120].replace('\n', ' ')
+                print(f"    Result: {preview}...")
+        print(f"{'='*75}\n")
+    return 0 if res.status == "success" else 1
+
+
+def handle_refactor_command(args: argparse.Namespace) -> int:
+    service = RefactorService()
+    extensions = [ext.strip() for ext in args.ext.split(",") if ext.strip()]
+    res = service.execute_batch_refactor(
+        root_dir=args.root,
+        find_pattern=args.find,
+        replace_text=args.replace,
+        allowed_extensions=extensions,
+        is_regex=args.regex,
+        dry_run=not args.apply,
+    )
+    if args.json:
+        print(json.dumps(asdict(res), indent=2))
+    else:
+        mode = "APPLIED" if args.apply else "DRY-RUN (Simulated)"
+        print(f"\n{'='*75}")
+        print(f"🔄 BATCH REFACTOR SUMMARY [{mode}]")
+        print(f"{'='*75}")
+        print(f"Files Scanned   : {res.total_files_scanned}")
+        print(f"Files Modified  : {res.total_files_modified}")
+        print(f"Total Matches   : {res.total_occurrences_replaced}")
+        print(f"{'='*75}\n")
+    return 0
+
+
+def handle_policy_check_command(args: argparse.Namespace) -> int:
+    sync_service = PolicySyncService()
+    violations = sync_service.audit_contract_file(args.path)
+    if args.json:
+        print(json.dumps([asdict(v) for v in violations], indent=2))
+    else:
+        print(f"\n{'='*75}")
+        print(f"📋 POLICY CONTRACT AUDIT: {len(violations)} Violations in {args.path}")
+        print(f"{'='*75}")
+        if not violations:
+            print("✅ All algorithm entries strictly conform to the engineering contract standard.")
+        else:
+            for v in violations:
+                print(f"  ❌ Line {v.line_number}: [{v.rule_id}] {v.message}")
+        print(f"{'='*75}\n")
+    return 0 if len(violations) == 0 else 1
 
 
 def handle_migrate_command(args: argparse.Namespace) -> int:
     runner = DatabaseMigrationRunner()
-    if args.action == "run":
-        if args.db == "sqlite":
-            res = runner.run_sqlite_migrations(args.sqlite_path)
+    if getattr(args, "action", "run") == "run":
+        db_target = getattr(args, "db", "sqlite")
+        if db_target == "sqlite":
+            res = runner.run_sqlite_migrations(getattr(args, "sqlite_path", "policy_registry.db"))
         else:
-            res = runner.run_postgres_migrations(args.postgres_url)
+            res = runner.run_postgres_migrations(getattr(args, "postgres_url", "postgresql://postgres:postgres@localhost:5432/postgres"))
         print(f"✅ Migration successful: Applied {res.get('applied_migrations')} migrations, Seeded {res.get('seeded_algorithms')} algorithms.")
         return 0
-    elif args.action == "status":
-        status = runner.get_migration_status(args.sqlite_path if args.db == "sqlite" else None)
+    elif getattr(args, "action", "") == "status":
+        status = runner.get_migration_status(getattr(args, "sqlite_path", None) if getattr(args, "db", "sqlite") == "sqlite" else None)
         print(json.dumps(status, indent=2))
         return 0
     return 0
@@ -431,17 +1057,106 @@ def handle_serve_command(args: argparse.Namespace) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="policy-orchestrator",
-        description="Repository Invariant Auditor, AI Agent & Policy Orchestrator",
+        description="Repository Invariant Auditor, Layer 1 Algorithm Suite & Policy Orchestrator",
     )
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
-    audit_parser = subparsers.add_parser("audit", help="Run multi-vector invariant scan")
-    audit_parser.add_argument("--root", default=".", help="Root directory")
-    audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
+    # 1. Search Subcommand
+    search_p = subparsers.add_parser("search", help="Fast multi-pattern code search (ALGO-SRCH-03 + 11 + 14)")
+    search_p.add_argument("patterns", nargs="?", default="TODO,FIXME,error,critical", help="Comma-separated patterns to find")
+    search_p.add_argument("directory", nargs="?", default=".", help="Target directory (default: current)")
+    search_p.add_argument("--patterns", dest="patterns_flag", default=None, help="Explicit --patterns flag")
+    search_p.add_argument("--directory", "--root", dest="dir_flag", default=None, help="Explicit directory flag")
+    search_p.add_argument("--json", action="store_true", help="Output as JSON")
 
+    # 2. Scan Subcommand
+    scan_p = subparsers.add_parser("scan", help="Recursive repository file tree discovery (ALGO-SRCH-01/02)")
+    scan_p.add_argument("directory", nargs="?", default=".", help="Root directory (default: .)")
+    scan_p.add_argument("--root", dest="root_flag", default=None, help="Explicit --root flag")
+    scan_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 3. Outline Subcommand
+    outline_p = subparsers.add_parser("outline", help="Hierarchical AST symbol outline (ALGO-OBS-17 + 21)")
+    outline_p.add_argument("file", nargs="?", default=None, help="Source code file path")
+    outline_p.add_argument("--file", dest="file_flag", default=None, help="Explicit --file flag")
+    outline_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 4. Lint Subcommand
+    lint_p = subparsers.add_parser("lint", help="Zero-Inline-Comment doctrine compliance linter (ALGO-OBS-19)")
+    lint_p.add_argument("file", nargs="?", default=None, help="Source code file path")
+    lint_p.add_argument("--file", dest="file_flag", default=None, help="Explicit --file flag")
+    lint_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 5. Dependencies / Deps Subcommand
+    deps_p = subparsers.add_parser("deps", aliases=["dependencies"], help="Module import dependency graph & cycle detector (ALGO-OBS-20)")
+    deps_p.add_argument("directory", nargs="?", default="src", help="Target source directory")
+    deps_p.add_argument("--directory", dest="dir_flag", default=None, help="Explicit directory flag")
+    deps_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 6. Diff Subcommand
+    diff_p = subparsers.add_parser("diff", help="Unified context diff generator (ALGO-UPD-24)")
+    diff_p.add_argument("file", nargs="?", default=None, help="File to inspect")
+    diff_p.add_argument("find", nargs="?", default="", help="Pattern to match")
+    diff_p.add_argument("replace", nargs="?", default="", help="Replacement string")
+    diff_p.add_argument("--file", dest="file_flag", default=None, help="Explicit --file flag")
+    diff_p.add_argument("--find", dest="find_flag", default=None, help="Explicit --find flag")
+    diff_p.add_argument("--replace", dest="replace_flag", default=None, help="Explicit --replace flag")
+    diff_p.add_argument("--regex", action="store_true", help="Treat pattern as regex")
+    diff_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 7. Patch Subcommand
+    patch_p = subparsers.add_parser("patch", help="AST/CST atomic batch patcher (ALGO-UPD-22/23)")
+    patch_p.add_argument("file", nargs="?", default=None, help="File to patch")
+    patch_p.add_argument("find", nargs="?", default="", help="Pattern to match")
+    patch_p.add_argument("replace", nargs="?", default="", help="Replacement string")
+    patch_p.add_argument("--file", dest="file_flag", default=None, help="Explicit --file flag")
+    patch_p.add_argument("--find", dest="find_flag", default=None, help="Explicit --find flag")
+    patch_p.add_argument("--replace", dest="replace_flag", default=None, help="Explicit --replace flag")
+    patch_p.add_argument("--apply", action="store_true", help="Apply mutations to disk (default is dry-run)")
+    patch_p.add_argument("--regex", action="store_true", help="Treat pattern as regex")
+    patch_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 8. Exec Subcommand
+    exec_p = subparsers.add_parser("exec", aliases=["execute"], help="Direct universal algorithm execution across all 42 algos")
+    exec_p.add_argument("id", nargs="?", default=None, help="Algorithm ID (e.g. ALGO-VEC-01, ALGO-GRAPH-01, ALGO-SRCH-11)")
+    exec_p.add_argument("input", nargs="?", default="{}", help="Input payload JSON string or @filepath")
+    exec_p.add_argument("--id", dest="id_flag", default=None, help="Explicit --id flag")
+    exec_p.add_argument("--input", dest="input_flag", default=None, help="Explicit --input flag")
+    exec_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 9. Contracts Subcommand
+    contracts_p = subparsers.add_parser("contracts", help="List and filter Layer 1 Algorithm Contracts")
+    contracts_p.add_argument("--category", choices=["search", "observability", "update", "vector", "graph"], default=None, help="Filter by category")
+    contracts_p.add_argument("--tag", default=None, help="Filter by capability tag")
+    contracts_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 10. Compose Subcommand
+    compose_p = subparsers.add_parser("compose", help="Compose dynamic DAG pipeline from algorithm IDs")
+    compose_p.add_argument("algos", nargs="?", default="ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23", help="Comma-separated algorithm IDs")
+    compose_p.add_argument("--algos", dest="algos_flag", default=None, help="Explicit --algos flag")
+    compose_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 11. Run Subcommand (human-friendly alias runner)
+    run_p = subparsers.add_parser("run", help="Run any algorithm by its human-friendly name (e.g. bfs, dijkstra, normalize, chunk)")
+    run_p.add_argument("alias", nargs="?", default=None, help="Human-friendly algorithm name (run `policy-orchestrator list` to see all)")
+    run_p.add_argument("input", nargs="?", default="{}", help="Input as JSON string or @filepath")
+    run_p.add_argument("--alias", dest="alias_flag", default=None, help="Explicit --alias flag")
+    run_p.add_argument("--input", dest="input_flag", default=None, help="Explicit --input flag")
+    run_p.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 12. List Subcommand (human-friendly discovery)
+    list_p = subparsers.add_parser("list", help="List every algorithm with plain-English names and descriptions")
+    list_p.add_argument("--category", choices=["search", "observability", "update", "vector", "graph"], default=None, help="Filter by category")
+    list_p.add_argument("--json", action="store_true", help="Output full detail as JSON")
+
+    # 13. Completion Subcommand
+    comp_p = subparsers.add_parser("completion", help="Generate shell auto-completion script (bash, zsh, fish)")
+    comp_p.add_argument("shell", choices=["bash", "zsh", "fish"], default="bash", nargs="?", help="Target shell")
+
+    # 12. Legacy Algo Subcommand (Backwards Compatibility)
     algo_parser = subparsers.add_parser("algo", help="Execute Categorized Search, Observability, Update & Vector Algorithms")
     algo_parser.add_argument("action", choices=["search", "scan", "outline", "lint-comments", "dependencies", "patch", "diff", "contracts", "compose", "execute"], help="Algorithm action")
-    algo_parser.add_argument("--id", default=None, help="Algorithm ID to execute (e.g. ALGO-VEC-01, ALGO-SRCH-11)")
+    algo_parser.add_argument("--id", default=None, help="Algorithm ID to execute")
     algo_parser.add_argument("--input", default="{}", help="Input payload JSON string or @filepath")
     algo_parser.add_argument("--root", default=".", help="Root directory")
     algo_parser.add_argument("--patterns", default="TODO,FIXME,error,critical", help="Comma-separated patterns")
@@ -451,9 +1166,14 @@ def main() -> None:
     algo_parser.add_argument("--replace", default="", help="Replacement string for update/diff/patch")
     algo_parser.add_argument("--regex", action="store_true", help="Treat find pattern as regex")
     algo_parser.add_argument("--apply", action="store_true", help="Apply patch modifications to disk")
-    algo_parser.add_argument("--category", default=None, help="Filter contracts by category (search, observability, update, vector)")
+    algo_parser.add_argument("--category", default=None, help="Filter contracts by category")
     algo_parser.add_argument("--algos", default="ALGO-SRCH-03,ALGO-OBS-17,ALGO-UPD-23", help="Comma-separated algorithm IDs to compose")
     algo_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # Standard existing commands
+    audit_parser = subparsers.add_parser("audit", help="Run multi-vector invariant scan")
+    audit_parser.add_argument("--root", default=".", help="Root directory")
+    audit_parser.add_argument("--json", action="store_true", help="Output findings as JSON")
 
     migrate_parser = subparsers.add_parser("migrate", help="Run database migrations and seed algorithm contracts")
     migrate_parser.add_argument("action", choices=["run", "status"], default="run", nargs="?", help="Migration action")
@@ -500,9 +1220,47 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Normalise flags vs positional shortcuts
+    if hasattr(args, "patterns_flag") and args.patterns_flag:
+        args.patterns = args.patterns_flag
+    if hasattr(args, "dir_flag") and args.dir_flag:
+        args.directory = args.dir_flag
+    if hasattr(args, "root_flag") and args.root_flag:
+        args.root = args.root_flag
+    if hasattr(args, "file_flag") and args.file_flag:
+        args.file = args.file_flag
+    if hasattr(args, "find_flag") and args.find_flag:
+        args.find = args.find_flag
+    if hasattr(args, "replace_flag") and args.replace_flag:
+        args.replace = args.replace_flag
+    if hasattr(args, "id_flag") and args.id_flag:
+        args.id = args.id_flag
+    if hasattr(args, "input_flag") and args.input_flag:
+        args.input = args.input_flag
+    if hasattr(args, "algos_flag") and args.algos_flag:
+        args.algos = args.algos_flag
+
+    if hasattr(args, "alias_flag") and args.alias_flag:
+        args.alias = args.alias_flag
+
     dispatch = {
-        "audit": handle_audit_command,
+        "search": handle_search_command,
+        "scan": handle_scan_command,
+        "outline": handle_outline_command,
+        "lint": handle_lint_command,
+        "deps": handle_deps_command,
+        "dependencies": handle_deps_command,
+        "diff": handle_diff_command,
+        "patch": handle_patch_command,
+        "exec": handle_exec_command,
+        "execute": handle_exec_command,
+        "run": handle_run_command,
+        "list": handle_list_command,
+        "contracts": handle_contracts_command,
+        "compose": handle_compose_command,
+        "completion": handle_completion_command,
         "algo": handle_algo_command,
+        "audit": handle_audit_command,
         "migrate": handle_migrate_command,
         "rag": handle_rag_command,
         "agent": handle_agent_command,

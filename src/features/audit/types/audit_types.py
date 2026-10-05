@@ -17,7 +17,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: AUDIT DOMAIN TYPES & DATA MODELS
    - Strict Enums: Severity tiers and rule categories are constrained to rigid enums.
 
 3. DATA INVARIANTS:
-   - Line numbers must be positive integers ($line \ge 1$).
+   - Line numbers must be positive integers (line >= 1).
    - Rule identifiers conform to alphanumeric uppercase namespaces (e.g. `SEC-001`).
 ================================================================================
 """

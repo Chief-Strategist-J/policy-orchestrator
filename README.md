@@ -5,9 +5,122 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 ---
 
 ## 🎯 Purpose & Capabilities
+
+- **42 Production Algorithm Engines:** Complete suite of Graph, Vector, Search, Observability, and Update algorithms with unified interfaces, strict schema validation, and deterministic execution.
+- **3-Tier Command Architecture:** Seamless interaction via **Normal Commands** (human-friendly aliases for beginners), **Developer Commands** (CLI power tools & catalog IDs for CI/CD), and **Code Commands** (REST API & Python SDK for services).
 - **Repository Invariant Auditing (`audit`):** Multi-vector static analysis detecting naked sleeps, race conditions, SQL injection risks, unsafe deserializers, deep `OFFSET` pagination, and Redis blocking commands.
-- **Safe Batch Refactoring (`refactor`):** Deterministic, dry-run-verified search-and-replace across multi-language codebases (Go, TypeScript, JavaScript, Python, SQL, Prisma).
-- **Continuous Policy Verification (`policy-check`):** Audits authoritative engineering contracts in `policies/` to ensure full compliance with mathematical complexity, step-by-step mechanics, and structured agent operating roles.
+- **Safe Batch Refactoring (`refactor` / `patch`):** Deterministic, dry-run-verified search-and-replace across multi-language codebases (Go, TypeScript, JavaScript, Python, SQL, Prisma) using Concrete Syntax Tree (CST) analysis.
+- **RAG & Knowledge Graph Engine (`rag` / `graph`):** Grounded semantic retrieval across policy rules and Cypher-compatible knowledge graph extraction.
+
+---
+
+## ⚡ 3-Tier Command System
+
+Every one of the 42 algorithms supports three access tiers designed for different audiences and workflows:
+
+| Tier | Target Audience | Syntax Style | Primary Use Case | Output Format |
+|---|---|---|---|---|
+| **Tier 1: Normal Command** | Beginners, End-Users, Quick CLI usage | `policy-orchestrator run <alias> [payload]` | Interactive terminal work, intuitive recall, auto-complete | Plain text header + full formatted JSON |
+| **Tier 2: Developer Command** | Engineers, CI/CD, Scripting | `policy-orchestrator exec <ALGO-ID> [payload]`<br>or dedicated tool: `search`, `scan`, `outline`, etc. | DevOps pipelines, precise catalog verification, shell tooling | Raw JSON or specialized terminal tables |
+| **Tier 3: Code Command** | Microservices, Python SDK, Agents | `POST /api/v1/algos/...`<br>`CodeEngineService.execute_algorithm()` | Application backend integration, automated workflows | Enterprise envelope (`{success, statusCode, data, errors, meta}`) |
+
+### Discovering & Running Commands
+
+```bash
+# 1. List all 42 algorithms with plain-English descriptions
+policy-orchestrator list
+
+# 2. Filter list by category (graph, vector, search, observability, update)
+policy-orchestrator list --category graph
+
+# 3. Run any algorithm using its human-friendly alias (shows schema hint if payload omitted)
+policy-orchestrator run dijkstra
+
+# 4. Run with an inline JSON payload
+policy-orchestrator run bfs '{"graph": {"A":["B","C"],"B":["D"],"C":[],"D":[]}, "start_node": "A"}'
+
+# 5. Enable Shell Tab-Autocomplete (Bash, Zsh, Fish)
+eval "$(policy-orchestrator completion bash)"
+```
+
+---
+
+## 📚 Complete 42-Algorithm Reference
+
+### 1. Graph Algorithms (9 Algorithms)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 1 | `ALGO-GRAPH-01` | `policy-orchestrator run bfs` | `policy-orchestrator exec ALGO-GRAPH-01` | `POST /api/v1/algos/graph/bfs` | Breadth-first graph walk (layer by layer like ripples in water) |
+| 2 | `ALGO-GRAPH-02` | `policy-orchestrator run dfs` | `policy-orchestrator exec ALGO-GRAPH-02` | `POST /api/v1/algos/graph/dfs` | Depth-first graph walk (deepest path first before backtracking) |
+| 3 | `ALGO-GRAPH-03` | `policy-orchestrator run dijkstra`<br>*(or `shortest-path`)* | `policy-orchestrator exec ALGO-GRAPH-03` | `POST /api/v1/algos/graph/dijkstra` | Finds lowest-cost path between two points (GPS routing) |
+| 4 | `ALGO-GRAPH-04` | `policy-orchestrator run astar` | `policy-orchestrator exec ALGO-GRAPH-04` | `POST /api/v1/algos/graph/astar` | Smart heuristic-guided route finder to reach targets faster |
+| 5 | `ALGO-GRAPH-05` | `policy-orchestrator run pagerank` | `policy-orchestrator exec ALGO-GRAPH-05` | `POST /api/v1/algos/graph/pagerank` | Scores nodes by incoming links from other important nodes |
+| 6 | `ALGO-GRAPH-06` | `policy-orchestrator run centrality` | `policy-orchestrator exec ALGO-GRAPH-06` | `POST /api/v1/algos/graph/degree-centrality` | Identifies the most connected hub node in a network |
+| 7 | `ALGO-GRAPH-07` | `policy-orchestrator run components` | `policy-orchestrator exec ALGO-GRAPH-07` | `POST /api/v1/algos/graph/connected-components` | Finds disconnected groups or sub-clusters in a graph |
+| 8 | `ALGO-GRAPH-08` | `policy-orchestrator run tarjan` | `policy-orchestrator exec ALGO-GRAPH-08` | `POST /api/v1/algos/graph/tarjan-scc` | Detects circular dependency loops and potential deadlocks |
+| 9 | `ALGO-GRAPH-09` | `policy-orchestrator run pattern-match` | `policy-orchestrator exec ALGO-GRAPH-09` | `POST /api/v1/algos/graph/subgraph-match` | Checks if a target sub-graph pattern exists in a larger network |
+
+---
+
+### 2. Vector Algorithms (9 Algorithms)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 10 | `ALGO-VEC-01` | `policy-orchestrator run normalize` | `policy-orchestrator exec ALGO-VEC-01` | `POST /api/v1/algos/vector/normalize` | Scales vectors to standard length 1.0 (L2 unit norm) |
+| 11 | `ALGO-VEC-02` | `policy-orchestrator run mean-center` | `policy-orchestrator exec ALGO-VEC-02` | `POST /api/v1/algos/vector/center` | Shifts numbers so dataset average is 0 (removes global bias) |
+| 12 | `ALGO-VEC-03` | `policy-orchestrator run scale` | `policy-orchestrator exec ALGO-VEC-03` | `POST /api/v1/algos/vector/scale` | Fits numbers into standard 0–1 or standard-deviation units |
+| 13 | `ALGO-VEC-04` | `policy-orchestrator run token-pool` | `policy-orchestrator exec ALGO-VEC-04` | `POST /api/v1/algos/vector/pool` | Condenses token embeddings into one sentence vector (mean/max) |
+| 14 | `ALGO-VEC-05` | `policy-orchestrator run chunk` | `policy-orchestrator exec ALGO-VEC-05` | `POST /api/v1/algos/vector/chunk` | Splits long documents at topic transitions, not just line counts |
+| 15 | `ALGO-VEC-06` | `policy-orchestrator run quantize` | `policy-orchestrator exec ALGO-VEC-06` | `POST /api/v1/algos/vector/quantize/scalar` | Compresses FP32 vectors to INT8/INT4 to save memory |
+| 16 | `ALGO-VEC-07` | `policy-orchestrator run binary-quantize` | `policy-orchestrator exec ALGO-VEC-07` | `POST /api/v1/algos/vector/quantize/binary` | Shrinks vector values into 1s and 0s for fast bitwise search |
+| 17 | `ALGO-VEC-08` | `policy-orchestrator run slice` | `policy-orchestrator exec ALGO-VEC-08` | `POST /api/v1/algos/vector/slice` | Trims big vectors to smaller dimensions (Matryoshka learning) |
+| 18 | `ALGO-VEC-09` | `policy-orchestrator run layer-norm` | `policy-orchestrator exec ALGO-VEC-09` | `POST /api/v1/algos/vector/layer-norm` | Stabilizes vector distributions across AI model layers |
+
+---
+
+### 3. Search Algorithms (15 Algorithms)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 19 | `ALGO-SRCH-01` | `policy-orchestrator run file-walk` | `policy-orchestrator scan [dir]`<br>`policy-orchestrator exec ALGO-SRCH-01` | `POST /api/v1/algos/search/walk` | Lists every file in folder tree recursively |
+| 20 | `ALGO-SRCH-02` | `policy-orchestrator run git-walk` | `policy-orchestrator exec ALGO-SRCH-02` | `POST /api/v1/algos/search/work-stealing-walk` | Parallel file search across CPU cores with work-stealing |
+| 21 | `ALGO-SRCH-03` | `policy-orchestrator run git-ignore-walk` | `policy-orchestrator exec ALGO-SRCH-03` | `POST /api/v1/algos/search/git-aware-walk` | Lists files while automatically skipping `.gitignore` patterns |
+| 22 | `ALGO-SRCH-04` | `policy-orchestrator run glob` | `policy-orchestrator exec ALGO-SRCH-04` | `POST /api/v1/algos/search/glob-match` | Matches paths with wildcard patterns (e.g. `**/*.py`) |
+| 23 | `ALGO-SRCH-05` | `policy-orchestrator run trigram` | `policy-orchestrator exec ALGO-SRCH-05` | `POST /api/v1/algos/search/trigram-index` | 3-letter inverted index for ultra-fast fuzzy substring search |
+| 24 | `ALGO-SRCH-06` | `policy-orchestrator run mmap-scan` | `policy-orchestrator exec ALGO-SRCH-06` | `POST /api/v1/algos/search/mmap-scan` | Memory-mapped zero-copy scan of gigabyte-sized files |
+| 25 | `ALGO-SRCH-07` | `policy-orchestrator run stream-scan` | `policy-orchestrator exec ALGO-SRCH-07` | `POST /api/v1/algos/search/streaming-chunk-scan` | Low-RAM stream scanner for large files |
+| 26 | `ALGO-SRCH-08` | `policy-orchestrator run size-filter` | `policy-orchestrator exec ALGO-SRCH-08` | `POST /api/v1/algos/search/size-line-check` | Skips files that exceed byte size or line count limits |
+| 27 | `ALGO-SRCH-09` | `policy-orchestrator run regex-scan` | `policy-orchestrator exec ALGO-SRCH-09` | `POST /api/v1/algos/search/lazy-dfa` | Fast regex matching without backtracking catastrophic delays |
+| 28 | `ALGO-SRCH-10` | `policy-orchestrator run snippet` | `policy-orchestrator exec ALGO-SRCH-10` | `POST /api/v1/algos/search/context-snippet` | Fetches lines before & after match for rich display |
+| 29 | `ALGO-SRCH-11` | `policy-orchestrator run byte-search` | `policy-orchestrator exec ALGO-SRCH-11` | `POST /api/v1/algos/search/simd-memchr` | SIMD hardware-accelerated single-byte scanning |
+| 30 | `ALGO-SRCH-12` | `policy-orchestrator run is-binary` | `policy-orchestrator exec ALGO-SRCH-12` | `POST /api/v1/algos/search/binary-check` | Checks if a file is binary or human-readable text |
+| 31 | `ALGO-SRCH-13` | `policy-orchestrator run content-type` | `policy-orchestrator exec ALGO-SRCH-13` | `POST /api/v1/algos/search/content-type` | Probes file header bytes for MIME type and language |
+| 32 | `ALGO-SRCH-14` | `policy-orchestrator run is-generated` | `policy-orchestrator exec ALGO-SRCH-14` | `POST /api/v1/algos/search/generated-code-check` | Flags auto-generated files (protobuf, swagger, etc.) |
+| 33 | `ALGO-SRCH-15` | `policy-orchestrator run parallel-walk` | `policy-orchestrator search <patterns> [dir]`<br>`policy-orchestrator exec ALGO-SRCH-15` | `POST /api/v1/algos/search/aho-corasick`<br>`POST /api/v1/algos/search/scan` | Scans text for multiple search terms simultaneously |
+
+---
+
+### 4. Observability Algorithms (6 Algorithms)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 34 | `ALGO-OBS-16` | `policy-orchestrator run ast-parse` | `policy-orchestrator exec ALGO-OBS-16` | `POST /api/v1/algos/observability/ast` | Parses code into syntax tree representation |
+| 35 | `ALGO-OBS-17` | `policy-orchestrator run outline` | `policy-orchestrator outline <file>`<br>`policy-orchestrator exec ALGO-OBS-17` | `POST /api/v1/algos/observability/outline` | Summarizes all classes, methods, and functions in a file |
+| 36 | `ALGO-OBS-18` | `policy-orchestrator run extract-comments` | `policy-orchestrator exec ALGO-OBS-18` | `POST /api/v1/algos/observability/span-track` | Pulls out all comments, notes, and byte spans from code |
+| 37 | `ALGO-OBS-19` | `policy-orchestrator run no-inline` | `policy-orchestrator lint <file>`<br>`policy-orchestrator exec ALGO-OBS-19` | `POST /api/v1/algos/observability/lint-comments` | Enforces Zero-Inline-Comment doctrine across codebases |
+| 38 | `ALGO-OBS-20` | `policy-orchestrator run dep-graph` | `policy-orchestrator deps [dir]`<br>`policy-orchestrator exec ALGO-OBS-20` | `POST /api/v1/algos/observability/dependencies` | Maps module imports and flags circular cycles |
+| 39 | `ALGO-OBS-21` | `policy-orchestrator run symbols` | `policy-orchestrator exec ALGO-OBS-21` | `POST /api/v1/algos/observability/symbols` | Resolves symbol scopes and variable definitions |
+
+---
+
+### 5. Update Algorithms (3 Algorithms)
+
+| # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
+|---|---|---|---|---|---|
+| 40 | `ALGO-UPD-22` | `policy-orchestrator run smart-patch` | `policy-orchestrator patch <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-22` | `POST /api/v1/algos/update/cst-match` | Concrete Syntax Tree (CST) code patcher without syntax errors |
+| 41 | `ALGO-UPD-23` | `policy-orchestrator run batch-patch` | `policy-orchestrator exec ALGO-UPD-23` | `POST /api/v1/algos/update/patch` | Multi-file atomic patch with rollback on any failure |
+| 42 | `ALGO-UPD-24` | `policy-orchestrator run show-diff` | `policy-orchestrator diff <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-24` | `POST /api/v1/algos/update/diff` | Generates standard unified GNU context diff (+/-) |
 
 ---
 
@@ -16,67 +129,45 @@ A high-performance Python package conforming to the **Contract-First & Pure Data
 ```
 packages/policy-orchestrator/
 ├── contracts/
-│   ├── .gitkeep
 │   └── openapi/
-│       ├── .gitkeep
 │       └── v1.yaml               # REST API Contract Specification
 ├── config/
-│   ├── .gitkeep
 │   ├── default.yaml              # Default configuration values
 │   └── env.schema                # Environment variable schema
 ├── src/
 │   ├── api/
-│   │   ├── .gitkeep
 │   │   ├── cli/
-│   │   │   └── main.py           # CLI Command dispatcher
+│   │   │   └── main.py           # Single-entrypoint CLI with 3-tier dispatch
 │   │   └── rest/v1/
-│   │       └── .gitkeep
+│   │       ├── router.py         # FastAPI REST Router with standard envelope
+│   │       └── envelope.py       # Strict API envelope format
+│   ├── domain/
+│   │   └── ports/                # Abstract domain interfaces
 │   ├── features/
-│   │   ├── audit/                # Invariant Scanning Domain
-│   │   │   ├── types/
-│   │   │   ├── schema/
-│   │   │   ├── rules/            # Rules as Data
-│   │   │   └── service/          # Pure Domain Audit Service
-│   │   ├── refactor/             # Safe Batch Refactoring Domain
-│   │   │   ├── schema/
-│   │   │   └── service/
-│   │   └── policy_sync/          # Policy Validation & Submodule Sync
-│   │       ├── schema/
-│   │       └── service/
+│   │   ├── code_engine/
+│   │   │   ├── algos/            # 42 Pure Algorithm Implementations
+│   │   │   │   ├── graph/        # 9 Graph algorithms (BFS, DFS, Dijkstra, A*, etc.)
+│   │   │   │   ├── vector/       # 9 Vector algorithms (L2 Norm, Scaling, Quantize, etc.)
+│   │   │   │   ├── search/       # 15 Search algorithms (Walkers, Trigram, DFA, etc.)
+│   │   │   │   ├── observability/# 6 Observability algorithms (AST, Outline, Linter, etc.)
+│   │   │   │   └── update/       # 3 Update algorithms (CST Matcher, Patch, Diff)
+│   │   │   └── service/          # Algorithm execution & pipeline composer
+│   │   ├── audit/                # Invariant scanning domain
+│   │   ├── refactor/             # Safe batch refactoring domain
+│   │   ├── rag/                  # Semantic policy retrieval domain
+│   │   └── agent/                # Autonomous AI agent orchestration
 │   └── infra/
-│       ├── filesystem/           # Bounded, safe directory walker
-│       └── observability/
+│       ├── adapters/             # Database, Vector DB, LLM adapters
+│       └── filesystem/           # Safe directory walker
 └── tests/
-    └── unit/
-```
-
----
-
-## 🚀 CLI Usage
-
-### 1. Invariant Codebase Audit
-```bash
-python3 packages/policy-orchestrator/src/api/cli/main.py audit --root .
-python3 packages/policy-orchestrator/src/api/cli/main.py audit --root . --json
-```
-
-### 2. Safe Batch Refactoring (Dry-Run by Default)
-```bash
-# Dry-run inspection
-python3 packages/policy-orchestrator/src/api/cli/main.py refactor --root . --find "old_fn" --replace "new_fn"
-
-# Explicit application
-python3 packages/policy-orchestrator/src/api/cli/main.py refactor --root . --find "old_fn" --replace "new_fn" --apply
-```
-
-### 3. Policy Contract Compliance Check
-```bash
-python3 packages/policy-orchestrator/src/api/cli/main.py policy-check --path policies/rules/edgeCases/algos/agent-operating-contract.md
+    └── unit/                     # Unit test suites (83+ tests passing)
 ```
 
 ---
 
 ## 📜 Architectural Invariants Enforced
+
 - **Zero-Inline-Comment Doctrine:** 100% comment-free function bodies; comprehensive top-level algorithm blueprints.
 - **Pure Data-Driven Rules:** Business and security checks declared as data (`AuditRule` records), not procedural code.
-- **Mandatory `.gitkeep`:** Every directory in the package tree retains `.gitkeep` for deterministic Git replication.
+- **Envelope Consistency:** All REST API responses conform strictly to `{success, statusCode, data, errors, meta}`.
+- **Deterministic Rollback:** All update algorithms support dry-run preview and atomic commit/rollback.
