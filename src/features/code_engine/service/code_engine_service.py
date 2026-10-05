@@ -152,6 +152,21 @@ from src.features.code_engine.algos.vector_search import (
     VectorSearchAlgoIvfPq,
     VectorSearchAlgoNprobeTuner,
     VectorSearchAlgoInvertedMultiIndex,
+    VectorSearchAlgoNSW,
+    VectorSearchAlgoHNSWSearch,
+    VectorSearchAlgoHNSWInsert,
+    VectorSearchAlgoBeamSearch,
+    VectorSearchAlgoVamana,
+    VectorSearchAlgoRobustPrune,
+    VectorSearchAlgoNSG,
+    VectorSearchAlgoCAGRA,
+    VectorSearchAlgoEntryPoint,
+    VectorSearchAlgoConnectivityRepair,
+    VectorSearchAlgoFilteredDiskANN,
+    VectorSearchAlgoSPANN,
+    VectorSearchAlgoRandomHyperplaneLSH,
+    VectorSearchAlgoMultiProbeLSH,
+    VectorSearchAlgoE2LSH,
 )
 
 
@@ -818,6 +833,134 @@ class CodeEngineService:
             seed = merged.get("seed", 42)
             ids = merged.get("vector_ids")
             return VectorSearchAlgoInvertedMultiIndex.search(vecs, q, k=k, codebook_k1=k1, codebook_k2=k2, max_cells_to_probe=max_cells, seed=seed, vector_ids=ids)
+
+        elif algo_id == "ALGO-VEC-SRCH-65":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            max_edges = merged.get("max_edges", 6)
+            num_attempts = merged.get("num_attempts", 3)
+            return VectorSearchAlgoNSW.build_and_search(vecs, query=q, k=k, max_edges=max_edges, num_attempts=num_attempts)
+
+        elif algo_id == "ALGO-VEC-SRCH-66":
+            vecs = merged.get("vectors", [])
+            layers = merged.get("layers", [])
+            ep = merged.get("entry_point", 0)
+            top_l = merged.get("top_layer", 0)
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            ef = merged.get("ef", 16)
+            return VectorSearchAlgoHNSWSearch.search(vecs, layers, ep, top_l, q, k=k, ef=ef)
+
+        elif algo_id == "ALGO-VEC-SRCH-67":
+            vecs = merged.get("vectors", [])
+            m = merged.get("m", 4)
+            ef_c = merged.get("ef_construction", 16)
+            m_max_0 = merged.get("m_max_0", 8)
+            ml = merged.get("ml", 0.62)
+            return VectorSearchAlgoHNSWInsert.build_index(vecs, m=m, ef_construction=ef_c, m_max_0=m_max_0, ml=ml)
+
+        elif algo_id == "ALGO-VEC-SRCH-68":
+            vecs = merged.get("vectors", [])
+            adj = merged.get("adjacency", {})
+            start_nodes = merged.get("start_nodes", [0])
+            q = merged.get("query", [])
+            k = merged.get("k", 5)
+            ef = merged.get("ef", 16)
+            return VectorSearchAlgoBeamSearch.execute_beam_search(vecs, adj, start_nodes, q, k=k, ef=ef)
+
+        elif algo_id == "ALGO-VEC-SRCH-69":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            r_max = merged.get("r_max_degree", 8)
+            l_size = merged.get("l_search_list_size", 16)
+            alpha = merged.get("alpha", 1.2)
+            return VectorSearchAlgoVamana.build_and_search(vecs, query=q, k=k, r_max_degree=r_max, l_search_list_size=l_size, alpha=alpha)
+
+        elif algo_id == "ALGO-VEC-SRCH-70":
+            pt = merged.get("point", [])
+            c_vecs = merged.get("candidate_vectors", [])
+            c_ids = merged.get("candidate_ids")
+            alpha = merged.get("alpha", 1.2)
+            r_max = merged.get("r_max_degree", 64)
+            return VectorSearchAlgoRobustPrune.prune(pt, c_vecs, candidate_ids=c_ids, alpha=alpha, r_max_degree=r_max)
+
+        elif algo_id == "ALGO-VEC-SRCH-71":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            r_max = merged.get("r_max_degree", 8)
+            pool_size = merged.get("candidate_pool_size", 16)
+            return VectorSearchAlgoNSG.build_and_search(vecs, query=q, k=k, r_max_degree=r_max, candidate_pool_size=pool_size)
+
+        elif algo_id == "ALGO-VEC-SRCH-72":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            fixed_deg = merged.get("fixed_degree", 6)
+            width = merged.get("search_width", 8)
+            return VectorSearchAlgoCAGRA.execute(vecs, query=q, k=k, fixed_degree=fixed_deg, search_width=width)
+
+        elif algo_id == "ALGO-VEC-SRCH-73":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            strat = merged.get("strategy", "query_adaptive")
+            num_seeds = merged.get("num_seeds", 4)
+            return VectorSearchAlgoEntryPoint.select_entry_point(vecs, query=q, strategy=strat, num_seeds=num_seeds)
+
+        elif algo_id == "ALGO-VEC-SRCH-74":
+            vecs = merged.get("vectors", [])
+            adj = merged.get("adjacency", {})
+            eps = merged.get("entry_points", [0])
+            return VectorSearchAlgoConnectivityRepair.audit_and_repair(vecs, adj, eps)
+
+        elif algo_id == "ALGO-VEC-SRCH-75":
+            vecs = merged.get("vectors", [])
+            labels = merged.get("labels", [])
+            q = merged.get("query", [])
+            target_label = merged.get("target_label", "")
+            k = merged.get("k", 5)
+            ef = merged.get("ef_search", 16)
+            r_max = merged.get("r_max_degree", 8)
+            return VectorSearchAlgoFilteredDiskANN.search_filtered(vecs, labels, q, target_label, k=k, ef_search=ef, r_max_degree=r_max)
+
+        elif algo_id == "ALGO-VEC-SRCH-76":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            num_c = merged.get("num_centroids", 4)
+            nprobe = merged.get("nprobe", 2)
+            slack = merged.get("slack_factor", 1.2)
+            return VectorSearchAlgoSPANN.build_and_search(vecs, query=q, k=k, num_centroids=num_c, nprobe=nprobe, slack_factor=slack)
+
+        elif algo_id == "ALGO-VEC-SRCH-77":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            num_bits = merged.get("num_bits", 4)
+            num_tables = merged.get("num_tables", 3)
+            seed = merged.get("seed", 42)
+            return VectorSearchAlgoRandomHyperplaneLSH.build_and_search(vecs, query=q, k=k, num_bits=num_bits, num_tables=num_tables, seed=seed)
+
+        elif algo_id == "ALGO-VEC-SRCH-78":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            num_bits = merged.get("num_bits", 6)
+            budget = merged.get("probe_budget", 4)
+            seed = merged.get("seed", 42)
+            return VectorSearchAlgoMultiProbeLSH.build_and_search(vecs, query=q, k=k, num_bits=num_bits, probe_budget=budget, seed=seed)
+
+        elif algo_id == "ALGO-VEC-SRCH-79":
+            vecs = merged.get("vectors", [])
+            q = merged.get("query")
+            k = merged.get("k", 5)
+            w = merged.get("slot_width_w", 4.0)
+            m = merged.get("num_projections_m", 4)
+            l_tables = merged.get("num_tables_l", 3)
+            seed = merged.get("seed", 42)
+            return VectorSearchAlgoE2LSH.build_and_search(vecs, query=q, k=k, slot_width_w=w, num_projections_m=m, num_tables_l=l_tables, seed=seed)
 
         else:
             raise ValueError(f"Unknown algorithm ID: '{algo_id}'")

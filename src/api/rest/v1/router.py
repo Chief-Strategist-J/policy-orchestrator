@@ -75,6 +75,21 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REST API V1 ROUTER
      • POST /api/v1/algos/vector-search/ivf-pq: Inverted File with Product Quantization and Asymmetric Distance.
      • POST /api/v1/algos/vector-search/nprobe-tune: Automated Pareto Frontier nprobe Tuner.
      • POST /api/v1/algos/vector-search/imi: Inverted Multi-Index Dual Codebook Coarse Quantizer.
+     • POST /api/v1/algos/vector-search/nsw: Navigable Small World Proximity Graph.
+     • POST /api/v1/algos/vector-search/hnsw-search: Hierarchical NSW Multilayer Beam Search.
+     • POST /api/v1/algos/vector-search/hnsw-insert: HNSW Scale-Free Layer Insertion & Heuristic.
+     • POST /api/v1/algos/vector-search/beam-search: Bounded Beam Search on Proximity Graphs.
+     • POST /api/v1/algos/vector-search/vamana: Vamana/DiskANN Two-Pass Proximity Graph Index.
+     • POST /api/v1/algos/vector-search/robust-prune: RobustPrune Alpha Diversity Filter.
+     • POST /api/v1/algos/vector-search/nsg: Navigating Spreading-out Graph with MRNG Pruning.
+     • POST /api/v1/algos/vector-search/cagra: GPU-Optimized Fixed-Degree Regular Graph.
+     • POST /api/v1/algos/vector-search/entry-point: Medoid & Multi-Seed Entry-Point Selection.
+     • POST /api/v1/algos/vector-search/connectivity-repair: Graph Reachability Audit & Island Repair.
+     • POST /api/v1/algos/vector-search/filtered-diskann: Label-Constrained In-Index Graph Traversal.
+     • POST /api/v1/algos/vector-search/spann: SPANN Memory-Disk Hybrid with Boundary Duplication.
+     • POST /api/v1/algos/vector-search/random-hyperplane-lsh: Random-Hyperplane Cosine LSH.
+     • POST /api/v1/algos/vector-search/multi-probe-lsh: Multi-Probe Perturbation Sequence LSH.
+     • POST /api/v1/algos/vector-search/e2lsh: Exact 2-Stable Gaussian L2 Locality-Sensitive Hashing.
 
 2. ARCHITECTURAL LAYOUT & DESIGN PILLARS:
    - Strict Protocol Envelope: All routes strictly return `{success, statusCode, data, errors, meta}`
@@ -479,6 +494,134 @@ class VecSearchInvertedMultiIndexDTO(BaseModel):
     codebook_k2: int = Field(default=4, description="Second codebook size")
     max_cells_to_probe: int = Field(default=4, description="Max cells to probe")
     vector_ids: Optional[List[str]] = Field(default=None, description="Vector IDs")
+
+
+class VecSearchNswDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    max_edges: int = Field(default=6, description="Max edges per node")
+    num_attempts: int = Field(default=3, description="Routing attempts")
+
+
+class VecSearchHnswSearchDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    layers: List[Dict[str, Any]] = Field(..., description="Hierarchical graph layers")
+    entry_point: int = Field(default=0, description="Top-layer entry point")
+    top_layer: int = Field(default=0, description="Top layer level")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    ef: int = Field(default=16, description="Beam exploration size ef >= k")
+
+
+class VecSearchHnswInsertDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    m: int = Field(default=4, description="Connections per element")
+    ef_construction: int = Field(default=16, description="Construction beam size")
+    m_max_0: int = Field(default=8, description="Max connections at layer 0")
+    ml: float = Field(default=0.62, description="Layer generation normalization factor")
+
+
+class VecSearchBeamSearchDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Metric vectors")
+    adjacency: Dict[str, List[int]] = Field(..., description="Graph adjacency map")
+    start_nodes: List[int] = Field(default=[0], description="Starting entry points")
+    query: List[float] = Field(..., description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    ef: int = Field(default=16, description="Beam size ef")
+
+
+class VecSearchVamanaDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    r_max_degree: int = Field(default=8, description="Max out-degree")
+    l_search_list_size: int = Field(default=16, description="Search list size L")
+    alpha: float = Field(default=1.2, description="Distance scaling factor alpha")
+
+
+class VecSearchRobustPruneDTO(BaseModel):
+    point: List[float] = Field(..., description="Target reference vector")
+    candidate_vectors: List[List[float]] = Field(..., description="Candidate neighbor vectors")
+    candidate_ids: Optional[List[int]] = Field(default=None, description="Candidate identifier list")
+    alpha: float = Field(default=1.2, description="Diversity threshold parameter alpha")
+    r_max_degree: int = Field(default=64, description="Maximum allowed out-degree R")
+
+
+class VecSearchNsgDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    r_max_degree: int = Field(default=8, description="Max out-degree R")
+    candidate_pool_size: int = Field(default=16, description="Initial candidate pool size")
+
+
+class VecSearchCagraDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    fixed_degree: int = Field(default=6, description="Fixed regular degree")
+    search_width: int = Field(default=8, description="Search width")
+
+
+class VecSearchEntryPointDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    strategy: str = Field(default="query_adaptive", description="Strategy ('medoid', 'multi_seed', 'query_adaptive')")
+    num_seeds: int = Field(default=4, description="Number of seed entry points")
+
+
+class VecSearchConnectivityRepairDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    adjacency: Dict[str, List[int]] = Field(..., description="Graph adjacency map")
+    entry_points: List[int] = Field(default=[0], description="Seed entry point indices")
+
+
+class VecSearchFilteredDiskannDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    labels: List[str] = Field(..., description="Metadata labels per vector")
+    query: List[float] = Field(..., description="Query vector")
+    target_label: str = Field(..., description="Target metadata label filter")
+    k: int = Field(default=5, description="Top-k")
+    ef_search: int = Field(default=16, description="Beam exploration size ef")
+    r_max_degree: int = Field(default=8, description="Max degree R")
+
+
+class VecSearchSpannDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    num_centroids: int = Field(default=4, description="Number of centroids")
+    nprobe: int = Field(default=2, description="Centroids to probe")
+    slack_factor: float = Field(default=1.2, description="Boundary duplication slack epsilon")
+
+
+class VecSearchRandomHyperplaneLshDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    num_bits: int = Field(default=4, description="Bits per hash table")
+    num_tables: int = Field(default=3, description="Number of hash tables")
+    seed: int = Field(default=42, description="Random seed")
+
+
+class VecSearchMultiProbeLshDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    num_bits: int = Field(default=6, description="Number of hyperplane bits")
+    probe_budget: int = Field(default=4, description="Multi-probe bucket budget")
+    seed: int = Field(default=42, description="Random seed")
+
+
+class VecSearchE2LshDTO(BaseModel):
+    vectors: List[List[float]] = Field(..., description="Dataset vectors")
+    query: Optional[List[float]] = Field(default=None, description="Query vector")
+    k: int = Field(default=5, description="Top-k")
+    slot_width_w: float = Field(default=4.0, description="Quantization slot width w")
+    num_projections_m: int = Field(default=4, description="Number of projections m")
+    num_tables_l: int = Field(default=3, description="Number of tables L")
+    seed: int = Field(default=42, description="Random seed")
 
 
 def get_orchestrator_services() -> Dict[str, Any]:
@@ -1315,6 +1458,126 @@ def vector_search_imi_endpoint(payload: VecSearchInvertedMultiIndexDTO, request:
     trace_id = request.headers.get("x-trace-id")
     svc = get_code_engine_service()
     res = svc.execute_algorithm("ALGO-VEC-SRCH-64", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/nsw")
+def vector_search_nsw_endpoint(payload: VecSearchNswDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-65", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/hnsw-search")
+def vector_search_hnsw_search_endpoint(payload: VecSearchHnswSearchDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-66", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/hnsw-insert")
+def vector_search_hnsw_insert_endpoint(payload: VecSearchHnswInsertDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-67", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/beam-search")
+def vector_search_beam_search_endpoint(payload: VecSearchBeamSearchDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-68", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/vamana")
+def vector_search_vamana_endpoint(payload: VecSearchVamanaDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-69", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/robust-prune")
+def vector_search_robust_prune_endpoint(payload: VecSearchRobustPruneDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-70", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/nsg")
+def vector_search_nsg_endpoint(payload: VecSearchNsgDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-71", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/cagra")
+def vector_search_cagra_endpoint(payload: VecSearchCagraDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-72", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/entry-point")
+def vector_search_entry_point_endpoint(payload: VecSearchEntryPointDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-73", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/connectivity-repair")
+def vector_search_connectivity_repair_endpoint(payload: VecSearchConnectivityRepairDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-74", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/filtered-diskann")
+def vector_search_filtered_diskann_endpoint(payload: VecSearchFilteredDiskannDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-75", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/spann")
+def vector_search_spann_endpoint(payload: VecSearchSpannDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-76", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/random-hyperplane-lsh")
+def vector_search_random_hyperplane_lsh_endpoint(payload: VecSearchRandomHyperplaneLshDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-77", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/multi-probe-lsh")
+def vector_search_multi_probe_lsh_endpoint(payload: VecSearchMultiProbeLshDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-78", payload.model_dump())
+    return build_success_envelope(data=res, trace_id=trace_id)
+
+
+@router.post("/algos/vector-search/e2lsh")
+def vector_search_e2lsh_endpoint(payload: VecSearchE2LshDTO, request: Request) -> Dict[str, Any]:
+    trace_id = request.headers.get("x-trace-id")
+    svc = get_code_engine_service()
+    res = svc.execute_algorithm("ALGO-VEC-SRCH-79", payload.model_dump())
     return build_success_envelope(data=res, trace_id=trace_id)
 
 

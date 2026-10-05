@@ -62,9 +62,24 @@ def test_cli_all_42_algorithms_execute():
         "ALGO-VEC-SRCH-62": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], "query": [1.0, 2.0], "k": 1, "num_clusters": 2, "subspaces": 2, "codebook_size": 2},
         "ALGO-VEC-SRCH-63": {"database_vectors": [[1.0, 2.0], [3.0, 4.0]], "sample_queries": [[1.0, 2.0]], "k": 1, "num_clusters": 2},
         "ALGO-VEC-SRCH-64": {"vectors": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], "query": [1.0, 2.0], "k": 1, "codebook_k1": 2, "codebook_k2": 2},
+        "ALGO-VEC-SRCH-65": {"vectors": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [10.0, 10.0]], "query": [0.1, 0.1], "k": 2, "max_edges": 3},
+        "ALGO-VEC-SRCH-66": {"vectors": [[0.0, 0.0], [1.0, 0.0]], "layers": [{"0": [1], "1": [0]}], "entry_point": 0, "top_layer": 0, "query": [0.1, 0.0], "k": 1, "ef": 4},
+        "ALGO-VEC-SRCH-67": {"vectors": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]], "m": 2, "ef_construction": 4},
+        "ALGO-VEC-SRCH-68": {"vectors": [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]], "adjacency": {"0": [1], "1": [0, 2], "2": [1]}, "start_nodes": [0], "query": [1.1, 0.0], "k": 1, "ef": 4},
+        "ALGO-VEC-SRCH-69": {"vectors": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]], "query": [0.1, 0.1], "k": 2, "r_max_degree": 2, "l_search_list_size": 4, "alpha": 1.2},
+        "ALGO-VEC-SRCH-70": {"point": [0.0, 0.0], "candidate_vectors": [[1.0, 0.0], [0.0, 1.0]], "alpha": 1.2, "r_max_degree": 2},
+        "ALGO-VEC-SRCH-71": {"vectors": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]], "query": [0.1, 0.1], "k": 2, "r_max_degree": 2},
+        "ALGO-VEC-SRCH-72": {"vectors": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], "query": [0.1, 0.1], "k": 2, "fixed_degree": 2},
+        "ALGO-VEC-SRCH-73": {"vectors": [[0.0, 0.0], [1.0, 1.0]], "strategy": "medoid"},
+        "ALGO-VEC-SRCH-74": {"vectors": [[0.0, 0.0], [1.0, 0.0]], "adjacency": {"0": [1], "1": [0]}, "entry_points": [0]},
+        "ALGO-VEC-SRCH-75": {"vectors": [[0.0, 0.0], [1.0, 0.0]], "labels": ["t1", "t2"], "query": [0.0, 0.0], "target_label": "t1", "k": 1},
+        "ALGO-VEC-SRCH-76": {"vectors": [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]], "query": [0.0, 0.0], "k": 1, "num_centroids": 2, "nprobe": 1, "slack_factor": 1.2},
+        "ALGO-VEC-SRCH-77": {"vectors": [[1.0, 0.0], [0.0, 1.0]], "query": [1.0, 0.0], "k": 1, "num_bits": 2, "num_tables": 2},
+        "ALGO-VEC-SRCH-78": {"vectors": [[1.0, 0.0], [0.0, 1.0]], "query": [1.0, 0.0], "k": 1, "num_bits": 2, "probe_budget": 2},
+        "ALGO-VEC-SRCH-79": {"vectors": [[0.0, 0.0], [1.0, 1.0]], "query": [0.0, 0.0], "k": 1, "slot_width_w": 2.0, "num_projections_m": 2, "num_tables_l": 2},
     }
 
-    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 56
+    assert len(BUILTIN_ALGORITHM_CONTRACTS) == 71
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:
         algo_id = contract.id

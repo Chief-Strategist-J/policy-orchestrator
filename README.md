@@ -63,7 +63,7 @@ eval "$(policy-orchestrator completion bash)"
 
 ---
 
-### 2. Vector Algorithms (23 Algorithms)
+### 2. Vector Algorithms (38 Algorithms)
 
 #### A. Preprocessing & Normalization (9 Algorithms)
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
@@ -78,7 +78,7 @@ eval "$(policy-orchestrator completion bash)"
 | 17 | `ALGO-VEC-08` | `policy-orchestrator run slice` | `policy-orchestrator exec ALGO-VEC-08` | `POST /api/v1/algos/vector/slice` | Trims big vectors to smaller dimensions (Matryoshka learning) |
 | 18 | `ALGO-VEC-09` | `policy-orchestrator run layer-norm` | `policy-orchestrator exec ALGO-VEC-09` | `POST /api/v1/algos/vector/layer-norm` | Stabilizes vector distributions across AI model layers |
 
-#### B. Vector Search & Indexing (14 Algorithms — #51 to #64)
+#### B. Vector Search & Indexing (29 Algorithms — #51 to #79)
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
 |---|---|---|---|---|---|
 | 19 | `ALGO-VEC-SRCH-51` | `policy-orchestrator run vec-gemm` | `policy-orchestrator exec ALGO-VEC-SRCH-51` | `POST /api/v1/algos/vector-search/gemm` | Exact nearest neighbor search using matrix multiplication |
@@ -95,6 +95,21 @@ eval "$(policy-orchestrator completion bash)"
 | 30 | `ALGO-VEC-SRCH-62` | `policy-orchestrator run vec-ivfpq` | `policy-orchestrator exec ALGO-VEC-SRCH-62` | `POST /api/v1/algos/vector-search/ivf-pq` | Inverted file index with Product Quantization (ADC) |
 | 31 | `ALGO-VEC-SRCH-63` | `policy-orchestrator run vec-nprobe` | `policy-orchestrator exec ALGO-VEC-SRCH-63` | `POST /api/v1/algos/vector-search/nprobe-tune` | Automated Pareto frontier nprobe parameter tuner |
 | 32 | `ALGO-VEC-SRCH-64` | `policy-orchestrator run vec-imi` | `policy-orchestrator exec ALGO-VEC-SRCH-64` | `POST /api/v1/algos/vector-search/imi` | Fine dual-codebook Inverted Multi-Index |
+| 33 | `ALGO-VEC-SRCH-65` | `policy-orchestrator run vec-nsw` | `policy-orchestrator exec ALGO-VEC-SRCH-65` | `POST /api/v1/algos/vector-search/nsw` | Navigable Small World (NSW) proximity graph index & search |
+| 34 | `ALGO-VEC-SRCH-66` | `policy-orchestrator run vec-hnsw-search` | `policy-orchestrator exec ALGO-VEC-SRCH-66` | `POST /api/v1/algos/vector-search/hnsw-search` | Hierarchical NSW multilayer beam search |
+| 35 | `ALGO-VEC-SRCH-67` | `policy-orchestrator run vec-hnsw-insert` | `policy-orchestrator exec ALGO-VEC-SRCH-67` | `POST /api/v1/algos/vector-search/hnsw-insert` | HNSW scale-free layer insertion with neighbor heuristic |
+| 36 | `ALGO-VEC-SRCH-68` | `policy-orchestrator run vec-beam` | `policy-orchestrator exec ALGO-VEC-SRCH-68` | `POST /api/v1/algos/vector-search/beam-search` | Bounded beam search on proximity graphs |
+| 37 | `ALGO-VEC-SRCH-69` | `policy-orchestrator run vec-vamana` | `policy-orchestrator exec ALGO-VEC-SRCH-69` | `POST /api/v1/algos/vector-search/vamana` | Vamana/DiskANN two-pass proximity graph index |
+| 38 | `ALGO-VEC-SRCH-70` | `policy-orchestrator run vec-robust-prune` | `policy-orchestrator exec ALGO-VEC-SRCH-70` | `POST /api/v1/algos/vector-search/robust-prune` | RobustPrune alpha diversity filter for neighbor graphs |
+| 39 | `ALGO-VEC-SRCH-71` | `policy-orchestrator run vec-nsg` | `policy-orchestrator exec ALGO-VEC-SRCH-71` | `POST /api/v1/algos/vector-search/nsg` | Navigating Spreading-out Graph with MRNG pruning |
+| 40 | `ALGO-VEC-SRCH-72` | `policy-orchestrator run vec-cagra` | `policy-orchestrator exec ALGO-VEC-SRCH-72` | `POST /api/v1/algos/vector-search/cagra` | GPU-optimized fixed-degree regular graph |
+| 41 | `ALGO-VEC-SRCH-73` | `policy-orchestrator run vec-entry` | `policy-orchestrator exec ALGO-VEC-SRCH-73` | `POST /api/v1/algos/vector-search/entry-point` | Medoid & multi-seed entry-point selection |
+| 42 | `ALGO-VEC-SRCH-74` | `policy-orchestrator run vec-repair` | `policy-orchestrator exec ALGO-VEC-SRCH-74` | `POST /api/v1/algos/vector-search/connectivity-repair` | Graph reachability audit & island repair |
+| 43 | `ALGO-VEC-SRCH-75` | `policy-orchestrator run vec-filtered-diskann` | `policy-orchestrator exec ALGO-VEC-SRCH-75` | `POST /api/v1/algos/vector-search/filtered-diskann` | Label-constrained in-index graph traversal |
+| 44 | `ALGO-VEC-SRCH-76` | `policy-orchestrator run vec-spann` | `policy-orchestrator exec ALGO-VEC-SRCH-76` | `POST /api/v1/algos/vector-search/spann` | SPANN memory-disk hybrid with boundary duplication |
+| 45 | `ALGO-VEC-SRCH-77` | `policy-orchestrator run vec-lsh-hyperplane` | `policy-orchestrator exec ALGO-VEC-SRCH-77` | `POST /api/v1/algos/vector-search/lsh-hyperplane` | Random-hyperplane cosine Locality-Sensitive Hashing |
+| 46 | `ALGO-VEC-SRCH-78` | `policy-orchestrator run vec-lsh-multiprobe` | `policy-orchestrator exec ALGO-VEC-SRCH-78` | `POST /api/v1/algos/vector-search/lsh-multiprobe` | Multi-probe perturbation sequence LSH |
+| 47 | `ALGO-VEC-SRCH-79` | `policy-orchestrator run vec-e2lsh` | `policy-orchestrator exec ALGO-VEC-SRCH-79` | `POST /api/v1/algos/vector-search/e2lsh` | Exact 2-stable Gaussian L2 Locality-Sensitive Hashing |
 
 ---
 
@@ -102,21 +117,21 @@ eval "$(policy-orchestrator completion bash)"
 
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
 |---|---|---|---|---|---|
-| 19 | `ALGO-SRCH-01` | `policy-orchestrator run file-walk` | `policy-orchestrator scan [dir]`<br>`policy-orchestrator exec ALGO-SRCH-01` | `POST /api/v1/algos/search/walk` | Lists every file in folder tree recursively |
-| 20 | `ALGO-SRCH-02` | `policy-orchestrator run git-walk` | `policy-orchestrator exec ALGO-SRCH-02` | `POST /api/v1/algos/search/work-stealing-walk` | Parallel file search across CPU cores with work-stealing |
-| 21 | `ALGO-SRCH-03` | `policy-orchestrator run git-ignore-walk` | `policy-orchestrator exec ALGO-SRCH-03` | `POST /api/v1/algos/search/git-aware-walk` | Lists files while automatically skipping `.gitignore` patterns |
-| 22 | `ALGO-SRCH-04` | `policy-orchestrator run glob` | `policy-orchestrator exec ALGO-SRCH-04` | `POST /api/v1/algos/search/glob-match` | Matches paths with wildcard patterns (e.g. `**/*.py`) |
-| 23 | `ALGO-SRCH-05` | `policy-orchestrator run trigram` | `policy-orchestrator exec ALGO-SRCH-05` | `POST /api/v1/algos/search/trigram-index` | 3-letter inverted index for ultra-fast fuzzy substring search |
-| 24 | `ALGO-SRCH-06` | `policy-orchestrator run mmap-scan` | `policy-orchestrator exec ALGO-SRCH-06` | `POST /api/v1/algos/search/mmap-scan` | Memory-mapped zero-copy scan of gigabyte-sized files |
-| 25 | `ALGO-SRCH-07` | `policy-orchestrator run stream-scan` | `policy-orchestrator exec ALGO-SRCH-07` | `POST /api/v1/algos/search/streaming-chunk-scan` | Low-RAM stream scanner for large files |
-| 26 | `ALGO-SRCH-08` | `policy-orchestrator run size-filter` | `policy-orchestrator exec ALGO-SRCH-08` | `POST /api/v1/algos/search/size-line-check` | Skips files that exceed byte size or line count limits |
-| 27 | `ALGO-SRCH-09` | `policy-orchestrator run regex-scan` | `policy-orchestrator exec ALGO-SRCH-09` | `POST /api/v1/algos/search/lazy-dfa` | Fast regex matching without backtracking catastrophic delays |
-| 28 | `ALGO-SRCH-10` | `policy-orchestrator run snippet` | `policy-orchestrator exec ALGO-SRCH-10` | `POST /api/v1/algos/search/context-snippet` | Fetches lines before & after match for rich display |
-| 29 | `ALGO-SRCH-11` | `policy-orchestrator run byte-search` | `policy-orchestrator exec ALGO-SRCH-11` | `POST /api/v1/algos/search/simd-memchr` | SIMD hardware-accelerated single-byte scanning |
-| 30 | `ALGO-SRCH-12` | `policy-orchestrator run is-binary` | `policy-orchestrator exec ALGO-SRCH-12` | `POST /api/v1/algos/search/binary-check` | Checks if a file is binary or human-readable text |
-| 31 | `ALGO-SRCH-13` | `policy-orchestrator run content-type` | `policy-orchestrator exec ALGO-SRCH-13` | `POST /api/v1/algos/search/content-type` | Probes file header bytes for MIME type and language |
-| 32 | `ALGO-SRCH-14` | `policy-orchestrator run is-generated` | `policy-orchestrator exec ALGO-SRCH-14` | `POST /api/v1/algos/search/generated-code-check` | Flags auto-generated files (protobuf, swagger, etc.) |
-| 33 | `ALGO-SRCH-15` | `policy-orchestrator run parallel-walk` | `policy-orchestrator search <patterns> [dir]`<br>`policy-orchestrator exec ALGO-SRCH-15` | `POST /api/v1/algos/search/aho-corasick`<br>`POST /api/v1/algos/search/scan` | Scans text for multiple search terms simultaneously |
+| 48 | `ALGO-SRCH-01` | `policy-orchestrator run file-walk` | `policy-orchestrator scan [dir]`<br>`policy-orchestrator exec ALGO-SRCH-01` | `POST /api/v1/algos/search/walk` | Lists every file in folder tree recursively |
+| 49 | `ALGO-SRCH-02` | `policy-orchestrator run git-walk` | `policy-orchestrator exec ALGO-SRCH-02` | `POST /api/v1/algos/search/work-stealing-walk` | Parallel file search across CPU cores with work-stealing |
+| 50 | `ALGO-SRCH-03` | `policy-orchestrator run git-ignore-walk` | `policy-orchestrator exec ALGO-SRCH-03` | `POST /api/v1/algos/search/git-aware-walk` | Lists files while automatically skipping `.gitignore` patterns |
+| 51 | `ALGO-SRCH-04` | `policy-orchestrator run glob` | `policy-orchestrator exec ALGO-SRCH-04` | `POST /api/v1/algos/search/glob-match` | Matches paths with wildcard patterns (e.g. `**/*.py`) |
+| 52 | `ALGO-SRCH-05` | `policy-orchestrator run trigram` | `policy-orchestrator exec ALGO-SRCH-05` | `POST /api/v1/algos/search/trigram-index` | 3-letter inverted index for ultra-fast fuzzy substring search |
+| 53 | `ALGO-SRCH-06` | `policy-orchestrator run mmap-scan` | `policy-orchestrator exec ALGO-SRCH-06` | `POST /api/v1/algos/search/mmap-scan` | Memory-mapped zero-copy scan of gigabyte-sized files |
+| 54 | `ALGO-SRCH-07` | `policy-orchestrator run stream-scan` | `policy-orchestrator exec ALGO-SRCH-07` | `POST /api/v1/algos/search/streaming-chunk-scan` | Low-RAM stream scanner for large files |
+| 55 | `ALGO-SRCH-08` | `policy-orchestrator run size-filter` | `policy-orchestrator exec ALGO-SRCH-08` | `POST /api/v1/algos/search/size-line-check` | Skips files that exceed byte size or line count limits |
+| 56 | `ALGO-SRCH-09` | `policy-orchestrator run regex-scan` | `policy-orchestrator exec ALGO-SRCH-09` | `POST /api/v1/algos/search/lazy-dfa` | Fast regex matching without backtracking catastrophic delays |
+| 57 | `ALGO-SRCH-10` | `policy-orchestrator run snippet` | `policy-orchestrator exec ALGO-SRCH-10` | `POST /api/v1/algos/search/context-snippet` | Fetches lines before & after match for rich display |
+| 58 | `ALGO-SRCH-11` | `policy-orchestrator run byte-search` | `policy-orchestrator exec ALGO-SRCH-11` | `POST /api/v1/algos/search/simd-memchr` | SIMD hardware-accelerated single-byte scanning |
+| 59 | `ALGO-SRCH-12` | `policy-orchestrator run is-binary` | `policy-orchestrator exec ALGO-SRCH-12` | `POST /api/v1/algos/search/binary-check` | Checks if a file is binary or human-readable text |
+| 60 | `ALGO-SRCH-13` | `policy-orchestrator run content-type` | `policy-orchestrator exec ALGO-SRCH-13` | `POST /api/v1/algos/search/content-type` | Probes file header bytes for MIME type and language |
+| 61 | `ALGO-SRCH-14` | `policy-orchestrator run is-generated` | `policy-orchestrator exec ALGO-SRCH-14` | `POST /api/v1/algos/search/generated-code-check` | Flags auto-generated files (protobuf, swagger, etc.) |
+| 62 | `ALGO-SRCH-15` | `policy-orchestrator run parallel-walk` | `policy-orchestrator search <patterns> [dir]`<br>`policy-orchestrator exec ALGO-SRCH-15` | `POST /api/v1/algos/search/aho-corasick`<br>`POST /api/v1/algos/search/scan` | Scans text for multiple search terms simultaneously |
 
 ---
 
@@ -124,12 +139,12 @@ eval "$(policy-orchestrator completion bash)"
 
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
 |---|---|---|---|---|---|
-| 34 | `ALGO-OBS-16` | `policy-orchestrator run ast-parse` | `policy-orchestrator exec ALGO-OBS-16` | `POST /api/v1/algos/observability/ast` | Parses code into syntax tree representation |
-| 35 | `ALGO-OBS-17` | `policy-orchestrator run outline` | `policy-orchestrator outline <file>`<br>`policy-orchestrator exec ALGO-OBS-17` | `POST /api/v1/algos/observability/outline` | Summarizes all classes, methods, and functions in a file |
-| 36 | `ALGO-OBS-18` | `policy-orchestrator run extract-comments` | `policy-orchestrator exec ALGO-OBS-18` | `POST /api/v1/algos/observability/span-track` | Pulls out all comments, notes, and byte spans from code |
-| 37 | `ALGO-OBS-19` | `policy-orchestrator run no-inline` | `policy-orchestrator lint <file>`<br>`policy-orchestrator exec ALGO-OBS-19` | `POST /api/v1/algos/observability/lint-comments` | Enforces Zero-Inline-Comment doctrine across codebases |
-| 38 | `ALGO-OBS-20` | `policy-orchestrator run dep-graph` | `policy-orchestrator deps [dir]`<br>`policy-orchestrator exec ALGO-OBS-20` | `POST /api/v1/algos/observability/dependencies` | Maps module imports and flags circular cycles |
-| 39 | `ALGO-OBS-21` | `policy-orchestrator run symbols` | `policy-orchestrator exec ALGO-OBS-21` | `POST /api/v1/algos/observability/symbols` | Resolves symbol scopes and variable definitions |
+| 63 | `ALGO-OBS-16` | `policy-orchestrator run ast-parse` | `policy-orchestrator exec ALGO-OBS-16` | `POST /api/v1/algos/observability/ast` | Parses code into syntax tree representation |
+| 64 | `ALGO-OBS-17` | `policy-orchestrator run outline` | `policy-orchestrator outline <file>`<br>`policy-orchestrator exec ALGO-OBS-17` | `POST /api/v1/algos/observability/outline` | Summarizes all classes, methods, and functions in a file |
+| 65 | `ALGO-OBS-18` | `policy-orchestrator run extract-comments` | `policy-orchestrator exec ALGO-OBS-18` | `POST /api/v1/algos/observability/span-track` | Pulls out all comments, notes, and byte spans from code |
+| 66 | `ALGO-OBS-19` | `policy-orchestrator run no-inline` | `policy-orchestrator lint <file>`<br>`policy-orchestrator exec ALGO-OBS-19` | `POST /api/v1/algos/observability/lint-comments` | Enforces Zero-Inline-Comment doctrine across codebases |
+| 67 | `ALGO-OBS-20` | `policy-orchestrator run dep-graph` | `policy-orchestrator deps [dir]`<br>`policy-orchestrator exec ALGO-OBS-20` | `POST /api/v1/algos/observability/dependencies` | Maps module imports and flags circular cycles |
+| 68 | `ALGO-OBS-21` | `policy-orchestrator run symbols` | `policy-orchestrator exec ALGO-OBS-21` | `POST /api/v1/algos/observability/symbols` | Resolves symbol scopes and variable definitions |
 
 ---
 
@@ -137,9 +152,9 @@ eval "$(policy-orchestrator completion bash)"
 
 | # | Algo ID | Normal Command (Beginner) | Developer Command (CLI Power User) | Code Command (REST API & Python SDK) | What It Does (Plain English) |
 |---|---|---|---|---|---|
-| 40 | `ALGO-UPD-22` | `policy-orchestrator run smart-patch` | `policy-orchestrator patch <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-22` | `POST /api/v1/algos/update/cst-match` | Concrete Syntax Tree (CST) code patcher without syntax errors |
-| 41 | `ALGO-UPD-23` | `policy-orchestrator run batch-patch` | `policy-orchestrator exec ALGO-UPD-23` | `POST /api/v1/algos/update/patch` | Multi-file atomic patch with rollback on any failure |
-| 42 | `ALGO-UPD-24` | `policy-orchestrator run show-diff` | `policy-orchestrator diff <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-24` | `POST /api/v1/algos/update/diff` | Generates standard unified GNU context diff (+/-) |
+| 69 | `ALGO-UPD-22` | `policy-orchestrator run smart-patch` | `policy-orchestrator patch <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-22` | `POST /api/v1/algos/update/cst-match` | Concrete Syntax Tree (CST) code patcher without syntax errors |
+| 70 | `ALGO-UPD-23` | `policy-orchestrator run batch-patch` | `policy-orchestrator exec ALGO-UPD-23` | `POST /api/v1/algos/update/patch` | Multi-file atomic patch with rollback on any failure |
+| 71 | `ALGO-UPD-24` | `policy-orchestrator run show-diff` | `policy-orchestrator diff <file> <find> <replace>`<br>`policy-orchestrator exec ALGO-UPD-24` | `POST /api/v1/algos/update/diff` | Generates standard unified GNU context diff (+/-) |
 
 ---
 

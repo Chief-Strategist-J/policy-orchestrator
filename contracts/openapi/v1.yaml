@@ -5,7 +5,7 @@ info:
   description: >-
     Enterprise-grade, vendor-agnostic REST API for repository invariant auditing,
     grounded hybrid GraphRAG, autonomous AI Agent orchestration, and direct execution
-    of all 56 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
+    of all 71 Layer 1 algorithms across Search, Observability, Update, and Vector categories.
     Strictly conforms to the RFC API Request & Response Structure Specification (v5.0).
 servers:
   - url: http://localhost:8000
@@ -1299,6 +1299,457 @@ paths:
       responses:
         '200':
           description: Inverted multi-index kNN query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/nsw:
+    post:
+      summary: Navigable Small World Proximity Graph (ALGO-VEC-SRCH-65)
+      operationId: vectorSearchNSW
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                max_edges: { type: integer, default: 6 }
+                num_attempts: { type: integer, default: 3 }
+      responses:
+        '200':
+          description: NSW kNN query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/hnsw-search:
+    post:
+      summary: Hierarchical NSW Multilayer Beam Search (ALGO-VEC-SRCH-66)
+      operationId: vectorSearchHNSWSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, layers, entry_point, top_layer, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                layers:
+                  type: array
+                  items: { type: object }
+                entry_point: { type: integer, default: 0 }
+                top_layer: { type: integer, default: 0 }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                ef: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: HNSW search top-k results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/hnsw-insert:
+    post:
+      summary: HNSW Scale-Free Layer Insertion & Heuristic (ALGO-VEC-SRCH-67)
+      operationId: vectorSearchHNSWInsert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                m: { type: integer, default: 4 }
+                ef_construction: { type: integer, default: 16 }
+                m_max_0: { type: integer, default: 8 }
+                ml: { type: number, default: 0.62 }
+      responses:
+        '200':
+          description: Built HNSW multi-layer index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/beam-search:
+    post:
+      summary: Bounded Beam Search on Proximity Graphs (ALGO-VEC-SRCH-68)
+      operationId: vectorSearchBeamSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, adjacency, start_nodes, query]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                adjacency:
+                  type: object
+                start_nodes:
+                  type: array
+                  items: { type: integer }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                ef: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: Beam search exploration results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/vamana:
+    post:
+      summary: Vamana/DiskANN Two-Pass Proximity Graph Index (ALGO-VEC-SRCH-69)
+      operationId: vectorSearchVamana
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                r_max_degree: { type: integer, default: 8 }
+                l_search_list_size: { type: integer, default: 16 }
+                alpha: { type: number, default: 1.2 }
+      responses:
+        '200':
+          description: Vamana graph index and search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/robust-prune:
+    post:
+      summary: RobustPrune Alpha Diversity Filter (ALGO-VEC-SRCH-70)
+      operationId: vectorSearchRobustPrune
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [point, candidate_vectors]
+              properties:
+                point:
+                  type: array
+                  items: { type: number }
+                candidate_vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                candidate_ids:
+                  type: array
+                  items: { type: integer }
+                alpha: { type: number, default: 1.2 }
+                r_max_degree: { type: integer, default: 64 }
+      responses:
+        '200':
+          description: Pruned diverse candidate IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/nsg:
+    post:
+      summary: Navigating Spreading-out Graph with MRNG Pruning (ALGO-VEC-SRCH-71)
+      operationId: vectorSearchNSG
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                r_max_degree: { type: integer, default: 8 }
+                candidate_pool_size: { type: integer, default: 16 }
+      responses:
+        '200':
+          description: NSG sparse graph search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/cagra:
+    post:
+      summary: GPU-Optimized Fixed-Degree Regular Graph (ALGO-VEC-SRCH-72)
+      operationId: vectorSearchCAGRA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                fixed_degree: { type: integer, default: 6 }
+                search_width: { type: integer, default: 8 }
+      responses:
+        '200':
+          description: CAGRA regular graph search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/entry-point:
+    post:
+      summary: Medoid & Multi-Seed Entry-Point Selection (ALGO-VEC-SRCH-73)
+      operationId: vectorSearchEntryPoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                strategy: { type: string, enum: [medoid, multi_seed, query_adaptive], default: query_adaptive }
+                num_seeds: { type: integer, default: 4 }
+      responses:
+        '200':
+          description: Selected entry point and seeds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/connectivity-repair:
+    post:
+      summary: Graph Reachability Audit & Island Repair (ALGO-VEC-SRCH-74)
+      operationId: vectorSearchConnectivityRepair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, adjacency, entry_points]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                adjacency:
+                  type: object
+                entry_points:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: Connectivity audit report and repaired adjacency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/filtered-diskann:
+    post:
+      summary: Label-Constrained In-Index Graph Traversal (ALGO-VEC-SRCH-75)
+      operationId: vectorSearchFilteredDiskANN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors, labels, query, target_label]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                labels:
+                  type: array
+                  items: { type: string }
+                query:
+                  type: array
+                  items: { type: number }
+                target_label: { type: string }
+                k: { type: integer, default: 5 }
+                ef_search: { type: integer, default: 16 }
+                r_max_degree: { type: integer, default: 8 }
+      responses:
+        '200':
+          description: Label-filtered kNN query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/spann:
+    post:
+      summary: SPANN Memory-Disk Hybrid with Boundary Duplication (ALGO-VEC-SRCH-76)
+      operationId: vectorSearchSPANN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_centroids: { type: integer, default: 4 }
+                nprobe: { type: integer, default: 2 }
+                slack_factor: { type: number, default: 1.2 }
+      responses:
+        '200':
+          description: SPANN hybrid search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/random-hyperplane-lsh:
+    post:
+      summary: Random-Hyperplane Cosine LSH (ALGO-VEC-SRCH-77)
+      operationId: vectorSearchRandomHyperplaneLSH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_bits: { type: integer, default: 4 }
+                num_tables: { type: integer, default: 3 }
+                seed: { type: integer, default: 42 }
+      responses:
+        '200':
+          description: Random hyperplane LSH search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/multi-probe-lsh:
+    post:
+      summary: Multi-Probe Perturbation Sequence LSH (ALGO-VEC-SRCH-78)
+      operationId: vectorSearchMultiProbeLSH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                num_bits: { type: integer, default: 6 }
+                probe_budget: { type: integer, default: 4 }
+                seed: { type: integer, default: 42 }
+      responses:
+        '200':
+          description: Multi-probe LSH search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/vector-search/e2lsh:
+    post:
+      summary: Exact 2-Stable Gaussian L2 Locality-Sensitive Hashing (ALGO-VEC-SRCH-79)
+      operationId: vectorSearchE2LSH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vectors]
+              properties:
+                vectors:
+                  type: array
+                  items: { type: array, items: { type: number } }
+                query:
+                  type: array
+                  items: { type: number }
+                k: { type: integer, default: 5 }
+                slot_width_w: { type: number, default: 4.0 }
+                num_projections_m: { type: integer, default: 4 }
+                num_tables_l: { type: integer, default: 3 }
+                seed: { type: integer, default: 42 }
+      responses:
+        '200':
+          description: E2LSH search results
           content:
             application/json:
               schema:
