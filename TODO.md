@@ -1,6 +1,6 @@
-# Policy Orchestrator & AI Meta-Agent: Master Roadmap & Algorithm Engine
+# Policy Orchestrator & Master Algorithm Engine Roadmap
 
-This document tracks the comprehensive architecture, completed capabilities, the **1000+ Declarative Agent Catalog**, and the prioritized roadmap for the **Policy Orchestrator, Advanced GraphRAG, and AI Meta-Agent Engine** (`policies/policy-orchestrator`).
+This document tracks the comprehensive architecture, completed capabilities, the **1000+ Declarative Agent Catalog**, and the exhaustive roadmap for incorporating all algorithmic knowledge bases from `policies/rules/algos/` into the **Policy Orchestrator and Master Algorithm Engine** (`policies/policy-orchestrator`).
 
 ---
 
@@ -16,179 +16,176 @@ This document tracks the comprehensive architecture, completed capabilities, the
    - W3C Distributed Trace Context (`traceparent` header propagation).
    - CloudEvents 1.0 event model alignment.
    - OpenAPI v3.1 contract conformance with uniform `{meta, data, errors}` response envelopes.
-4. **Declarative Agent Scaling (Template for 1000+ Specialized Agents)**:
+4. **Three-Tier Wiring Invariant (Per Algorithm)**:
+   - **Tier 1 (In-Code Contract & Pure Logic)**: Strongly-typed Pydantic contract registered in `BUILTIN_ALGORITHM_CONTRACTS` in [`algorithm_catalog.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/features/code_engine/registry/algorithm_catalog.py), accompanied by pure deterministic Python implementation with zero inline comments in `src/features/code_engine/algos/<category>/`.
+   - **Tier 2 (Service Dispatch & CLI Access)**: Dynamic execution wiring in [`code_engine_service.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/features/code_engine/service/code_engine_service.py) and shorthand command alias in [`src/api/cli/main.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/api/cli/main.py).
+   - **Tier 3 (Delivery & Contracts)**: Role-scoped REST route in dedicated router under `src/api/rest/v1/routers/`, mounted into [`router.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/api/rest/v1/router.py), documented in [`contracts/openapi/v1.yaml`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/contracts/openapi/v1.yaml), and backed by complete unit tests.
+5. **Declarative Agent Scaling (Template for 1000+ Specialized Agents)**:
    - Agents are declared as frozen `AgentManifest` data structures (specifying `agent_id`, `role`, `system_prompt`, `allowed_tools`, and `algorithms`).
-   - Zero boilerplate code duplication: 1000+ agents can be loaded from YAML manifests or dynamic registries instantly.
+   - Zero boilerplate duplication: 1000+ agents can be loaded from YAML manifests or dynamic registries instantly.
 
 ---
 
-## 📊 Current Status & Feature Matrix
+## 📊 High-Level Algorithm Implementation Status
 
-| Subsystem | Component | Status | Port / Contract | Adapters |
-| :--- | :--- | :---: | :--- | :--- |
-| **Domain** | LLM Engine | ✅ Completed | `LLMProviderPort` | `OpenAICompatibleAdapter` (vLLM/Ollama/DeepSeek/OpenAI), `MockLLMAdapter` |
-| **Domain** | Vector Database | ✅ Completed | `VectorStorePort` | `InMemoryCosineVectorAdapter`, `QdrantVectorAdapter` |
-| **Domain** | Graph Database | ✅ Completed | `GraphStorePort` | `InMemoryGraphAdapter`, `Neo4jGraphAdapter` (openCypher/Memgraph) |
-| **Domain** | Live Search & Scraper | ✅ Completed | `WebSearchPort` | `DuckDuckGoSearchAdapter`, `MockWebSearchAdapter` |
-| **Domain** | Tool Registry & Cache| ✅ Completed | `ToolRegistryPort` | `InMemoryToolRegistryAdapter` (Dynamic AST & Scraper Store) |
-| **Domain** | Declarative Agent Manifests | ✅ Completed | `AgentManifestRegistryPort` | `InMemoryAgentManifestRegistryAdapter` (27+ Builtin Agents, scalable to 1000+) |
-| **Domain** | Knowledge Source | ✅ Completed | `KnowledgeSourcePort`| `PolicyRulesMarkdownLoader` (Parses `policies/rules/`) |
-| **Feature** | Invariant Audit | ✅ Completed | `AuditService` | Multi-vector pattern rules, severity triage |
-| **Feature** | Hybrid RAG | ✅ Completed | `RAGService` | BM25 lexical search + dense vector + Reciprocal Rank Fusion (RRF) |
-| **Feature** | Knowledge Graph | ✅ Completed | `KnowledgeGraphService`| Automatic entity & dependency extraction, BFS shortest path |
-| **Feature** | AI Policy Meta-Agent | ✅ Completed | `AgentService` | ReAct reasoning loop, specialized agent execution, safety guardrails |
-| **Delivery**| REST API | ✅ Completed | FastAPI v1 Router | Envelope `{meta, data, errors}`, trace context middleware, OpenAPI 3.1 |
-| **Delivery**| CLI Utility | ✅ Completed | `python -m src.api.cli` | `audit`, `rag`, `agent`, `refactor`, `policy-check`, `serve` |
-| **DevOps**  | Dockerization | ✅ Completed | Dockerfile + Compose | Multi-stage non-root runtime, Qdrant & Neo4j integration |
+| Category Source Directory | Total Algos Described | Implemented & Verified | Pending | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **`vectorAlgo/`** (Vector Math, Search, Lifecycle, Obs) | 200 | **155** | 45 | 🟡 77.5% Complete (Part 4 Pending) |
+| **`fileIndexingAndSearching/`** (Search, AST, Diff, CST) | 200 | **24** | 176 | 🟠 12% Complete |
+| **`graphs/`** (Traversal, Flow, Temporal, Distributed) | 300+ | **9** | 291+ | 🔴 3% Complete |
+| **`knowlageGraph/`** (KG Modeling, Reasoning, GNNs) | 100+ | **0** | 100+ | ⚪ Pending |
+| **`glue/`** (Composition Models, L1–L8 Pipeline Contracts) | 8 Specs | **L1 Contracts** | L2–L8 Engines | 🟡 In Progress |
+| **TOTALS** | **800+** | **197 Live** | **612+** | **Active Pipeline** |
+
+*Current System Metrics: 197 Algorithms, 217 FastAPI Routes, 191 Documented OpenAPI Paths, 198 CLI Aliases, 247 Automated Passing Tests.*
 
 ---
 
-## 🤖 Declarative Agent Engine & Algorithm Registry (22 Algos + 5 Pipeline Roles)
+## 🎯 Immediate Priority: Vector Algorithms Part 4 (#156–200)
 
-All agents are declaratively defined in [`src/features/agent/registry/builtin_agents.py`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/features/agent/registry/builtin_agents.py) and managed via [`AgentManifestRegistryPort`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/src/domain/ports/agent_manifest_port.py).
+**Kickoff Target for Tomorrow**: Implement all 45 algorithms from [`policies/rules/algos/vectorAlgo/04.vector.observability.drift.and.metrics.md`](file:///home/btpl-lap-22/live/llm-obs-infra/policies/rules/algos/vectorAlgo/04.vector.observability.drift.and.metrics.md) to bring the Vector Algorithm Suite to **100% completion (200/200)**.
 
-### Core Pipeline Agents (5 Roles)
-| Agent ID | Name | Role | Category | Primary Responsibility |
-| :--- | :--- | :--- | :--- | :--- |
-| `agent_scout` | Scout Agent | `SCOUT` | `core_pipeline` | File enumeration, ignore-list pruning, path filtering, and fast regex scanning. |
-| `agent_planner` | Planner Agent | `PLANNER` | `core_pipeline` | Dependency analysis, SHA-256 precondition hashing, match count declaration, DAG creation. |
-| `agent_editor` | Editor Agent | `EDITOR` | `core_pipeline` | AST-safe code transformations, Zero-Inline-Comment extraction, envelope wrapping. |
-| `agent_verifier`| Verifier Agent | `VERIFIER` | `core_pipeline` | Invariant audits, pytest test suites, live RFC/CVE verification, zero-regression proof. |
-| `agent_reporter`| Reporter Agent | `REPORTER` | `core_pipeline` | Structured diff summaries, OpenAPI changelogs, metric telemetry. |
+### Sub-Category D1: Retrieval Quality Metrics (#156–167)
+- [ ] **156. Recall@k (against exact ground truth)** (`ALGO-VEC-OBS-156`) — Fraction of true k-nearest neighbors returned vs brute force top-k.
+- [ ] **157. Ground-truth sampling (shadow brute force)** (`ALGO-VEC-OBS-157`) — Continuous exact recall sampling on background shadow snapshots.
+- [ ] **158. Precision@k** (`ALGO-VEC-OBS-158`) — Fraction of top-k results verified relevant to user query.
+- [ ] **159. Mean Reciprocal Rank (MRR)** (`ALGO-VEC-OBS-159`) — Mean reciprocal rank $1/\text{rank}$ of first relevant result across queries.
+- [ ] **160. nDCG (normalized discounted cumulative gain)** (`ALGO-VEC-OBS-160`) — Graded relevance ranking metric with logarithmic position discounts.
+- [ ] **161. Hit rate (success@k)** (`ALGO-VEC-OBS-161`) — Proportion of queries with at least one relevant passage in top-k.
+- [ ] **162. Relative distance error** (`ALGO-VEC-OBS-162`) — Distance difference ratio between approximate and exact nearest neighbors.
+- [ ] **163. LLM-as-judge relevance evaluation** (`ALGO-VEC-OBS-163`) — Prompted LLM evaluator scoring query-passage relevance and explanation.
+- [ ] **164. Golden query set regression testing** (`ALGO-VEC-OBS-164`) — Synthetic/curated benchmark regression gate before index or model promotions.
+- [ ] **165. Online implicit feedback** (`ALGO-VEC-OBS-165`) — Click-through rate, dwell time, and copy action monitoring for result quality.
+- [ ] **166. Interleaving experiments** (`ALGO-VEC-OBS-166`) — Team-draft interleaving of two retrieval rankers in single live streams.
+- [ ] **167. Faithfulness and groundedness (RAG evaluation)** (`ALGO-VEC-OBS-167`) — Entailment and hallucination checking against retrieved context.
 
-### 22 Algorithm Specialized Agents (From `agent-operating-contract.md`)
-| Algo # | Agent ID | Specialized Agent Name | Category | Algorithm & Data Structure |
-| :---: | :--- | :--- | :--- | :--- |
-| **1** | `algo_01_recursive_walk` | Recursive Walk Agent | `file_discovery` | DFS subtree walk with $O(\text{depth})$ path arena and early pruning |
-| **2** | `algo_02_work_stealing_walker` | Work-Stealing Walker Agent | `file_discovery` | Lock-free Chase-Lev deques and thread-pinned I/O for monorepos |
-| **3** | `algo_03_git_aware_walker` | Git-Aware Walker Agent | `file_discovery` | Git index reader parsing tracked tree and ignoring dirty worktrees |
-| **4** | `algo_04_glob_matcher` | Glob Matcher Agent | `file_discovery` | Double-star glob trie matching path allowlists and denylists |
-| **5** | `algo_05_binary_classifier` | Binary/Text Classifier Agent | `file_discovery` | Null-byte ($0x00$) and UTF-8 validity scanner guarding against binary writes |
-| **6** | `algo_06_content_type_prober` | Content-Type Prober Agent | `file_discovery` | Magic byte header signatures and shebang interpreter detector |
-| **7** | `algo_07_size_line_bouncer` | Size & Line Bouncer Agent | `file_discovery` | Hard file size ($\le 10\text{MB}$) and line count limiter preventing OOMs |
-| **8** | `algo_08_generated_code_classifier` | Generated Code Classifier Agent | `file_discovery` | Token scanner identifying generated files (protobuf, openapi, mocks) |
-| **9** | `algo_09_trigram_index` | Trigram Index Agent | `pattern_search` | N-gram inverted index for sub-millisecond candidate filtering |
-| **10** | `algo_10_simd_memchr` | SIMD Literal Scanner Agent | `pattern_search` | Vectorized AVX-512/NEON byte matcher for exact string scanning |
-| **11** | `algo_11_aho_corasick` | Aho-Corasick Multi-Pattern Agent | `pattern_search` | Finite state machine trie searching hundreds of keyword rules in $O(N)$ |
-| **12** | `algo_12_lazy_dfa` | Lazy DFA Regex Agent | `pattern_search` | On-demand state transition regex engine with zero exponential backtracking |
-| **13** | `algo_13_streaming_chunk_scanner` | Streaming Chunk Scanner Agent | `pattern_search` | Sliding window boundary scanner handling multi-line cross-chunk matches |
-| **14** | `algo_14_context_snippet_collector` | Context Snippet Collector Agent | `pattern_search` | Surrounding line collector formatting syntax-highlighted issue snippets |
-| **15** | `algo_15_mmap_scanner` | Memory-Mapped IO Scanner Agent | `pattern_search` | Zero-copy virtual memory scanner for extreme search throughput |
-| **16** | `algo_16_position_span_tracker` | Position & Span Tracker Agent | `pattern_search` | Byte offset to line/column indexer computing exact replacement spans |
-| **17** | `algo_17_tree_sitter_ast` | Tree-Sitter AST Scanner Agent | `structural_ast` | Grammar-based parser building concrete syntax trees across languages |
-| **18** | `algo_18_cst_matcher` | Concrete Syntax Tree Matcher Agent | `structural_ast` | Lossless CST matcher preserving comments, whitespace, and formatting |
-| **19** | `algo_19_symbol_scope_resolver` | Symbol Scope Resolver Agent | `structural_ast` | Lexical environment and symbol shadow resolver preventing scope conflicts |
-| **20** | `algo_20_comment_extractor` | Comment & Docstring Extractor Agent | `structural_ast` | Inline comment classifier extracting mid-function comments into top docblocks |
-| **21** | `algo_21_import_dependency_grapher` | Import & Dependency Grapher Agent | `structural_ast` | Module import resolver detecting cyclic dependencies and computing DAG orders |
-| **22** | `algo_22_code_outline_generator` | Code Outline Generator Agent | `structural_ast` | Hierarchical symbol and class outline generator for high-level codebase maps |
+### Sub-Category D2: Embedding Space and Distribution Drift (#168–177)
+- [ ] **168. Centroid shift** (`ALGO-VEC-OBS-168`) — Tracking global and per-cluster center displacement over time.
+- [ ] **169. Maximum Mean Discrepancy (MMD)** (`ALGO-VEC-OBS-169`) — Kernel two-sample test measuring distribution drift between vector sets.
+- [ ] **170. PSI and KS tests on projections** (`ALGO-VEC-OBS-170`) — Population Stability Index and Kolmogorov-Smirnov statistical drift tests.
+- [ ] **171. Similarity score distribution monitoring** (`ALGO-VEC-OBS-171`) — Histogram and percentile tracking of top-1/top-k cosine scores.
+- [ ] **172. Vector norm distribution** (`ALGO-VEC-OBS-172`) — Norm anomalies detection signaling unnormalized vectors or token corruption.
+- [ ] **173. Partition and cluster balance** (`ALGO-VEC-OBS-173`) — Tracking entropy and Gini coefficient of partition cluster sizes.
+- [ ] **174. Hubness measurement (k-occurrence skew)** (`ALGO-VEC-OBS-174`) — Identifying bad hub vectors that appear inordinately often in top-k results.
+- [ ] **175. Intrinsic dimensionality estimation** (`ALGO-VEC-OBS-175`) — Two-NN and MLE dimension estimation measuring embedding space collapse.
+- [ ] **176. Outlier detection on embeddings** (`ALGO-VEC-OBS-176`) — Isolation forests and k-NN distance thresholding for poisoned vectors.
+- [ ] **177. Query out-of-distribution (OOD) detection** (`ALGO-VEC-OBS-177`) — Mahalanobis and cosine distance gating against training/index domain.
 
----
+### Sub-Category D3: Performance, Resources, and Health (#178–190)
+- [ ] **178. Latency histograms and percentiles** (`ALGO-VEC-OBS-178`) — p50, p95, p99, p99.9 latency telemetry per pipeline phase.
+- [ ] **179. RED and USE methods** (`ALGO-VEC-OBS-179`) — Rate, Errors, Duration + Utilization, Saturation, Errors monitoring.
+- [ ] **180. SLOs and error-budget burn rate** (`ALGO-VEC-OBS-180`) — Error budget consumption alerts with multi-window multi-burn rates.
+- [ ] **181. Distributed tracing (OpenTelemetry)** (`ALGO-VEC-OBS-181`) — End-to-end W3C trace context spans across embed, search, rerank, and LLM.
+- [ ] **182. Freshness lag (ingest-to-searchable)** (`ALGO-VEC-OBS-182`) — End-to-end duration from source mutation to searchable index state.
+- [ ] **183. Graph index health** (`ALGO-VEC-OBS-183`) — HNSW/DiskANN disconnected component detection, out-degree distribution, diameter.
+- [ ] **184. Tombstone ratio** (`ALGO-VEC-OBS-184`) — Soft-deleted record proportion alerting compaction and rebuild triggers.
+- [ ] **185. Cache hit ratio and memory pressure** (`ALGO-VEC-OBS-185`) — Vector cache eviction rates, hit/miss ratios, working set fit.
+- [ ] **186. Capacity planning with Little's Law** (`ALGO-VEC-OBS-186`) — Concurrency = Arrival Rate $\times$ Latency capacity provisioning.
+- [ ] **187. Consumer lag (stream backlog)** (`ALGO-VEC-OBS-187`) — Kafka/WAL offset distance between producer write and index consumer.
+- [ ] **188. Cardinality-safe metric labels** (`ALGO-VEC-OBS-188`) — Prometheus label sanitization preventing time-series explosions.
+- [ ] **189. Anomaly detection on metrics** (`ALGO-VEC-OBS-189`) — Z-score, Holt-Winters, and rolling standard deviation metric tripwires.
+- [ ] **190. Quantile sketches (t-digest, DDSketch)** (`ALGO-VEC-OBS-190`) — Mergeable bounded-memory streaming quantile estimators.
 
-## 🚀 Prioritized Upcoming Feature Roadmap
-
-### 🔴 Priority P0: Critical / Immediate Value (Next Sprint)
-*Features delivering direct 1000% speedup, automated refactoring, and real-time developer productivity.*
-
-1. **AST-Safe Automated Zero-Inline-Comment Migrator**
-   - **Impact:** High | **Category:** Automation / Compliance
-   - Uses `libcst` (Python) and `tree-sitter` (Go, TypeScript) to extract inline comments from function bodies and generate standardized top-side docblock blueprints automatically.
-2. **Real-Time Streaming Telemetry & SSE (`/api/v1/agent/stream`)**
-   - **Impact:** High | **Category:** UX & Observability
-   - Server-Sent Events (SSE) endpoint emitting token-by-token generation, ReAct thoughts, tool execution progress, and latency counters in real time.
-3. **Multi-Project Workspace Batch Synchronizer**
-   - **Impact:** High | **Category:** Multi-Repo Consistency
-   - Single command (`policy-orchestrator sync --workspace-root ...`) to simultaneously audit and enforce uniform API envelopes, error codes, and lint boundaries across all submodules.
-4. **GraphRAG Hybrid Fusion (Neo4j Community Walk + Qdrant Embeddings)**
-   - **Impact:** High | **Category:** Advanced RAG
-   - Traverses Neo4j subgraphs (`(:Rule)-[:ENFORCES]->(:Pattern)`) to collect topological neighbor context, combining it with Qdrant cosine similarity for multi-hop reasoning.
+### Sub-Category D4: Debugging, Lineage, and Economics (#191–200)
+- [ ] **191. Query explain (per-stage breakdown)** (`ALGO-VEC-OBS-191`) — Execution timeline detailing filter pruning, candidate counts, distance ops.
+- [ ] **192. Retrieval trace logging with sampling** (`ALGO-VEC-OBS-192`) — Structured query/result payload capture with privacy scrubbing and rate limits.
+- [ ] **193. Embedding-space visualization** (`ALGO-VEC-OBS-193`) — UMAP and t-SNE 2D/3D projection maps for semantic inspections.
+- [ ] **194. Failure clustering** (`ALGO-VEC-OBS-194`) — HDBSCAN clustering on low-score/failed queries to isolate blind spots.
+- [ ] **195. Canary queries and synthetic probes** (`ALGO-VEC-OBS-195`) — Continuous synthetic probe injections verifying alive serving state.
+- [ ] **196. Shadow traffic comparison** (`ALGO-VEC-OBS-196`) — Live mirroring of production requests to candidate index versions.
+- [ ] **197. Data lineage** (`ALGO-VEC-OBS-197`) — Full provenance tracking: raw document $\to$ chunker $\to$ embedding model $\to$ segment.
+- [ ] **198. Reconciliation checks** (`ALGO-VEC-OBS-198`) — Periodic cross-system audits verifying database record count matches vector index.
+- [ ] **199. Cost per query and per item** (`ALGO-VEC-OBS-199`) — Token consumption, GPU hours, and infrastructure cost accounting per tenant.
+- [ ] **200. Feedback loop into improvement** (`ALGO-VEC-OBS-200`) — Closed-loop pipeline routing observability findings to re-embedding and tuning.
 
 ---
 
-### 🟠 Priority P1: High Priority (Quality, Recall & Safety)
-*Features enhancing search precision, automated tool creation, and observability telemetry.*
+## 🗺️ Master Category Inventory & Roadmap (All Folders)
 
-5. **Hypothetical Document Embeddings (HyDE) & Cross-Encoder Reranker**
-   - **Impact:** High | **Category:** Advanced RAG
-   - Generates zero-shot hypothetical answer candidates before embedding, followed by a local cross-encoder scoring stage to eliminate irrelevant context chunks.
-6. **Auto-Generated Scraper & AST Tool Self-Registration**
-   - **Impact:** Medium-High | **Category:** Meta-Agent Tooling
-   - When the agent encounters an unknown library or documentation source, it generates a scraper, validates its parameters schema, and registers it to `ToolRegistryPort` for permanent workspace reuse.
-7. **Self-Updating Policy Proposal Engine (Automated PR Generator)**
-   - **Impact:** Medium-High | **Category:** Policy Evolution
-   - Analyzes newly discovered production traps or anti-patterns and generates formatted markdown rule proposals directly into `policies/rules/edgeCases/`.
-8. **OpenTelemetry Span Exporter to OTLP / Grafana Tempo**
-   - **Impact:** Medium-High | **Category:** Observability
-   - Native export of internal agent spans (Thought duration, Tool execution time, LLM inference latency) directly to OTLP collector endpoints.
-
----
-
-### 🟡 Priority P2: Medium Priority (Scale & Distributed Workflows)
-*Features for distributed coordination, sub-agent swarms, and CI/CD bot integrations.*
-
-9. **Multi-Agent Swarm Delegation Pipeline**
-   - **Impact:** Medium | **Category:** Agent Orchestration
-   - Meta-Agent delegates tasks to specialized sub-agents (`agent_scout`, `agent_planner`, `agent_editor`, `agent_verifier`, `agent_reporter`).
-10. **Temporal / Durable Workflow Orchestration Worker**
-    - **Impact:** Medium | **Category:** Resilience
-    - Enables durable, checkpointed execution of large-scale repository refactoring sagas that survive process restarts.
-11. **CloudEvents Git PR Webhook Consumer**
-    - **Impact:** Medium | **Category:** CI/CD Integration
-    - Listens to GitHub/GitLab webhook events and runs automated policy compliance checks on open Pull Requests.
+### 1. `policies/rules/algos/vectorAlgo/` (200 Total Algorithms)
+- ✅ **Part 1: Transformation & Normalization (#1–50)**:
+  - 50 algorithms live: `ALGO-VEC-TRFM-01` to `ALGO-VEC-TRFM-50`.
+  - Byte-pair tokenization, embeddings pooling, Matryoshka slicing, whitening, PCA, UMAP, scalar & product quantization (PQ, SQ, RVQ, IVFPQ), sparse lexical projection.
+- ✅ **Part 2: Search & Indexing (#51–110)**:
+  - 60 algorithms live: `ALGO-VEC-SRCH-51` to `ALGO-VEC-SRCH-110` (including `ALGO-VEC-FLTR-80` to `84`).
+  - Brute force, k-d trees, Ball trees, Annoy random projection, IVF, HNSW, DiskANN, Vamana, LSH, pre/post/iterative filtering, hybrid lexical-dense RRF, ColBERT MaxSim, HyDE, two-stage cascades, hedged routing.
+- ✅ **Part 3: Update and Lifecycle Management (#111–155)**:
+  - 45 algorithms live: `ALGO-VEC-UPD-111` to `ALGO-VEC-UPD-155`.
+  - Stable IDs, WAL mutations, Fresh buffer, LSM segment compaction, tombstone deletions, HNSW edge repair, blue-green index swaps, CDC, outbox pattern, idempotent versions, Raft consensus, quorum R/W, version vectors.
+- ⏳ **Part 4: Observability, Drift, and Metrics (#156–200)**:
+  - 45 algorithms scheduled next (see detailed checklist above).
 
 ---
 
-### 🟢 Priority P3: Future Optimizations & Multi-Modal
-*Long-term performance and multi-modal intelligence capabilities.*
+### 2. `policies/rules/algos/fileIndexingAndSearching/` (200 Total Algorithms)
+Focuses on codebase indexing, syntax-tree transformation, fuzzy search, and verified diff application.
 
-12. **Local Model Distillation & Fine-Tuning Pipeline**
-    - **Impact:** Low-Medium | **Category:** AI Optimization
-    - Fine-tunes small local quantized models (e.g. Qwen2.5-Coder-7B / Llama-3.2-3B) specifically on company policy invariants for sub-second offline checks.
-13. **Multi-Modal Architecture Diagram Extractor**
-    - **Impact:** Low-Medium | **Category:** Multi-Modal
-    - Parses PNG/SVG/Mermaid architecture diagrams and validates them against the active knowledge graph and OpenAPI specs.
-
----
-
-## 🔧 Environment Configuration Reference
-
-| Environment Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `POLICY_RULES_DIR` | `../rules` | Path to markdown rules directory |
-| `LLM_BACKEND` | `mock` | LLM backend: `mock`, `openai`, `ollama` |
-| `VECTOR_BACKEND` | `inmemory` | Vector database: `inmemory`, `qdrant` |
-| `GRAPH_BACKEND` | `inmemory` | Graph database: `inmemory`, `neo4j` |
-| `SEARCH_BACKEND` | `mock` | Search provider: `mock`, `duckduckgo` |
-| `QDRANT_URL` | `http://localhost:6333` | Qdrant HTTP REST endpoint |
-| `QDRANT_COLLECTION`| `policy_rules` | Qdrant collection name |
-| `NEO4J_URI` | `http://localhost:7474` | Neo4j HTTP API endpoint |
-| `NEO4J_USER` | `neo4j` | Neo4j basic auth username |
-| `NEO4J_PASSWORD` | `policysecret` | Neo4j basic auth password |
-| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint URL |
-| `OPENAI_API_KEY` | `EMPTY` | API Key for model authentication |
-| `OPENAI_MODEL` | `gpt-4o` | Model name for chat completions |
-| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Ollama local inference endpoint |
-| `OLLAMA_MODEL` | `llama3.2` | Ollama local model tag |
+- 🟡 **Part 1: Bulk Search, String Matching, Regex (#1–50)**:
+  - 24 implemented: `ALGO-SRCH-01`–`15` (Recursive walk, work-stealing, git-aware, glob matcher, trigram, SIMD memchr, Aho-Corasick, lazy DFA, mmap scanner), `ALGO-OBS-16`–`21` (Span tracker, tree-sitter, CST matcher, symbol scope, comments, imports), `ALGO-UPD-22`–`24` (AST replace, unified patch, 3-way merge).
+  - 26 pending: Boyer-Moore-Horspool, Teddy multi-string SIMD, Bitap fuzzy bitwise matching, Suffix Automaton, Aho-Corasick with wildcards, Zoekt inverted trigram indexing, streaming multi-file regex pipelines.
+- ⏳ **Part 2: Index Structures & Structural Symbol Search (#51–100)**:
+  - FM-index, Patricia Radix Tree, FST (Finite State Transducers), B+ trees, Roaring Bitmaps, Galloping intersection, Block-Max WAND, SCIP/LSIF code intelligence, Call Graph, CFG, Static Single Assignment (SSA), Dataflow worklist, Taint analysis, CodeQL Datalog rules.
+- ⏳ **Part 3: Vector Retrieval, Syntax Trees, Text Buffers, Diff (#101–150)**:
+  - AST-aware chunking, code embeddings, piece-table text buffers, rope data structures, Myers diff, patience diff, GumTree AST diff, tree edit distance (Zhang-Shasha), syntax-directed refactoring.
+- ⏳ **Part 4: Diff Refinement, Safe Application & LLM Edits (#151–200)**:
+  - Precondition hash gating, semantic AST patch reconciliation, Zero-Inline-Comment extractors, multi-file atomic transactions, rollback recovery, lint boundary enforcement.
 
 ---
 
-## 🧪 Daily Commands & Testing Cheat Sheet
+### 3. `policies/rules/algos/graphs/` (300+ Total Algorithms)
+Focuses on deep graph analytics, topological traversal, dynamic graphs, and distributed GNN processing.
 
-```bash
-# 1. Run all unit and integration test suites
-python3 -m unittest discover -s tests -p "test_*.py"
+- 🟡 **Basic Implemented**:
+  - 9 algorithms live: `ALGO-GRAPH-01` to `ALGO-GRAPH-09` (BFS, DFS, Dijkstra, A*, Tarjan SCC, Cycle Detection, Bipartite Matching, PageRank, Subgraph Isomorphism).
+- ⏳ **Advanced Traversal & Connectivity (#10–50)**:
+  - Bellman-Ford, Floyd-Warshall, Johnson's all-pairs shortest paths, Suurballe's disjoint paths, Edmonds-Karp, Dinic's blocking flow, Push-Relabel, Hopcroft-Karp maximum bipartite matching, Blossom general matching.
+- ⏳ **Centrality, Communities, & Spectral Methods (#51–150)**:
+  - Betweenness centrality (Brandes), Closeness, Eigenvector, Katz centrality, Louvain community detection, Leiden algorithm, Infomap, Girvan-Newman, Spectral clustering via Graph Laplacian, Normalized cuts.
+- ⏳ **Dynamic, Streaming, & Temporal Graphs (#151–245)**:
+  - Ramalingam-Reps dynamic shortest paths, Pearce-Kelly incremental topological sort, semi-streaming spanners, AGM linear graph sketches, Count-Min sketches for graphs, temporal reachability journeys, delta-temporal motifs, Gather-Apply-Scatter (GAS), Gunrock GPU frontier processing, GraphBLAS linear algebraic formulations.
+- ⏳ **Distributed & Subgraph Processing (#246–300+)**:
+  - 2D partitioning distributed BFS, Shiloach-Vishkin fast connected components, GHS distributed MST, worst-case optimal joins (Leapfrog Triejoin), AutoMine/GraphPi pattern enumeration, SWeG graph summarization, Benczúr-Karger cut sparsifiers.
 
-# 2. Search Grounded Policy Rules via Advanced Hybrid RAG
-python3 src/api/cli/main.py rag search --query "transactional outbox dual write prevention"
+---
 
-# 3. Execute Autonomous AI Meta-Agent for multi-step reasoning
-python3 src/api/cli/main.py agent "Audit the repository, search live RFC standards, and verify zero inline comments"
+### 4. `policies/rules/algos/knowlageGraph/` (100+ Total Algorithms)
+Focuses on enterprise Knowledge Graph construction, semantic querying, ontology alignment, and GraphRAG.
 
-# 4. Invariant Contract Compliance Check
-python3 src/api/cli/main.py policy-check
+- ⏳ **Section 1: Modeling, Storage, and Construction**:
+  - RDF/OWL triple stores, Property Graphs, Entity Extraction (NER), Relation Extraction (RE), Coreference resolution, Entity linking, Knowledge fusion, Canonicalization.
+- ⏳ **Section 2: Querying, Graph Algorithms, and Reasoning**:
+  - openCypher parsing, SPARQL graph pattern matching, Datalog rule engines, OWL Description Logic reasoners, Transitive closure engines, Multi-hop path reasoning.
+- ⏳ **Section 3: Embeddings & Graph Machine Learning**:
+  - TransE, RotatE, ComplEx, DistMult knowledge graph embeddings, Node2Vec, DeepWalk, Graph Convolutional Networks (GCN), Graph Attention Networks (GAT), Inductive representation learning (GraphSAGE).
+- ⏳ **Section 4: Knowledge Graphs + LLM Operations & Observability**:
+  - Subgraph extraction for LLM prompt augmentation, GraphRAG community walk summarization, Cypher/SPARQL generation verification, hallucination detection via factual graph checks.
 
-# 5. Launch REST API Server
-python3 src/api/cli/main.py serve --host 0.0.0.0 --port 8000
+---
 
-# 6. Run Complete Stack via Docker Compose (Orchestrator + Qdrant + Neo4j)
-docker compose up --build -d
-```
+### 5. `policies/rules/algos/glue/` (Execution & Composition Layer)
+Focuses on the declarative execution engine that wires any arbitrary chain of algorithms together automatically.
+
+- ✅ **Contracts-L1**: Master metadata, purity, determinism, idempotency, and complexity schema definitions (implemented in `AlgorithmContract`).
+- ⏳ **Composition-Models-L2**: Sequential, branching, parallel, and speculative algorithm composition DAGs.
+- ⏳ **Automatic-Composition-L3**: Type-driven automatic algorithm pipeline synthesizers based on input/output schemas.
+- ⏳ **Execution-Control-L4**: Cancellation tokens, timeouts, resource limits, and circuit breakers.
+- ⏳ **Scope-and-Data-Flow-L5**: Dynamic memory arenas, zero-copy buffer passing between algorithms.
+- ⏳ **Safety-and-Verification-L6**: Invariant formal checking, taint tracking, and precondition guards.
+- ⏳ **Matching-Data-Binding-L7**: Metavariable capture, structural pattern binding across algorithm inputs.
+- ⏳ **Lang-Ref-L8**: Declarative pipeline DSL for algorithm workflows.
+
+---
+
+## 🛠️ Implementation Protocol & Daily Checklist
+
+When starting a new batch of algorithms:
+
+1. **Strict Zero-Inline-Comment Doctrine**: Code files must contain zero inline comments inside function bodies or methods. Blueprints, complexity analysis, and pre/postconditions must reside in top-level module docstrings.
+2. **Deterministic Naming Conventions**:
+   - Files: `src/features/code_engine/algos/<category>/<category>_algo_<name>.py`
+   - Contract IDs: `ALGO-<CATEGORY>-<NUMBER>`
+   - CLI Aliases: `<cat>-<name>` in `src/api/cli/main.py`
+3. **Cascading Git Submodule Push**:
+   - Push commit in `policies/policy-orchestrator` (`origin main`).
+   - Push submodule update in `policies` (`origin main`).
+   - Push submodule update in root `llm-obs-infra` (`origin main`).
