@@ -1,25 +1,30 @@
-"""
+r"""
 ================================================================================
 ALGORITHM BLUEPRINT: RELATION TYPE PREDICTION LINK RANKER
 ================================================================================
 
 1. OVERVIEW & OBJECTIVE:
-   Standardized Knowledge Graph domain algorithm implementing graph embeddings,
-   Graph Neural Network architectures, link prediction, and representation learning.
+   Standardized Knowledge Graph relation prediction engine. Given an entity pair
+   $(h, t)$, infers the most likely relational predicate $r \in \mathcal{R}$
+   using score calibration, embedding distance metrics, and constraint filtering.
 
-2. OPERATIONAL INVARIANTS & CONSTRAINTS:
+2. FORMAL MATHEMATICAL SPECIFICATION:
+   - Softmax Probability Distribution:
+       $P(r | h, t) = \frac{\exp(s(h, r, t) / \tau)}{\sum_{r' \in \mathcal{R}} \exp(s(h, r', t) / \tau)}$
+   - RotatE / Distance Score:
+       $s(h, r, t) = - \|\mathbf{h} \circ \mathbf{r} - \mathbf{t}\|$
+
+3. OPERATIONAL INVARIANTS & CONSTRAINTS:
    - Zero Inline Comments: Code logic is self-documenting.
    - Purity & Determinism: Pure functional state transitions.
 
-3. COMPLEXITY ANALYSIS:
-   - Time Complexity: Linear with respect to dimensionality and sample size.
-   - Space Complexity: Compact tensor representations.
-
-4. ZERO-INLINE-COMMENT DOCTRINE:
-   - Zero inline comments inside method bodies.
+4. COMPLEXITY ANALYSIS:
+   - Time Complexity: O(|\mathcal{R}| \cdot D)
+   - Space Complexity: O(|\mathcal{R}|)
 ================================================================================
 """
 
+import math
 from typing import Dict, Any, List, Set, Tuple, Optional, Callable
 
 class KgAlgoRelationPrediction:
@@ -57,3 +62,37 @@ class KgAlgoRelationPrediction:
             "predicted_relation": ranked[0][0] if ranked else None,
             "rankings": [{"relation": r, "score": round(s, 4)} for r, s in ranked],
         }
+
+    def predict_relation_probabilities(
+        self,
+        head: str,
+        tail: str,
+        rel_scores: Dict[str, float],
+        temperature: float = 1.0,
+        top_k: int = 5,
+    ) -> Dict[str, Any]:
+        if not rel_scores:
+            return {
+                "algorithm": "ALGO-KG-135",
+                "head": head,
+                "tail": tail,
+                "predicted_relation": None,
+                "probabilities": {},
+                "top_k": [],
+            }
+        
+        max_score = max(rel_scores.values())
+        exp_scores = {r: math.exp((s - max_score) / max(temperature, 1e-6)) for r, s in rel_scores.items()}
+        sum_exp = sum(exp_scores.values())
+        probs = {r: v / sum_exp for r, v in exp_scores.items()}
+        ranked = sorted(probs.items(), key=lambda x: x[1], reverse=True)
+
+        return {
+            "algorithm": "ALGO-KG-135",
+            "head": head,
+            "tail": tail,
+            "predicted_relation": ranked[0][0],
+            "top_probability": round(ranked[0][1], 4),
+            "top_k": [{"relation": r, "prob": round(p, 4), "raw_score": round(rel_scores[r], 4)} for r, p in ranked[:top_k]],
+        }
+
