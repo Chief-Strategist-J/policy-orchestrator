@@ -171,6 +171,8 @@ from src.features.code_engine.algos.atomic_mutation import (
     CodeEnginePermissionSandboxAlgo,
 )
 
+from src.features.code_engine.algos.knowledge_graph import *
+
 __all__ = [
     # Search
     "SearchEngineRecursiveWalkAlgo",

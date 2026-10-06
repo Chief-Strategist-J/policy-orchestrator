@@ -33,11 +33,11 @@ This document tracks the comprehensive architecture, completed capabilities, the
 | **`vectorAlgo/`** (Vector Math, Search, Lifecycle, Obs) | 200 | **200** | 0 | 🟢 100% Complete (All 4 Parts Done) |
 | **`fileIndexingAndSearching/`** (Search, AST, Diff, CST, Mutation, Verification) | 206 | **206** | 0 | 🟢 100% Complete (All 4 Parts Done) |
 | **`graphs/`** (Traversal, Flow, Temporal, Distributed) | 300+ | **9** | 291+ | 🔴 3% Complete |
-| **`knowlageGraph/`** (KG Modeling, Reasoning, GNNs) | 100+ | **0** | 100+ | ⚪ Pending |
+| **`knowlageGraph/`** (KG Modeling, Storage, Reasoning, GNNs) | 200 | **50** | 150 | 🟡 25% Complete (Part 1 Done) |
 | **`glue/`** (Composition Models, L1–L8 Pipeline Contracts) | 8 Specs | **L1 Contracts** | L2–L8 Engines | 🟡 In Progress |
-| **TOTALS** | **800+** | **415 Live** | **391+** | **Active Pipeline** |
+| **TOTALS** | **900+** | **465 Live** | **441+** | **Active Pipeline** |
 
-*Current System Metrics: 415 Algorithms Live, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 395 Automated Passing Tests.*
+*Current System Metrics: 465 Algorithms Live, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 445 Automated Passing Tests.*
 
 ---
 
@@ -149,17 +149,22 @@ Focuses on deep graph analytics, topological traversal, dynamic graphs, and dist
 
 ---
 
-### 4. `policies/rules/algos/knowlageGraph/` (100+ Total Algorithms)
-Focuses on enterprise Knowledge Graph construction, semantic querying, ontology alignment, and GraphRAG.
+### 4. `policies/rules/algos/knowlageGraph/` (200 Total Algorithms)
+Focuses on enterprise Knowledge Graph construction, semantic querying, ontology alignment, GNNs, and GraphRAG.
 
-- ⏳ **Section 1: Modeling, Storage, and Construction**:
-  - RDF/OWL triple stores, Property Graphs, Entity Extraction (NER), Relation Extraction (RE), Coreference resolution, Entity linking, Knowledge fusion, Canonicalization.
-- ⏳ **Section 2: Querying, Graph Algorithms, and Reasoning**:
-  - openCypher parsing, SPARQL graph pattern matching, Datalog rule engines, OWL Description Logic reasoners, Transitive closure engines, Multi-hop path reasoning.
-- ⏳ **Section 3: Embeddings & Graph Machine Learning**:
-  - TransE, RotatE, ComplEx, DistMult knowledge graph embeddings, Node2Vec, DeepWalk, Graph Convolutional Networks (GCN), Graph Attention Networks (GAT), Inductive representation learning (GraphSAGE).
-- ⏳ **Section 4: Knowledge Graphs + LLM Operations & Observability**:
-  - Subgraph extraction for LLM prompt augmentation, GraphRAG community walk summarization, Cypher/SPARQL generation verification, hallucination detection via factual graph checks.
+- 🟢 **Section 1: Modeling, Storage, and Construction (#1–50)**:
+  - **100% Complete (50/50 Live)**:
+    - Semantic Models: RDF Triples (`ALGO-KG-01`), RDFS Schema (`ALGO-KG-02`), OWL 2 Axioms (`ALGO-KG-03`), Labeled Property Graph (`ALGO-KG-04`), SHACL Shapes (`ALGO-KG-05`), SKOS Concepts (`ALGO-KG-06`), JSON-LD 1.1 (`ALGO-KG-07`), IRI & CURIE Namespaces (`ALGO-KG-08`), RDF-star Reification (`ALGO-KG-09`), Named Graphs & Quads (`ALGO-KG-10`), Schema.org Mapper (`ALGO-KG-11`), Bitemporal Fact Modeler (`ALGO-KG-12`).
+    - Storage & Indexing: Adjacency List (`ALGO-KG-13`), CSR Representation (`ALGO-KG-14`), Index-Free Adjacency (`ALGO-KG-15`), Hexastore Permutations (`ALGO-KG-16`), Dictionary Symbol Encoding (`ALGO-KG-17`), B+ Tree / LSM Graph Store (`ALGO-KG-18`), Compressed HDT (`ALGO-KG-19`), Graph Partitioning Edge/Vertex Cut (`ALGO-KG-20`), Consistent Hash Partitioner (`ALGO-KG-21`), Property Full-Text Node Index (`ALGO-KG-22`), Hybrid Graph-Vector Index (`ALGO-KG-23`), MVCC Snapshots & Versioning (`ALGO-KG-24`).
+    - Extraction Pipeline: Sentence Segmentation (`ALGO-KG-25`), Named Entity Recognition (`ALGO-KG-26`), Entity Linking & Disambiguation (`ALGO-KG-27`), Coreference Resolution (`ALGO-KG-28`), Supervised Relation Extraction (`ALGO-KG-29`), Open Information Extraction (`ALGO-KG-30`), Schema-Guided LLM Extractor (`ALGO-KG-31`), Event Extraction (`ALGO-KG-32`), Attribute & Value Normalization (`ALGO-KG-33`), Structured Table Extractor (`ALGO-KG-34`).
+    - Entity Resolution: Blocking Resolution (`ALGO-KG-35`), Fellegi-Sunter Linkage (`ALGO-KG-36`), Similarity Joins (`ALGO-KG-37`), Match Pair Clustering (`ALGO-KG-38`), Record Canonicalization & Golden Records (`ALGO-KG-39`), Relation Canonicalization (`ALGO-KG-40`).
+    - Ontology & Quality: Ontology Alignment (`ALGO-KG-41`), R2RML Relational-to-RDF (`ALGO-KG-42`), Hearst Pattern Taxonomy Induction (`ALGO-KG-43`), Entity Type Inference (`ALGO-KG-44`), LLM Ontology Synthesis (`ALGO-KG-45`), Schema Evolution & Compatibility (`ALGO-KG-46`), Property Graph Constraints (`ALGO-KG-47`), Data Quality Dimensions Evaluator (`ALGO-KG-48`), Relation Inverse/Symmetric Normalizer (`ALGO-KG-49`), Truth Discovery & Fact Confidence (`ALGO-KG-50`).
+- ⏳ **Section 2: Querying, Graph Algorithms, and Reasoning (#51–100)**:
+  - SPARQL 1.1, openCypher, GQL, Gremlin, Subgraph Matching (VF2), Leapfrog Triejoin, 2-Hop Reachability, Brandes Betweenness, Personalized PageRank, RDFS Entailment, OWL 2 RL/EL, Rete Forward Chaining, Datalog Semi-Naive, Tableau Reasoner.
+- ⏳ **Section 3: Embeddings & Graph Machine Learning (#101–150)**:
+  - TransE, RotatE, ComplEx, DistMult, TuckER, ConvE, DeepWalk, Node2Vec, Metapath2Vec, GCN, GraphSAGE, GAT, R-GCN, CompGCN, HGT, SEAL Link Prediction.
+- ⏳ **Section 4: Knowledge Graphs + LLM Operations & Observability (#151–200)**:
+  - Text-to-SPARQL/Cypher, Schema Prompting, GraphRAG Global/Local Search, Subgraph Linearization, Fact Verification & Hallucination Checking, Think-on-Graph, CDC Ingestion, KG Quality Monitoring.
 
 ---
 
