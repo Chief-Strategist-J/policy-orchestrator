@@ -115,6 +115,14 @@ from src.features.code_engine.algos.vector_filter import (
     VectorFilterAlgoPartitionedIndex,
 )
 
+from src.features.code_engine.algos.buffer import (
+    CodeEngineGapBufferAlgo,
+    CodeEngineRopeAlgo,
+    CodeEnginePieceTableAlgo,
+    CodeEngineLineIndexAlgo,
+    CodeEngineUndoRedoStackAlgo,
+)
+
 __all__ = [
     # Search
     "SearchEngineRecursiveWalkAlgo",
@@ -160,6 +168,12 @@ __all__ = [
     "SearchEngineRegexToTrigramQueryAlgo",
     "TransformAlgoLiteralExtraction",
     "SearchEngineLiteralExtractionAlgo",
+    # Buffer
+    "CodeEngineGapBufferAlgo",
+    "CodeEngineRopeAlgo",
+    "CodeEnginePieceTableAlgo",
+    "CodeEngineLineIndexAlgo",
+    "CodeEngineUndoRedoStackAlgo",
     # Observability
     "PositionSpanTracker",
     "PositionSpan",
