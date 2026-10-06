@@ -32,13 +32,28 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineSubtreeHashCloneAlgo:
     """
-    Implements bottom-up AST Merkle subtree hashing and structural code clone grouping.
+    --- contract:
+      id: ALGO-SRCH-82
+      name: SearchEngineSubtreeHashCloneAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(AstNodes)
+        space: O(UniqueHashes)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ast.subtree_hashing
+      - clone.detection
+      - code.duplication
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def hash_subtrees(self, code: str, normalize: bool = True) -> Dict[str, Any]:
-        """
-        Parses AST, computes subtree hashes, and groups duplicate subtrees.
-        """
         try:
             tree = ast.parse(code)
         except Exception:
@@ -96,9 +111,6 @@ class SearchEngineSubtreeHashCloneAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes AST subtree hashing over code payload.
-        """
         code = str(payload.get("code", ""))
         normalize = bool(payload.get("normalize", True))
 

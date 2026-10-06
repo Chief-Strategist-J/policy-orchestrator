@@ -31,13 +31,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineLspProtocolAlgo:
     """
-    Implements Language Server Protocol (LSP) JSON-RPC message construction and response parsing.
+    --- contract:
+      id: ALGO-SRCH-87
+      name: SearchEngineLspProtocolAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(MessageLength)
+        space: O(Buffer)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - lsp.protocol
+      - ide.language_server
+      - jsonrpc.messages
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def build_request(self, method: str, params: Dict[str, Any], request_id: int = 1) -> Dict[str, Any]:
-        """
-        Constructs a standard LSP JSON-RPC 2.0 request payload.
-        """
         return {
             "jsonrpc": "2.0",
             "id": request_id,
@@ -78,9 +93,6 @@ class SearchEngineLspProtocolAlgo:
         )
 
     def parse_diagnostics(self, notification_payload: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Extracts errors and warnings from a publishDiagnostics notification.
-        """
         params = notification_payload.get("params", {})
         uri = params.get("uri", "")
         diagnostics = params.get("diagnostics", [])
@@ -99,9 +111,6 @@ class SearchEngineLspProtocolAlgo:
         return parsed
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes LSP message generation and diagnostic parsing.
-        """
         action = str(payload.get("action", "build_definition")).lower()
         uri = str(payload.get("uri", "file:///workspace/main.py"))
         line = int(payload.get("line", 10))

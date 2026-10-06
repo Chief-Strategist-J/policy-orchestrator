@@ -39,7 +39,25 @@ class LexicalScope:
 
 class SearchEngineSymbolTableAlgo:
     """
-    Implements a nested lexical scope symbol table with symbol resolution and shadowing detection.
+    --- contract:
+      id: ALGO-SRCH-84
+      name: SearchEngineSymbolTableAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(1) average
+        space: O(TotalSymbols)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - symbol_table.indexer
+      - identifiers.lookup
+      - scope.symbols
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -47,25 +65,16 @@ class SearchEngineSymbolTableAlgo:
         self._current_scope: LexicalScope = self._global_scope
 
     def enter_scope(self, name: str, scope_type: str = "function") -> LexicalScope:
-        """
-        Creates and enters a new child scope.
-        """
         new_scope = LexicalScope(name, scope_type, parent=self._current_scope)
         self._current_scope.children.append(new_scope)
         self._current_scope = new_scope
         return new_scope
 
     def exit_scope(self) -> None:
-        """
-        Exits current scope, returning to parent scope.
-        """
         if self._current_scope.parent:
             self._current_scope = self._current_scope.parent
 
     def define(self, name: str, kind: str, symbol_type: str = "Any", lineno: int = 1) -> None:
-        """
-        Registers a symbol in the current active scope.
-        """
         self._current_scope.symbols[name] = {
             "name": name,
             "kind": kind,
@@ -75,9 +84,6 @@ class SearchEngineSymbolTableAlgo:
         }
 
     def resolve(self, name: str) -> Optional[Dict[str, Any]]:
-        """
-        Resolves symbol by traversing lexical scope chain from innermost to outermost.
-        """
         curr = self._current_scope
         depth = 0
         while curr is not None:
@@ -91,9 +97,6 @@ class SearchEngineSymbolTableAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes symbol table construction and lookup queries.
-        """
         declarations = payload.get("declarations", [])
         lookups = payload.get("lookups", [])
 

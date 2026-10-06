@@ -27,72 +27,33 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: REVERSE SUFFIX & INNER OPTIMIZER (ALGO 40)
 
 import re
 from typing import List, Dict, Any, Optional, Set, Tuple
-from .search_algo_literal_extraction import SearchEngineLiteralExtractionAlgo
+from .transform_algo_literal_extraction import TransformAlgoLiteralExtraction, SearchEngineLiteralExtractionAlgo
 
 
-class SearchEngineReverseInnerOptimizerAlgo:
+class TransformAlgoReverseInnerOptimizer:
     """
-    ---
-    contract:
-      algo_id: ALGO-SRCH-40
-      name: SearchEngineReverseInnerOptimizerAlgo
+    --- contract:
+      id: ALGO-TRFM-09
+      name: TransformAlgoReverseInnerOptimizer
       version: 1.0.0
-      category: search
-      capability_tags:
-      - regex.bidirectional
-      - search.reverse_optimizer
-      - fast_scan.sublinear
-      inputs:
-        type: object
-        required:
-        - text
-        properties:
-          text:
-            type: string
-      outputs:
-        type: object
-        required:
-        - matches
-        - anchor_literal
-        - candidate_hits_evaluated
-        properties:
-          matches:
-            type: array
-            items:
-              type: object
-              required:
-              - start_offset
-              - end_offset
-              - matched_text
-              properties:
-                start_offset:
-                  type: integer
-                end_offset:
-                  type: integer
-                matched_text:
-                  type: string
-          anchor_literal:
-            type: string
-          candidate_hits_evaluated:
-            type: integer
-      parameters:
-        type: object
-        required:
-        - pattern
-        properties:
-          pattern:
-            type: string
-            minLength: 1
-          max_lookback:
-            type: integer
-            default: 128
-            minimum: 16
-      purity: PURE
-      determinism: DETERMINISTIC
-      idempotency: IDEMPOTENT
+      category: transform
       complexity:
-        time: O(N / |Anchor|) average
-        space: O(Window)
+        time: O(N / |Anchor|)
+        space: O(1)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - regex.bidirectional
+        - transform.reverse_optimizer
+        - fast_scan.sublinear
+      input_schema:
+        text: string
+        pattern: string
+        max_lookback: int
+      output_schema:
+        matches: list[dict]
+        anchor_literal: string
+        candidate_hits_evaluated: int
     ---
     """
 
@@ -157,3 +118,6 @@ class SearchEngineReverseInnerOptimizerAlgo:
     @classmethod
     def execute(cls, text: str, pattern: str, max_lookback: int = 128) -> Dict[str, Any]:
         return cls.search(text=text, pattern=pattern, max_lookback=max_lookback)
+
+
+SearchEngineReverseInnerOptimizerAlgo = TransformAlgoReverseInnerOptimizer

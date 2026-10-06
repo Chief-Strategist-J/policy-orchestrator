@@ -91,17 +91,31 @@ class RoaringContainer:
 
 class SearchEngineRoaringBitmapAlgo:
     """
-    Implements a 32-bit Roaring Bitmap supporting array/bitmap containers,
-    fast membership checks, and set operations (AND, OR, ANDNOT).
+    --- contract:
+      id: ALGO-SRCH-64
+      name: SearchEngineRoaringBitmapAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(ActiveChunks)
+        space: O(CompressedBits)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - bitmap.roaring
+      - set.bitset
+      - compressed.indices
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
         self._chunks: Dict[int, RoaringContainer] = {}
 
     def add(self, value: int) -> None:
-        """
-        Adds a 32-bit unsigned integer to the bitmap.
-        """
         val = value & 0xFFFFFFFF
         chunk_key = val >> 16
         low_val = val & 0xFFFF
@@ -111,9 +125,6 @@ class SearchEngineRoaringBitmapAlgo:
         self._chunks[chunk_key].add(low_val)
 
     def contains(self, value: int) -> bool:
-        """
-        Tests if the 32-bit integer is in the bitmap.
-        """
         val = value & 0xFFFFFFFF
         chunk_key = val >> 16
         low_val = val & 0xFFFF
@@ -123,9 +134,6 @@ class SearchEngineRoaringBitmapAlgo:
         return self._chunks[chunk_key].contains(low_val)
 
     def to_list(self) -> List[int]:
-        """
-        Returns all integers in sorted order.
-        """
         results: List[int] = []
         for chunk_key in sorted(self._chunks.keys()):
             base = chunk_key << 16
@@ -134,9 +142,6 @@ class SearchEngineRoaringBitmapAlgo:
         return results
 
     def cardinality(self) -> int:
-        """
-        Returns total number of set bits.
-        """
         return sum(c.cardinality() for c in self._chunks.values())
 
     @staticmethod
@@ -164,9 +169,6 @@ class SearchEngineRoaringBitmapAlgo:
         return result
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Roaring Bitmap operations: additions, queries, set operations.
-        """
         integers = [int(x) for x in payload.get("integers", [])]
         second_set = [int(x) for x in payload.get("second_set", [])]
         query_values = [int(x) for x in payload.get("query_values", [])]

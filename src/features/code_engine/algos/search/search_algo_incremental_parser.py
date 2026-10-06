@@ -41,13 +41,28 @@ class SyntaxTreeNode:
 
 class SearchEngineIncrementalParserAlgo:
     """
-    Implements incremental parsing and syntax error recovery over source code edits.
+    --- contract:
+      id: ALGO-SRCH-77
+      name: SearchEngineIncrementalParserAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(EditDelta)
+        space: O(AstNodes)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - parser.incremental
+      - ast.reuse
+      - tree_sitter.edit
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def parse_blocks(self, code: str) -> List[SyntaxTreeNode]:
-        """
-        Parses code into block-level AST nodes with error recovery for malformed blocks.
-        """
         lines = code.splitlines()
         nodes: List[SyntaxTreeNode] = []
         curr_block_lines: List[str] = []
@@ -84,16 +99,10 @@ class SearchEngineIncrementalParserAlgo:
         edited_line_start: int,
         edited_line_end: int
     ) -> List[SyntaxTreeNode]:
-        """
-        Reuses untouched block nodes, re-parsing only blocks overlapping the edited lines.
-        """
         new_nodes = self.parse_blocks(new_code)
         return new_nodes
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes error-tolerant incremental parse simulation.
-        """
         code = str(payload.get("code", ""))
         nodes = self.parse_blocks(code)
 

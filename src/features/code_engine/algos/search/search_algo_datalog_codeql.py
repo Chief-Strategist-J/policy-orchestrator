@@ -30,7 +30,25 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineDatalogCodeqlAlgo:
     """
-    Implements a deductive Datalog relational engine for code facts and transitive rule evaluation.
+    --- contract:
+      id: ALGO-SRCH-95
+      name: SearchEngineDatalogCodeqlAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Tuples ^ Arity)
+        space: O(EDB + IDB)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - query.datalog
+      - analysis.relational
+      - codeql.evaluation
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -42,9 +60,6 @@ class SearchEngineDatalogCodeqlAlgo:
         self._edb_facts[relation].add(tuple(args))
 
     def evaluate_transitive_reachability(self, base_relation: str) -> Set[Tuple[str, str]]:
-        """
-        Computes transitive closure reachable(X, Y) :- base(X, Y) + base(X, Z), reachable(Z, Y).
-        """
         base_facts = self._edb_facts.get(base_relation, set())
         reachable: Set[Tuple[str, str]] = set()
 
@@ -76,9 +91,6 @@ class SearchEngineDatalogCodeqlAlgo:
         return reachable
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Datalog fact ingestion and deductive query evaluation.
-        """
         facts_input = payload.get("facts", [])
         query_relation = str(payload.get("query_relation", "call"))
 

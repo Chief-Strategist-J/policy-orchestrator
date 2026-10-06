@@ -35,7 +35,25 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineDataflowWorklistAlgo:
     """
-    Implements generic worklist-based dataflow analysis over CFG basic blocks.
+    --- contract:
+      id: ALGO-SRCH-93
+      name: SearchEngineDataflowWorklistAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Iterations * Blocks)
+        space: O(Blocks)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - analysis.dataflow
+      - worklist.fixpoint
+      - monotone.framework
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def solve_reaching_definitions(
@@ -44,9 +62,6 @@ class SearchEngineDataflowWorklistAlgo:
         successors_map: Dict[int, List[int]],
         predecessors_map: Dict[int, List[int]]
     ) -> Dict[str, Any]:
-        """
-        Solves reaching definitions across blocks using GEN/KILL sets.
-        """
         gen_map: Dict[int, Set[str]] = {}
         kill_map: Dict[int, Set[str]] = {}
         in_map: Dict[int, Set[str]] = {}
@@ -94,9 +109,6 @@ class SearchEngineDataflowWorklistAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes dataflow worklist analysis over provided block GEN/KILL sets and topology.
-        """
         blocks = payload.get("blocks", [])
         raw_succs = payload.get("successors", {})
         raw_preds = payload.get("predecessors", {})

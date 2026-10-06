@@ -32,7 +32,25 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineCallGraphAlgo:
     """
-    Implements Call Graph extraction, CHA polymorphic dispatch, and transitive caller impact analysis.
+    --- contract:
+      id: ALGO-SRCH-89
+      name: SearchEngineCallGraphAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(V + E)
+        space: O(V + E)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - graph.call_graph
+      - analysis.functions
+      - code.call_hierarchy
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -45,9 +63,6 @@ class SearchEngineCallGraphAlgo:
         self._call_edges.add((caller, callee))
 
     def extract_from_python_code(self, code: str) -> None:
-        """
-        Extracts call graph edges directly from Python source code AST.
-        """
         try:
             tree = ast.parse(code)
         except Exception:
@@ -68,9 +83,6 @@ class SearchEngineCallGraphAlgo:
                             self.add_call(caller_name, callee_name)
 
     def find_callers(self, target_function: str, transitive: bool = True) -> List[str]:
-        """
-        Finds all functions that call target_function directly or transitively.
-        """
         reverse_adj: Dict[str, List[str]] = {}
         for caller, callee in self._call_edges:
             if callee not in reverse_adj:
@@ -92,9 +104,6 @@ class SearchEngineCallGraphAlgo:
         return sorted(list(visited))
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes call graph construction and caller blast-radius query.
-        """
         code = payload.get("code")
         raw_edges = payload.get("edges", [])
         target_fn = payload.get("target_function")

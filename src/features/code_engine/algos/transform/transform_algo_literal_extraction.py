@@ -27,59 +27,27 @@ import re
 from typing import List, Dict, Any, Optional, Set, Tuple
 
 
-class SearchEngineLiteralExtractionAlgo:
+class TransformAlgoLiteralExtraction:
     """
-    ---
-    contract:
-      algo_id: ALGO-SRCH-39
-      name: SearchEngineLiteralExtractionAlgo
+    --- contract:
+      id: ALGO-TRFM-10
+      name: TransformAlgoLiteralExtraction
       version: 1.0.0
-      category: search
-      capability_tags:
-      - regex.optimizer
-      - prefilter.literals
-      - search.acceleration
-      inputs:
-        type: object
-        required:
-        - pattern
-        properties:
-          pattern:
-            type: string
-      outputs:
-        type: object
-        required:
-        - required_prefix
-        - required_suffix
-        - longest_literal
-        - all_extracted_literals
-        - can_use_literal_prefilter
-        properties:
-          required_prefix:
-            type: string
-          required_suffix:
-            type: string
-          longest_literal:
-            type: string
-          all_extracted_literals:
-            type: array
-            items:
-              type: string
-          can_use_literal_prefilter:
-            type: boolean
-      parameters:
-        type: object
-        properties:
-          min_literal_length:
-            type: integer
-            default: 2
-            minimum: 1
-      purity: PURE
-      determinism: DETERMINISTIC
-      idempotency: IDEMPOTENT
+      category: transform
       complexity:
         time: O(|Pattern|)
         space: O(|Pattern|)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - regex.optimizer
+        - prefilter.literals
+        - transform.literal_extraction
+      input_schema:
+        pattern: string
+        min_literal_length: int
+      output_schema:
+        can_use_literal_prefilter: bool
     ---
     """
 
@@ -143,3 +111,6 @@ class SearchEngineLiteralExtractionAlgo:
     @classmethod
     def execute(cls, pattern: str, min_literal_length: int = 2) -> Dict[str, Any]:
         return cls.extract(pattern=pattern, min_literal_length=min_literal_length)
+
+
+SearchEngineLiteralExtractionAlgo = TransformAlgoLiteralExtraction

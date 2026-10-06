@@ -29,15 +29,30 @@ ALGORITHM BLUEPRINT: BOOLEAN QUERY SIMPLIFIER & CANONICALIZER
 from typing import Dict, List, Any, Optional, Set
 
 
-class SearchEngineBooleanQuerySimplifierAlgo:
+class TransformAlgoBooleanQuerySimplifier:
     """
-    Implements boolean AST query simplification, absorption, and canonicalization.
+    --- contract:
+      id: ALGO-TRFM-08
+      name: TransformAlgoBooleanQuerySimplifier
+      version: 1.0.0
+      category: transform
+      complexity:
+        time: O(T * log T)
+        space: O(T)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - transform.boolean_query
+        - query.canonicalization
+        - ast.simplification
+      input_schema:
+        query_tree: dict
+      output_schema:
+        simplified_tree: dict
+    ---
     """
 
     def simplify(self, node: Any) -> Any:
-        """
-        Recursively simplifies boolean AST nodes.
-        """
         if not isinstance(node, dict):
             return node
 
@@ -106,9 +121,6 @@ class SearchEngineBooleanQuerySimplifierAlgo:
         return node
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes query simplification over an input boolean query tree.
-        """
         input_tree = payload.get("query_tree", {})
         simplified = self.simplify(input_tree)
 
@@ -117,3 +129,6 @@ class SearchEngineBooleanQuerySimplifierAlgo:
             "original_tree": input_tree,
             "simplified_tree": simplified
         }
+
+
+SearchEngineBooleanQuerySimplifierAlgo = TransformAlgoBooleanQuerySimplifier

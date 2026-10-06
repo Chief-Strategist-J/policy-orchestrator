@@ -41,8 +41,25 @@ class TrieNode:
 
 class SearchEngineTrieAlgo:
     """
-    Implements a robust Trie (prefix tree) supporting exact search, prefix matching,
-    key deletion, auto-complete ranking, and key enumeration.
+    --- contract:
+      id: ALGO-SRCH-52
+      name: SearchEngineTrieAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(|Prefix|)
+        space: O(TrieNodes)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.trie
+      - prefix.tree
+      - dictionary.search
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -50,9 +67,6 @@ class SearchEngineTrieAlgo:
         self._size = 0
 
     def insert(self, key: str, value: Optional[Any] = None) -> None:
-        """
-        Inserts a key-value pair into the prefix tree.
-        """
         if not key:
             return
         node = self._root
@@ -67,9 +81,6 @@ class SearchEngineTrieAlgo:
         node.frequency += 1
 
     def search(self, key: str) -> Tuple[bool, Optional[Any]]:
-        """
-        Searches for an exact key match in O(|key|) time.
-        """
         node = self._root
         for ch in key:
             if ch not in node.children:
@@ -80,9 +91,6 @@ class SearchEngineTrieAlgo:
         return False, None
 
     def starts_with(self, prefix: str, max_results: int = 100) -> List[Dict[str, Any]]:
-        """
-        Finds all keys starting with the given prefix.
-        """
         node = self._root
         for ch in prefix:
             if ch not in node.children:
@@ -107,9 +115,6 @@ class SearchEngineTrieAlgo:
         return results
 
     def delete(self, key: str) -> bool:
-        """
-        Deletes a key from the trie and cleans up orphan nodes.
-        """
         def _remove(current: TrieNode, k: str, depth: int) -> bool:
             if depth == len(k):
                 if not current.is_terminal:
@@ -135,9 +140,6 @@ class SearchEngineTrieAlgo:
         return self._size
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes batch insert, exact search, or prefix query operations.
-        """
         keys_to_insert = payload.get("keys", [])
         search_key = str(payload.get("search_key", ""))
         prefix = str(payload.get("prefix", ""))

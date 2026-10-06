@@ -45,8 +45,25 @@ class RadixNode:
 
 class SearchEngineRadixTreeAlgo:
     """
-    Implements a space-optimized Radix / Patricia tree supporting edge splitting,
-    longest prefix matching, exact lookup, and prefix listing.
+    --- contract:
+      id: ALGO-SRCH-53
+      name: SearchEngineRadixTreeAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(|Key|)
+        space: O(CompressedNodes)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.radix_tree
+      - trie.patricia
+      - prefix.search
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -61,9 +78,6 @@ class SearchEngineRadixTreeAlgo:
         return idx
 
     def insert(self, key: str, value: Optional[Any] = None) -> None:
-        """
-        Inserts a key-value pair, performing edge splitting where branches diverge.
-        """
         if not key:
             return
 
@@ -112,9 +126,6 @@ class SearchEngineRadixTreeAlgo:
             self._size += 1
 
     def search(self, key: str) -> Tuple[bool, Optional[Any]]:
-        """
-        Exact match lookup.
-        """
         current = self._root
         remaining = key
 
@@ -134,9 +145,6 @@ class SearchEngineRadixTreeAlgo:
         return False, None
 
     def longest_prefix_match(self, path: str) -> Optional[Dict[str, Any]]:
-        """
-        Finds the longest registered prefix rule matching the target path.
-        """
         current = self._root
         remaining = path
         matched_path: List[str] = []
@@ -175,9 +183,6 @@ class SearchEngineRadixTreeAlgo:
         return best_match
 
     def list_all_keys(self) -> List[Dict[str, Any]]:
-        """
-        Enumerates all stored keys with their compressed path representations.
-        """
         results: List[Dict[str, Any]] = []
 
         def _traverse(node: RadixNode, current_path: str) -> None:
@@ -198,9 +203,6 @@ class SearchEngineRadixTreeAlgo:
         return self._size
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Radix Tree operations: batch insertion, LPM routing lookup, and key listing.
-        """
         routes = payload.get("routes", [])
         target_path = str(payload.get("target_path", ""))
         exact_query = str(payload.get("exact_query", ""))

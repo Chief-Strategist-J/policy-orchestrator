@@ -34,13 +34,28 @@ from typing import Dict, List, Any, Optional, Set
 
 class SearchEngineTokenizerSearchAlgo:
     """
-    Implements lexical token-stream extraction and category-filtered code search.
+    --- contract:
+      id: ALGO-SRCH-74
+      name: SearchEngineTokenizerSearchAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(CodeLength)
+        space: O(Tokens)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - tokenizer.lexical
+      - lexer.code_search
+      - tokens.matching
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def tokenize_code(self, code: str) -> List[Dict[str, Any]]:
-        """
-        Tokenizes Python/general source code into typed lexical tokens.
-        """
         tokens: List[Dict[str, Any]] = []
         try:
             reader = io.StringIO(code).readline
@@ -95,9 +110,6 @@ class SearchEngineTokenizerSearchAlgo:
         allowed_kinds: Optional[List[str]] = None,
         exact_match: bool = True
     ) -> List[Dict[str, Any]]:
-        """
-        Filters tokens matching query and category constraints.
-        """
         tokens = self.tokenize_code(code)
         target_kinds = set(k.upper() for k in allowed_kinds) if allowed_kinds else None
         matches: List[Dict[str, Any]] = []
@@ -114,9 +126,6 @@ class SearchEngineTokenizerSearchAlgo:
         return matches
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes tokenizer search over source code payload.
-        """
         code = str(payload.get("code", ""))
         query = str(payload.get("query", ""))
         allowed_kinds = payload.get("allowed_kinds")

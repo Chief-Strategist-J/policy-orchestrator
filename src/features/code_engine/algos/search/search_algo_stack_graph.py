@@ -38,7 +38,25 @@ class StackGraphEdge:
 
 class SearchEngineStackGraphAlgo:
     """
-    Implements modular stack graph path evaluation and push/pop symbol resolution.
+    --- contract:
+      id: ALGO-SRCH-86
+      name: SearchEngineStackGraphAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Paths)
+        space: O(Nodes + Edges)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - stack.graph
+      - name_resolution.interprocedural
+      - scope.stack
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -48,9 +66,6 @@ class SearchEngineStackGraphAlgo:
         self._edges.append(StackGraphEdge(source, target, action, symbol))
 
     def resolve_path(self, start_node: str, target_node: str, max_depth: int = 20) -> Optional[List[str]]:
-        """
-        Finds a valid stack-compatible path between start_node and target_node.
-        """
         queue: List[Tuple[str, List[str], List[str]]] = [(start_node, [], [start_node])]
         visited_states: Set[Tuple[str, Tuple[str, ...]]] = set()
 
@@ -88,9 +103,6 @@ class SearchEngineStackGraphAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes stack graph edge registration and path resolution.
-        """
         edges_raw = payload.get("edges", [])
         start = str(payload.get("start_node", "ref"))
         target = str(payload.get("target_node", "def"))

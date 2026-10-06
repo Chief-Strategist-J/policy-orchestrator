@@ -32,13 +32,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineGallopingIntersectionAlgo:
     """
-    Implements Galloping (Exponential Search) Intersection between short and long sorted lists.
+    --- contract:
+      id: ALGO-SRCH-66
+      name: SearchEngineGallopingIntersectionAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(M * log(N/M))
+        space: O(Results)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - posting.galloping
+      - search.intersection
+      - index.skip
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def intersect_galloping(self, short_list: List[int], long_list: List[int]) -> List[int]:
-        """
-        Intersects two sorted lists using exponential search jumps.
-        """
         if not short_list or not long_list:
             return []
 
@@ -77,9 +92,6 @@ class SearchEngineGallopingIntersectionAlgo:
         return result
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes galloping intersection between two or more sorted lists.
-        """
         list_a = sorted([int(x) for x in payload.get("list_a", [])])
         list_b = sorted([int(x) for x in payload.get("list_b", [])])
 

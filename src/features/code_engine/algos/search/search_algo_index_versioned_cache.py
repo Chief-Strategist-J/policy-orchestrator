@@ -31,7 +31,25 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineIndexVersionedCacheAlgo:
     """
-    Implements an LRU query result cache with commit/index-versioned key derivation.
+    --- contract:
+      id: ALGO-SRCH-73
+      name: SearchEngineIndexVersionedCacheAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(1)
+        space: O(CacheCapacity)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - cache.versioned
+      - search.memoization
+      - ttl.invalidation
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, capacity: int = 1000) -> None:
@@ -41,26 +59,17 @@ class SearchEngineIndexVersionedCacheAlgo:
         self._misses: int = 0
 
     def canonicalize_query(self, query: str, scope: str = "") -> str:
-        """
-        Normalizes query tokens and whitespace.
-        """
         tokens = query.strip().split()
         normalized_q = " ".join(tokens)
         normalized_scope = scope.strip().lower()
         return f"{normalized_q}@@{normalized_scope}"
 
     def compute_cache_key(self, query: str, index_version: str, scope: str = "") -> str:
-        """
-        Derives an immutable cache key from query, version, and scope.
-        """
         canonical_str = self.canonicalize_query(query, scope)
         raw_key = f"{canonical_str}##{index_version}"
         return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()[:24]
 
     def get(self, query: str, index_version: str, scope: str = "") -> Tuple[bool, Optional[Any]]:
-        """
-        Looks up cached query result.
-        """
         key = self.compute_cache_key(query, index_version, scope)
         if key in self._cache:
             self._cache.move_to_end(key)
@@ -70,9 +79,6 @@ class SearchEngineIndexVersionedCacheAlgo:
         return False, None
 
     def put(self, query: str, index_version: str, data: Any, scope: str = "") -> str:
-        """
-        Caches a query result, evicting oldest item if capacity is exceeded.
-        """
         key = self.compute_cache_key(query, index_version, scope)
         if key in self._cache:
             self._cache.move_to_end(key)
@@ -87,9 +93,6 @@ class SearchEngineIndexVersionedCacheAlgo:
         return key
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes cache lookup or put operations.
-        """
         action = str(payload.get("action", "get")).lower()
         query = str(payload.get("query", ""))
         version = str(payload.get("index_version", "v1.0"))

@@ -29,13 +29,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineTreeSitterQueryAlgo:
     """
-    Implements structural S-expression AST query matching with node captures.
+    --- contract:
+      id: ALGO-SRCH-78
+      name: SearchEngineTreeSitterQueryAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(AstNodes)
+        space: O(Captures)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - tree_sitter.s_expression
+      - ast.query_cursor
+      - pattern.captures
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def match_call_queries(self, code: str, target_callee: Optional[str] = None) -> List[Dict[str, Any]]:
-        """
-        Matches function call nodes, capturing callee names, argument counts, and line numbers.
-        """
         try:
             tree = ast.parse(code)
         except Exception:
@@ -69,9 +84,6 @@ class SearchEngineTreeSitterQueryAlgo:
         return matches
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes S-expression AST query matching over source code.
-        """
         code = str(payload.get("code", ""))
         query_pattern = str(payload.get("query_pattern", "(call function: (identifier) @callee)"))
         target_name = payload.get("target_name")

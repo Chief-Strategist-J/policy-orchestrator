@@ -36,8 +36,25 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineBloomFilterAlgo:
     """
-    Implements a Bloom Filter with optimal parameter derivation,
-    Kirsch-Mitzenmacher double-hashing, and false positive estimation.
+    --- contract:
+      id: ALGO-SRCH-57
+      name: SearchEngineBloomFilterAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(K)
+        space: O(M)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - filter.bloom
+      - probabilistic.membership
+      - hash.filter
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, expected_elements: int = 1000, false_positive_rate: float = 0.01) -> None:
@@ -68,35 +85,23 @@ class SearchEngineBloomFilterAlgo:
         return indices
 
     def add(self, item: str) -> None:
-        """
-        Inserts an element into the Bloom filter.
-        """
         for idx in self._get_hashes(item):
             self._bit_array[idx] = 1
         self._count += 1
 
     def contains(self, item: str) -> bool:
-        """
-        Tests whether an item is possibly in the filter or definitely absent.
-        """
         for idx in self._get_hashes(item):
             if self._bit_array[idx] == 0:
                 return False
         return True
 
     def estimated_false_positive_rate(self) -> float:
-        """
-        Calculates theoretical false positive rate given current fill ratio.
-        """
         if self._bit_size == 0 or self._count == 0:
             return 0.0
         exp_val = - (self._num_hashes * self._count) / self._bit_size
         return float((1.0 - math.exp(exp_val)) ** self._num_hashes)
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Bloom Filter operations: initialization, additions, queries.
-        """
         expected = int(payload.get("expected_elements", 1000))
         target_fpr = float(payload.get("false_positive_rate", 0.01))
         items_to_add = payload.get("add_items", [])

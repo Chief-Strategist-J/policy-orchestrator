@@ -40,8 +40,25 @@ class FstNode:
 
 class SearchEngineFstAlgo:
     """
-    Implements a Finite State Transducer supporting ordered insertion,
-    state sharing, exact value transduction, and prefix / fuzzy exploration.
+    --- contract:
+      id: ALGO-SRCH-54
+      name: SearchEngineFstAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(|Key|)
+        space: O(States)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - automata.fst
+      - transducer.lookup
+      - compressed.dictionary
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -57,9 +74,6 @@ class SearchEngineFstAlgo:
         return nid
 
     def build_from_sorted(self, entries: List[Tuple[str, int]]) -> Dict[str, Any]:
-        """
-        Builds a compressed FST from lexicographically sorted (key, value) pairs.
-        """
         sorted_entries = sorted(entries, key=lambda x: x[0])
         self._nodes.clear()
         self._node_counter = 0
@@ -90,9 +104,6 @@ class SearchEngineFstAlgo:
         }
 
     def get(self, key: str) -> Optional[int]:
-        """
-        Transduces the key to its associated output value in O(|key|) time.
-        """
         curr_id = self._root_id
         accum_val = 0
 
@@ -110,9 +121,6 @@ class SearchEngineFstAlgo:
         return None
 
     def prefix_search(self, prefix: str, max_results: int = 100) -> List[Dict[str, Any]]:
-        """
-        Retrieves all key-value mappings beginning with the specified prefix.
-        """
         curr_id = self._root_id
         accum_val = 0
 
@@ -145,9 +153,6 @@ class SearchEngineFstAlgo:
         return results
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes FST compilation, exact transduction query, and prefix scan.
-        """
         raw_entries = payload.get("entries", [])
         search_key = str(payload.get("search_key", ""))
         prefix = str(payload.get("prefix", ""))

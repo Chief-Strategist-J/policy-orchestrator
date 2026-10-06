@@ -33,7 +33,25 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineScatterGatherAlgo:
     """
-    Implements coordinator-side Scatter-Gather query dispatching, merging, and shard tracking.
+    --- contract:
+      id: ALGO-SRCH-73
+      name: SearchEngineScatterGatherAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Shards)
+        space: O(AggregatedResults)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - distributed.scatter_gather
+      - search.sharding
+      - map_reduce.fanout
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def gather_and_merge(
@@ -41,9 +59,6 @@ class SearchEngineScatterGatherAlgo:
         shard_responses: List[Dict[str, Any]],
         global_limit: int = 50
     ) -> Dict[str, Any]:
-        """
-        Gathers shard payloads, merges sorted results, and reports shard availability.
-        """
         successful_shards: List[str] = []
         failed_shards: List[Dict[str, Any]] = []
         streams_to_merge: List[List[Dict[str, Any]]] = []
@@ -93,9 +108,6 @@ class SearchEngineScatterGatherAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes scatter-gather aggregation over provided shard responses.
-        """
         shard_responses = payload.get("shard_responses", [])
         limit = int(payload.get("global_limit", 50))
 

@@ -52,8 +52,25 @@ class SSTable:
 
 class SearchEngineLsmTreeAlgo:
     """
-    Implements a Log-Structured Merge Tree with in-memory MemTable,
-    immutable SSTable flushing, deletion tombstones, and multi-segment compaction.
+    --- contract:
+      id: ALGO-SRCH-56
+      name: SearchEngineLsmTreeAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(log N)
+        space: O(MemTableSize)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.lsm_tree
+      - memtable.sstable
+      - storage.append_only
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     TOMBSTONE = "__LSM_TOMBSTONE__"
@@ -65,23 +82,14 @@ class SearchEngineLsmTreeAlgo:
         self._next_sstable_id: int = 1
 
     def put(self, key: str, value: Any) -> None:
-        """
-        Inserts or updates a key in the active MemTable.
-        """
         self._memtable[key] = value
         if len(self._memtable) >= self._memtable_threshold:
             self.flush()
 
     def delete(self, key: str) -> None:
-        """
-        Marks a key as deleted via an explicit Tombstone record.
-        """
         self.put(key, self.TOMBSTONE)
 
     def flush(self) -> Optional[int]:
-        """
-        Flushes current MemTable into an immutable SSTable segment.
-        """
         if not self._memtable:
             return None
         sorted_pairs = sorted(self._memtable.items(), key=lambda x: x[0])
@@ -92,9 +100,6 @@ class SearchEngineLsmTreeAlgo:
         return sstable.sstable_id
 
     def get(self, key: str) -> Tuple[bool, Optional[Any]]:
-        """
-        Retrieves a key by checking MemTable first, then SSTables newest-to-oldest.
-        """
         if key in self._memtable:
             val = self._memtable[key]
             if val == self.TOMBSTONE:
@@ -110,10 +115,6 @@ class SearchEngineLsmTreeAlgo:
         return False, None
 
     def compact(self) -> Dict[str, Any]:
-        """
-        Merges all SSTables into a single consolidated, deduplicated SSTable,
-        purging obsolete values and tombstoned entries.
-        """
         if len(self._sstables) <= 1:
             return {
                 "compacted": False,
@@ -138,9 +139,6 @@ class SearchEngineLsmTreeAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes LSM Tree operations: puts, deletes, gets, flushes, and compaction.
-        """
         threshold = int(payload.get("memtable_threshold", 4))
         operations = payload.get("operations", [])
         query_key = payload.get("query_key")

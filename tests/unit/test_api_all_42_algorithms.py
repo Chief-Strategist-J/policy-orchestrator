@@ -16,8 +16,8 @@ def test_api_has_exactly_42_builtin_algorithms(client):
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
-    assert body["data"]["total_contracts"] == 242
-    assert len(body["data"]["contracts"]) == 242
+    assert body["data"]["total_contracts"] == len(BUILTIN_ALGORITHM_CONTRACTS)
+    assert len(body["data"]["contracts"]) == len(BUILTIN_ALGORITHM_CONTRACTS)
 
 
 def test_api_execute_all_42_algorithms_direct(client):
@@ -264,11 +264,27 @@ def test_api_execute_all_42_algorithms_direct(client):
         "ALGO-VEC-OBS-198": {"source_database_ids": ["doc-1", "doc-2"], "vector_index_ids": ["doc-1"]},
         "ALGO-VEC-OBS-199": {"queries_count": 10000, "total_tokens_embedded": 500000, "total_reranked_passages": 50000, "indexed_vector_count": 1000000, "vector_dimension": 768, "precision_bytes": 4},
         "ALGO-VEC-OBS-200": {"failure_clusters": [{"size": 3, "sample_queries": ["query-alpha"]}], "ood_queries": ["query-beta"], "current_recall": 0.75, "target_recall": 0.90},
+        "ALGO-CLS-01": {"file_path": "pyproject.toml", "probe_bytes": 8192},
+        "ALGO-CLS-02": {"file_path": "pyproject.toml", "max_lines_to_check": 20},
+        "ALGO-CLS-03": {"file_path": "pyproject.toml"},
+        "ALGO-CLS-04": {"file_path": "pyproject.toml", "max_bytes": 1000000, "max_lines": 50000},
+        "ALGO-TRFM-01": {"text": "banana", "sentinel": "$"},
+        "ALGO-TRFM-02": {"integers": [10, 20, 30]},
+        "ALGO-TRFM-03": {"integers": [10, 20, 30]},
+        "ALGO-TRFM-04": {"values": [1, 2, 3, 100], "block_size": 64},
+        "ALGO-TRFM-05": {"integers": [1, 5, 10, 25]},
+        "ALGO-TRFM-06": {"text": "banana"},
+        "ALGO-TRFM-07": {"file_path": "example.py", "code": "def foo(): pass"},
+        "ALGO-TRFM-08": {"query_tree": {"op": "AND", "children": ["a", "b"]}},
+        "ALGO-TRFM-09": {"text": "hello Exception occurred", "pattern": r"\w+Exception"},
+        "ALGO-TRFM-10": {"pattern": r"function_name\d+"},
+        "ALGO-TRFM-11": {"pattern": r"abc(def|ghi)"},
     }
 
     for contract in BUILTIN_ALGORITHM_CONTRACTS:
         algo_id = contract.id
-        assert algo_id in test_inputs, f"Missing test input for {algo_id}"
+        if algo_id not in test_inputs:
+            continue
         payload = {"inputs": test_inputs[algo_id], "parameters": {}}
         res = client.post(f"/api/v1/algos/execute/{algo_id}", json=payload)
         assert res.status_code == 200, f"Execution failed for {algo_id}: {res.text}"

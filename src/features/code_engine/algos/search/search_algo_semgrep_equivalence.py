@@ -31,13 +31,28 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineSemgrepEquivalenceAlgo:
     """
-    Implements semantic pattern matching with import alias tracking and negative rule filtering.
+    --- contract:
+      id: ALGO-SRCH-80
+      name: SearchEngineSemgrepEquivalenceAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(AstNodes)
+        space: O(EquivalenceClasses)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ast.equivalence
+      - semgrep.pattern
+      - isomorphism.semantic
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def analyze_aliases(self, tree: ast.AST) -> Dict[str, str]:
-        """
-        Extracts imported module alias mappings (alias -> full_name).
-        """
         aliases: Dict[str, str] = {}
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -57,9 +72,6 @@ class SearchEngineSemgrepEquivalenceAlgo:
         target_api: str,
         pattern_not: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
-        """
-        Finds occurrences of target_api resolving through aliases and applying negative filters.
-        """
         try:
             tree = ast.parse(code)
         except Exception:
@@ -96,9 +108,6 @@ class SearchEngineSemgrepEquivalenceAlgo:
         return matches
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes semgrep pattern search with alias resolution over code.
-        """
         code = str(payload.get("code", ""))
         target_api = str(payload.get("target_api", ""))
         pattern_not = payload.get("pattern_not", [])

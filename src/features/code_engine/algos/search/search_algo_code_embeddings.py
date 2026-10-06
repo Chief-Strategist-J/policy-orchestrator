@@ -33,7 +33,25 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineCodeEmbeddingsAlgo:
     """
-    Implements deterministic subtoken-weighted code embedding vectorization and similarity computation.
+    --- contract:
+      id: ALGO-SRCH-98
+      name: SearchEngineCodeEmbeddingsAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(N * D)
+        space: O(N * D)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - vector.embeddings
+      - semantic.code_search
+      - neural.retrieval
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, dimensions: int = 64) -> None:
@@ -52,9 +70,6 @@ class SearchEngineCodeEmbeddingsAlgo:
         return subtokens
 
     def embed_code(self, code: str) -> List[float]:
-        """
-        Transforms code into an L2-normalized dense embedding vector.
-        """
         subtokens = self._split_subtokens(code)
         if not subtokens:
             return [0.0] * self._dimensions
@@ -73,18 +88,12 @@ class SearchEngineCodeEmbeddingsAlgo:
         return vec
 
     def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
-        """
-        Calculates cosine similarity between two unit vectors.
-        """
         if len(vec_a) != len(vec_b) or not vec_a:
             return 0.0
         dot = sum(a * b for a, b in zip(vec_a, vec_b))
         return max(-1.0, min(1.0, round(dot, 4)))
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes embedding generation and optional similarity calculation.
-        """
         code = str(payload.get("code", ""))
         query = payload.get("query")
         dim = int(payload.get("dimensions", self._dimensions))

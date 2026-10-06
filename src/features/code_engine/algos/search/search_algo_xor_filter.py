@@ -42,8 +42,25 @@ from typing import Dict, List, Any, Optional, Tuple, Set
 
 class SearchEngineXorFilterAlgo:
     """
-    Implements a 3-way XOR Filter with linear peeling, back-substitution,
-    and fast 3-lookup membership verification.
+    --- contract:
+      id: ALGO-SRCH-58
+      name: SearchEngineXorFilterAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(K)
+        space: O(1.23 * N)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - filter.xor
+      - probabilistic.succinct
+      - membership.fast_lookup
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, fingerprint_bits: int = 8) -> None:
@@ -72,9 +89,6 @@ class SearchEngineXorFilterAlgo:
         return h1, h2, h3
 
     def build(self, keys: List[str]) -> bool:
-        """
-        Constructs the XOR filter using 3-hypergraph peeling and back-substitution.
-        """
         unique_keys = list(set(keys))
         n = len(unique_keys)
         if n == 0:
@@ -134,9 +148,6 @@ class SearchEngineXorFilterAlgo:
         return True
 
     def contains(self, key: str) -> bool:
-        """
-        Checks membership in O(1) time via 3 slot lookups and XOR comparison.
-        """
         if not self._built or not self._array:
             return False
         fp = self._fingerprint(key)
@@ -145,9 +156,6 @@ class SearchEngineXorFilterAlgo:
         return computed_fp == fp
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes XOR filter construction and membership testing.
-        """
         keys = [str(k) for k in payload.get("keys", [])]
         queries = [str(q) for q in payload.get("queries", [])]
 

@@ -36,13 +36,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineCandidateVerificationAlgo:
     """
-    Implements secondary post-index candidate verification against raw file contents.
+    --- contract:
+      id: ALGO-SRCH-71
+      name: SearchEngineCandidateVerificationAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Candidates)
+        space: O(1)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - search.verification
+      - filter.candidate
+      - index.post_filter
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def verify_candidates(self, candidates: List[Dict[str, str]], pattern: str, is_regex: bool = False) -> Dict[str, Any]:
-        """
-        Verifies a list of candidate {path, content} entries against pattern.
-        """
         verified_hits: List[Dict[str, Any]] = []
         false_positives = 0
 
@@ -94,9 +109,6 @@ class SearchEngineCandidateVerificationAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes candidate verification against given search pattern.
-        """
         candidates = payload.get("candidates", [])
         pattern = str(payload.get("pattern", ""))
         is_regex = bool(payload.get("is_regex", False))

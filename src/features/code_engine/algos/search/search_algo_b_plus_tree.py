@@ -48,8 +48,25 @@ class BPlusNode:
 
 class SearchEngineBPlusTreeAlgo:
     """
-    Implements an in-memory B+ Tree with configurable branching order,
-    exact point lookups, node splitting, and linked leaf range queries.
+    --- contract:
+      id: ALGO-SRCH-55
+      name: SearchEngineBPlusTreeAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(log_M N)
+        space: O(N)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.b_plus_tree
+      - search.range_query
+      - storage.balanced_tree
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, order: int = 4) -> None:
@@ -58,9 +75,6 @@ class SearchEngineBPlusTreeAlgo:
         self._size = 0
 
     def search(self, key: Any) -> Tuple[bool, Optional[Any]]:
-        """
-        Searches for a key, returning (found, value).
-        """
         curr = self._root
         while not curr.is_leaf:
             idx = bisect.bisect_right(curr.keys, key)
@@ -72,9 +86,6 @@ class SearchEngineBPlusTreeAlgo:
         return False, None
 
     def insert(self, key: Any, value: Any) -> None:
-        """
-        Inserts a key-value pair, splitting overflowing nodes from leaf to root.
-        """
         root = self._root
         if len(root.keys) == self._order - 1:
             new_root = BPlusNode(is_leaf=False)
@@ -132,9 +143,6 @@ class SearchEngineBPlusTreeAlgo:
             parent.children.insert(index + 1, right)
 
     def range_query(self, start_key: Any, end_key: Any, max_results: int = 100) -> List[Dict[str, Any]]:
-        """
-        Executes an efficient range query [start_key, end_key] by traversing linked leaf nodes.
-        """
         curr = self._root
         while not curr.is_leaf:
             idx = bisect.bisect_right(curr.keys, start_key)
@@ -154,9 +162,6 @@ class SearchEngineBPlusTreeAlgo:
         return results
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes batch insert, point query, or range search operations.
-        """
         order = int(payload.get("order", 4))
         items = payload.get("items", [])
         search_key = payload.get("search_key")

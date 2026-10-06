@@ -38,13 +38,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineMergeIntersectionAlgo:
     """
-    Implements two-pointer sorted list intersection and multi-way list merge.
+    --- contract:
+      id: ALGO-SRCH-65
+      name: SearchEngineMergeIntersectionAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(LenA + LenB)
+        space: O(Intersection)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - posting.merge_intersection
+      - search.and_query
+      - sorted.scan
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def intersect_pair(self, list_a: List[int], list_b: List[int]) -> List[int]:
-        """
-        Computes intersection of two sorted lists via two-pointer scan.
-        """
         i = 0
         j = 0
         len_a = len(list_a)
@@ -66,9 +81,6 @@ class SearchEngineMergeIntersectionAlgo:
         return result
 
     def intersect_multiple(self, lists: List[List[int]]) -> List[int]:
-        """
-        Intersects multiple sorted lists, optimizing order by evaluating shortest lists first.
-        """
         if not lists:
             return []
         if len(lists) == 1:
@@ -85,9 +97,6 @@ class SearchEngineMergeIntersectionAlgo:
         return current
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes merge intersection across provided sorted lists.
-        """
         lists_raw = payload.get("lists", [])
         parsed_lists: List[List[int]] = []
         for lst in lists_raw:

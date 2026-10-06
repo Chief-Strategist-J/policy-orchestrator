@@ -40,8 +40,25 @@ class PostingBlock:
 
 class SearchEnginePostingListAlgo:
     """
-    Implements a block-indexed posting list supporting document frequencies,
-    positional offsets, skip headers, and payload iteration.
+    --- contract:
+      id: ALGO-SRCH-59
+      name: SearchEnginePostingListAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Postings)
+        space: O(Postings)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.posting_list
+      - inverted_index.postings
+      - codec.delta_varint
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, term: str = "", block_size: int = 64) -> None:
@@ -52,9 +69,6 @@ class SearchEnginePostingListAlgo:
         self._total_frequency: int = 0
 
     def add(self, doc_id: int, positions: Optional[List[int]] = None) -> None:
-        """
-        Appends a document record in increasing order of doc_id.
-        """
         pos_list = sorted(positions) if positions else [0]
         freq = len(pos_list)
 
@@ -72,18 +86,12 @@ class SearchEnginePostingListAlgo:
         self._total_frequency += freq
 
     def get_all_doc_ids(self) -> List[int]:
-        """
-        Returns all document IDs across all blocks.
-        """
         doc_ids: List[int] = []
         for block in self._blocks:
             doc_ids.extend(block.doc_ids)
         return doc_ids
 
     def skip_to(self, target_doc_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Skips blocks using max_doc_id block metadata to find the target doc_id.
-        """
         for block in self._blocks:
             if block.max_doc_id >= target_doc_id:
                 for i, d in enumerate(block.doc_ids):
@@ -98,9 +106,6 @@ class SearchEnginePostingListAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes posting list population, document queries, and skip operations.
-        """
         term = str(payload.get("term", "default_term"))
         block_size = int(payload.get("block_size", 64))
         postings = payload.get("postings", [])

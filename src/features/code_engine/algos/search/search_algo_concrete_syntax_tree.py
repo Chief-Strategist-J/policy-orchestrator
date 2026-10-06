@@ -50,13 +50,28 @@ class CstNode:
 
 class SearchEngineConcreteSyntaxTreeAlgo:
     """
-    Implements a trivia-preserving Concrete Syntax Tree builder, modifier, and serializer.
+    --- contract:
+      id: ALGO-SRCH-75
+      name: SearchEngineConcreteSyntaxTreeAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(N)
+        space: O(CSTNodes)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - cst.matcher
+      - syntax.lossless
+      - code.refactor
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def parse_simple_cst(self, code: str) -> CstNode:
-        """
-        Parses source code into a CST preserving comments, whitespace, and tokens.
-        """
         root = CstNode("Module")
         lines = code.splitlines(keepends=True)
 
@@ -93,9 +108,6 @@ class SearchEngineConcreteSyntaxTreeAlgo:
         return root
 
     def replace_identifier(self, root: CstNode, target_name: str, replacement: str) -> int:
-        """
-        Replaces target identifier across CST leaves while preserving all trivia and formatting.
-        """
         replacements = 0
 
         def _walk(node: Union[CstNode, CstLeaf]) -> None:
@@ -112,9 +124,6 @@ class SearchEngineConcreteSyntaxTreeAlgo:
         return replacements
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes CST parsing, targeted node mutation, and lossless round-trip serialization.
-        """
         code = str(payload.get("code", ""))
         rename_from = payload.get("rename_from")
         rename_to = payload.get("rename_to")

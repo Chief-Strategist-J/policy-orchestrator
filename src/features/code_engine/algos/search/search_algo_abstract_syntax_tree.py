@@ -32,13 +32,28 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineAbstractSyntaxTreeAlgo:
     """
-    Implements AST parsing, semantic node extraction, and structural inspection.
+    --- contract:
+      id: ALGO-SRCH-76
+      name: SearchEngineAbstractSyntaxTreeAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(N)
+        space: O(TreeDepth)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ast.visitor
+      - syntax.parsing
+      - ast.tree
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def parse_ast_summary(self, code: str) -> Dict[str, Any]:
-        """
-        Parses code into AST and extracts summary of functions, classes, and call expressions.
-        """
         try:
             tree = ast.parse(code)
         except SyntaxError as e:
@@ -94,9 +109,6 @@ class SearchEngineAbstractSyntaxTreeAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes AST structural analysis over code payload.
-        """
         code = str(payload.get("code", ""))
         summary = self.parse_ast_summary(code)
 

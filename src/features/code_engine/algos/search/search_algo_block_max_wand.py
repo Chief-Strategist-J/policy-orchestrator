@@ -59,13 +59,28 @@ class PostingCursor:
 
 class SearchEngineBlockMaxWandAlgo:
     """
-    Implements the WAND & Block-Max WAND dynamic top-K score pruning algorithm.
+    --- contract:
+      id: ALGO-SRCH-68
+      name: SearchEngineBlockMaxWandAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(TermPostings)
+        space: O(K)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.wand
+      - retrieval.block_max
+      - posting.pruning
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def search_top_k(self, term_postings: Dict[str, List[Tuple[int, float]]], k: int = 10) -> List[Dict[str, Any]]:
-        """
-        Executes WAND top-K scoring and block pruning.
-        """
         cursors: List[PostingCursor] = []
         for term, postings in term_postings.items():
             if postings:
@@ -133,9 +148,6 @@ class SearchEngineBlockMaxWandAlgo:
         ]
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes WAND top-K query evaluation over simulated term posting lists.
-        """
         term_data = payload.get("term_postings", {})
         k = int(payload.get("k", 10))
 

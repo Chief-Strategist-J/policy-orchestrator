@@ -30,7 +30,25 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineAstGrepPatternAlgo:
     """
-    Implements ast-grep style structural code pattern matching with metavariables and rewrite templates.
+    --- contract:
+      id: ALGO-SRCH-79
+      name: SearchEngineAstGrepPatternAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Nodes)
+        space: O(Matches)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ast.pattern_matching
+      - structural.grep
+      - code.search
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def match_and_rewrite(
@@ -39,9 +57,6 @@ class SearchEngineAstGrepPatternAlgo:
         pattern: str,
         rewrite_template: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Matches code patterns with $VAR metavariables and optionally applies rewrite templates.
-        """
         regex_pattern = re.escape(pattern)
         regex_pattern = regex_pattern.replace(r'\$\$\$[A-Z0-9_]+', r'(?P<REST>.*?)')
         regex_pattern = re.sub(r'\\\$([A-Z0-9_]+)', r'(?P<\1>[a-zA-Z0-9_]+|\"[^\"]*\"|\'[^\']*\')', regex_pattern)
@@ -81,9 +96,6 @@ class SearchEngineAstGrepPatternAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes ast-grep pattern matching and code rewrite.
-        """
         code = str(payload.get("code", ""))
         pattern = str(payload.get("pattern", "$OBJ.fetch($URL, $$$REST)"))
         rewrite = payload.get("rewrite")

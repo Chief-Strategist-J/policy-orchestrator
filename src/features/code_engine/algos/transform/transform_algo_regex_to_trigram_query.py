@@ -31,9 +31,27 @@ import re
 from typing import Dict, List, Any, Optional, Set, Tuple
 
 
-class SearchEngineRegexToTrigramQueryAlgo:
+class TransformAlgoRegexToTrigramQuery:
     """
-    Implements regex parsing to boolean trigram query tree generation.
+    --- contract:
+      id: ALGO-TRFM-11
+      name: TransformAlgoRegexToTrigramQuery
+      version: 1.0.0
+      category: transform
+      complexity:
+        time: O(|Pattern|)
+        space: O(|Trigrams|)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - transform.regex_to_trigram
+        - query.compilation
+        - trigram.index_prefilter
+      input_schema:
+        pattern: string
+      output_schema:
+        query_tree: dict
+    ---
     """
 
     def _extract_trigrams(self, text: str) -> List[str]:
@@ -42,9 +60,6 @@ class SearchEngineRegexToTrigramQueryAlgo:
         return [text[i:i+3] for i in range(len(text) - 2)]
 
     def parse_regex_to_trigram_query(self, pattern: str) -> Dict[str, Any]:
-        """
-        Parses regex literals and alternations into an AND/OR trigram boolean query.
-        """
         if not pattern:
             return {"op": "TRUE", "trigrams": []}
 
@@ -74,9 +89,6 @@ class SearchEngineRegexToTrigramQueryAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes regex to trigram query compilation.
-        """
         pattern = str(payload.get("pattern", ""))
         result_tree = self.parse_regex_to_trigram_query(pattern)
 
@@ -85,3 +97,6 @@ class SearchEngineRegexToTrigramQueryAlgo:
             "pattern": pattern,
             "query_tree": result_tree
         }
+
+
+SearchEngineRegexToTrigramQueryAlgo = TransformAlgoRegexToTrigramQuery

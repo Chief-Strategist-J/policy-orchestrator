@@ -29,7 +29,25 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineTaintAnalysisAlgo:
     """
-    Implements source-to-sink taint tracking, sanitizer clearing, and vulnerability path reporting.
+    --- contract:
+      id: ALGO-SRCH-94
+      name: SearchEngineTaintAnalysisAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(DataflowEdges)
+        space: O(TaintedPaths)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - security.taint_analysis
+      - vulnerability.source_sink
+      - dataflow.tracking
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def analyze_taint_flow(
@@ -39,9 +57,6 @@ class SearchEngineTaintAnalysisAlgo:
         sinks: Set[str],
         sanitizers: Set[str]
     ) -> Dict[str, Any]:
-        """
-        Traces taint propagation through sequential statements.
-        """
         tainted_vars: Set[str] = set(sources)
         taint_origins: Dict[str, str] = {s: s for s in sources}
         vulnerabilities: List[Dict[str, Any]] = []
@@ -85,9 +100,6 @@ class SearchEngineTaintAnalysisAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes taint analysis across provided statement stream.
-        """
         statements = payload.get("statements", [])
         sources = set(payload.get("sources", ["user_input", "request_param"]))
         sinks = set(payload.get("sinks", ["sql_execute", "os_system", "eval"]))

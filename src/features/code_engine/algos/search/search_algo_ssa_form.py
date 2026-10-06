@@ -29,13 +29,28 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineSsaFormAlgo:
     """
-    Implements variable versioning and phi-node insertion for SSA transformation.
+    --- contract:
+      id: ALGO-SRCH-92
+      name: SearchEngineSsaFormAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Blocks * Variables)
+        space: O(SsaVariables)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ssa.conversion
+      - dominance.frontiers
+      - phi.placement
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def convert_to_ssa(self, raw_statements: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Transforms a sequence of variable assignments and branch joins into versioned SSA statements.
-        """
         counters: Dict[str, int] = {}
         active_versions: Dict[str, int] = {}
         ssa_statements: List[Dict[str, Any]] = []
@@ -79,9 +94,6 @@ class SearchEngineSsaFormAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes SSA conversion over input statements.
-        """
         statements = payload.get("statements", [])
         ssa_summary = self.convert_to_ssa(statements)
 

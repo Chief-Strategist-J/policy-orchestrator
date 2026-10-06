@@ -38,8 +38,25 @@ class ScopeGraphNode:
 
 class SearchEngineScopeGraphAlgo:
     """
-    Implements a Scope Graph model supporting multi-scope declaration, reference wiring,
-    and path-based name resolution.
+    --- contract:
+      id: ALGO-SRCH-85
+      name: SearchEngineScopeGraphAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Scopes + Edges)
+        space: O(ScopeTree)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - scope.graph
+      - lexical.resolution
+      - symbols.shadowing
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -53,9 +70,6 @@ class SearchEngineScopeGraphAlgo:
         self._edges.append((source_id, target_id, edge_type))
 
     def resolve_reference(self, ref_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Resolves a reference node by searching paths through scope edges to a matching declaration.
-        """
         ref_node = self._nodes.get(ref_id)
         if not ref_node or ref_node.node_type != "Reference":
             return None
@@ -94,9 +108,6 @@ class SearchEngineScopeGraphAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes scope graph population and reference resolutions.
-        """
         nodes = payload.get("nodes", [])
         edges = payload.get("edges", [])
         references = payload.get("references_to_resolve", [])

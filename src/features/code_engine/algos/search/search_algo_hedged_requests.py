@@ -31,7 +31,25 @@ from typing import Dict, List, Any, Optional, Callable
 
 class SearchEngineHedgedRequestsAlgo:
     """
-    Implements latency-hedged query simulation and replica response arbitration.
+    --- contract:
+      id: ALGO-SRCH-74
+      name: SearchEngineHedgedRequestsAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Replicas)
+        space: O(Responses)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - resilience.hedged_requests
+      - concurrency.tail_latency
+      - search.scatter
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def arbitrate_replicas(
@@ -42,9 +60,6 @@ class SearchEngineHedgedRequestsAlgo:
         primary_payload: Any,
         backup_payload: Any
     ) -> Dict[str, Any]:
-        """
-        Determines the winning replica response given hedged dispatch timings.
-        """
         if primary_latency_ms <= hedge_delay_ms:
             return {
                 "winner": "primary",
@@ -74,9 +89,6 @@ class SearchEngineHedgedRequestsAlgo:
             }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes hedged request simulation across mock replica latencies.
-        """
         primary_latency = float(payload.get("primary_latency_ms", 120.0))
         backup_latency = float(payload.get("backup_latency_ms", 30.0))
         hedge_delay = float(payload.get("hedge_delay_ms", 50.0))

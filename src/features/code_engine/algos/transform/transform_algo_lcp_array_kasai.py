@@ -26,17 +26,16 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: KASAI LINEAR LCP ARRAY BUILDER (ALGO 48)
 """
 
 from typing import List, Dict, Any, Tuple, Optional
-from .search_algo_suffix_array_sais import SearchEngineSuffixArraySaisAlgo
+from ..search.search_algo_suffix_array_sais import SearchEngineSuffixArraySaisAlgo
 
 
-class SearchEngineLcpArrayKasaiAlgo:
+class TransformAlgoLcpArrayKasai:
     """
-    ---
-    contract:
-      algo_id: ALGO-SRCH-48
-      name: SearchEngineLcpArrayKasaiAlgo
+    --- contract:
+      id: ALGO-TRFM-06
+      name: TransformAlgoLcpArrayKasai
       version: 1.0.0
-      category: search
+      category: transform
       capability_tags:
       - search.lcp_array
       - kasai.linear_lcp
@@ -122,3 +121,6 @@ class SearchEngineLcpArrayKasaiAlgo:
             "max_lcp": max_lcp,
             "longest_repeated_substring": longest_rep,
         }
+
+
+SearchEngineLcpArrayKasaiAlgo = TransformAlgoLcpArrayKasai

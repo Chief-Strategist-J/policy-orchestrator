@@ -33,19 +33,31 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineRarestFirstOrderingAlgo:
     """
-    Implements query term selectivity sorting and rarest-first progressive intersection.
+    --- contract:
+      id: ALGO-SRCH-70
+      name: SearchEngineRarestFirstOrderingAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Terms * log Terms)
+        space: O(Terms)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - query.planner
+      - posting.ordering
+      - cost_based.reordering
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def plan_query(self, term_frequencies: Dict[str, int]) -> List[Tuple[str, int]]:
-        """
-        Orders terms by ascending document frequency (rarest first).
-        """
         return sorted(term_frequencies.items(), key=lambda item: item[1])
 
     def execute_ordered_search(self, term_postings: Dict[str, List[int]]) -> Dict[str, Any]:
-        """
-        Plans and executes rarest-first intersection across posting lists.
-        """
         if not term_postings:
             return {"plan": [], "result": [], "evaluated_count": 0}
 
@@ -73,9 +85,6 @@ class SearchEngineRarestFirstOrderingAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes rarest-first query planning and intersection simulation.
-        """
         term_postings_raw = payload.get("term_postings", {})
         parsed_postings: Dict[str, List[int]] = {}
         for term, posts in term_postings_raw.items():

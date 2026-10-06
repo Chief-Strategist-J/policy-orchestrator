@@ -30,7 +30,25 @@ from typing import Dict, List, Any, Optional, Callable
 
 class SearchEngineEarlyTerminationAlgo:
     """
-    Implements search iteration early termination with multi-dimensional budget gating.
+    --- contract:
+      id: ALGO-SRCH-72
+      name: SearchEngineEarlyTerminationAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(K)
+        space: O(1)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - search.early_exit
+      - optimization.pruning
+      - top_k.limit
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def collect_with_limits(
@@ -40,9 +58,6 @@ class SearchEngineEarlyTerminationAlgo:
         max_per_file: int = 5,
         max_bytes: int = 1048576
     ) -> Dict[str, Any]:
-        """
-        Consumes item stream, enforcing per-file, total count, and byte budget caps.
-        """
         results: List[Dict[str, Any]] = []
         file_counts: Dict[str, int] = {}
         bytes_accum = 0
@@ -80,9 +95,6 @@ class SearchEngineEarlyTerminationAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes budget-bounded search collection over an item list.
-        """
         items = payload.get("items", [])
         max_results = int(payload.get("max_total_results", 50))
         max_per_file = int(payload.get("max_per_file", 5))

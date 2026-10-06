@@ -45,8 +45,25 @@ from typing import Dict, List, Any, Optional
 
 class SearchEngineFmIndexAlgo:
     """
-    Implements the FM-Index full-text search structure with backward search,
-    occurrence counting, and position retrieval.
+    --- contract:
+      id: ALGO-SRCH-51
+      name: SearchEngineFmIndexAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(|Pattern|)
+        space: O(N)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.fm_index
+      - bwt.backward_search
+      - compressed.index
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self, text: str = "") -> None:
@@ -59,9 +76,6 @@ class SearchEngineFmIndexAlgo:
             self.build_index(text)
 
     def build_index(self, text: str) -> Dict[str, Any]:
-        """
-        Builds suffix array, BWT, C-table, and occurrence rank tables for the given text.
-        """
         if not text.endswith("$"):
             processed_text = text + "$"
         else:
@@ -109,9 +123,6 @@ class SearchEngineFmIndexAlgo:
         return self._occ_table[char][clamped]
 
     def count(self, pattern: str) -> int:
-        """
-        Calculates exact count of pattern occurrences via backward search in O(|P|) time.
-        """
         if not pattern or not self._bwt:
             return 0
         n = len(self._bwt)
@@ -130,9 +141,6 @@ class SearchEngineFmIndexAlgo:
         return ep - sp + 1
 
     def locate(self, pattern: str, max_results: int = 100) -> List[int]:
-        """
-        Finds 0-indexed text locations of pattern occurrences.
-        """
         if not pattern or not self._bwt:
             return []
         n = len(self._bwt)
@@ -155,9 +163,6 @@ class SearchEngineFmIndexAlgo:
         return sorted(locations)
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes index build, counting, and pattern location operations.
-        """
         text = str(payload.get("text", ""))
         pattern = str(payload.get("pattern", ""))
         max_matches = int(payload.get("max_matches", 100))

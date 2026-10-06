@@ -29,9 +29,31 @@ import hashlib
 from typing import Dict, List, Any, Optional
 
 
-class SearchEngineAstChunkingAlgo:
+class TransformAlgoAstChunking:
     """
-    Implements AST-guided code chunking along function, class, and method boundaries with context metadata.
+    --- contract:
+      id: ALGO-TRFM-07
+      name: TransformAlgoAstChunking
+      version: 1.0.0
+      category: transform
+      complexity:
+        time: O(N)
+        space: O(N)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - transform.ast_chunking
+        - syntax_aware.partitioning
+        - code.chunking
+      input_schema:
+        file_path: string
+        code: string
+        max_chunk_chars: int
+        min_chunk_chars: int
+      output_schema:
+        total_chunks: int
+        chunks: list[dict]
+    ---
     """
 
     def chunk_code(
@@ -41,9 +63,6 @@ class SearchEngineAstChunkingAlgo:
         max_chunk_chars: int = 1500,
         min_chunk_chars: int = 100
     ) -> List[Dict[str, Any]]:
-        """
-        Chunks code into semantic units along AST function and class definitions.
-        """
         lines = code.splitlines(keepends=True)
         content_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()[:16]
 
@@ -112,9 +131,6 @@ class SearchEngineAstChunkingAlgo:
         return chunks
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes AST code chunking over input source code.
-        """
         file_path = str(payload.get("file_path", "example.py"))
         code = str(payload.get("code", ""))
         max_chars = int(payload.get("max_chunk_chars", 1500))
@@ -128,3 +144,6 @@ class SearchEngineAstChunkingAlgo:
             "total_chunks": len(chunk_list),
             "chunks": chunk_list
         }
+
+
+SearchEngineAstChunkingAlgo = TransformAlgoAstChunking

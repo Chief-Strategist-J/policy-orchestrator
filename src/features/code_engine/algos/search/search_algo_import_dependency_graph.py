@@ -31,7 +31,25 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 
 class SearchEngineImportDependencyGraphAlgo:
     """
-    Implements module import dependency graph analysis, cycle detection, and topological sorting.
+    --- contract:
+      id: ALGO-SRCH-90
+      name: SearchEngineImportDependencyGraphAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Files + Imports)
+        space: O(Graph)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - graph.dependency
+      - imports.dag
+      - cycle.detection
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -46,9 +64,6 @@ class SearchEngineImportDependencyGraphAlgo:
         self._reverse_adj[imported].add(importer)
 
     def extract_from_file_code(self, module_name: str, code: str) -> None:
-        """
-        Parses Python import statements and registers dependencies.
-        """
         self._modules.add(module_name)
         try:
             tree = ast.parse(code)
@@ -64,9 +79,6 @@ class SearchEngineImportDependencyGraphAlgo:
                     self.add_dependency(module_name, node.module)
 
     def detect_cycles(self) -> List[List[str]]:
-        """
-        Detects circular dependency cycles using DFS back-edge detection.
-        """
         visited: Set[str] = set()
         rec_stack: Set[str] = set()
         cycles: List[List[str]] = []
@@ -94,9 +106,6 @@ class SearchEngineImportDependencyGraphAlgo:
         return cycles
 
     def topological_sort(self) -> List[str]:
-        """
-        Computes safe compilation/build topological order using Kahn's algorithm.
-        """
         in_degree: Dict[str, int] = {m: 0 for m in self._modules}
         for src, targets in self._adj.items():
             for tgt in targets:
@@ -116,9 +125,6 @@ class SearchEngineImportDependencyGraphAlgo:
         return order
 
     def find_affected_downstream(self, module_name: str) -> List[str]:
-        """
-        Finds all modules transitively depending on module_name.
-        """
         visited: Set[str] = set()
         queue = [module_name]
         while queue:
@@ -130,9 +136,6 @@ class SearchEngineImportDependencyGraphAlgo:
         return sorted(list(visited))
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes dependency graph extraction, cycle detection, and impact query.
-        """
         files_data = payload.get("files", {})
         raw_deps = payload.get("dependencies", [])
         target_mod = payload.get("target_module")

@@ -41,7 +41,25 @@ class BasicBlock:
 
 class SearchEngineControlFlowGraphAlgo:
     """
-    Implements Basic Block partitioning, CFG construction, and reachability analysis.
+    --- contract:
+      id: ALGO-SRCH-91
+      name: SearchEngineControlFlowGraphAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Statements)
+        space: O(Blocks + Edges)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - cfg.builder
+      - analysis.control_flow
+      - graph.basic_blocks
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -49,9 +67,6 @@ class SearchEngineControlFlowGraphAlgo:
         self._entry_id: int = 0
 
     def build_cfg_from_statements(self, statements: List[str]) -> Dict[str, Any]:
-        """
-        Constructs linear and branching basic blocks from a statement list.
-        """
         self._blocks = {}
         curr_block = BasicBlock(0, "ENTRY")
         self._blocks[0] = curr_block
@@ -102,9 +117,6 @@ class SearchEngineControlFlowGraphAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes CFG basic block analysis over input statement sequence or code.
-        """
         statements = payload.get("statements", [])
         code = payload.get("code")
 

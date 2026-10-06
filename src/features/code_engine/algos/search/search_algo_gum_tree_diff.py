@@ -32,7 +32,25 @@ from typing import Dict, List, Any, Optional, Tuple, Set
 
 class SearchEngineGumTreeDiffAlgo:
     """
-    Implements GumTree-style structural AST comparison and edit script generation.
+    --- contract:
+      id: ALGO-SRCH-83
+      name: SearchEngineGumTreeDiffAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(N1 * N2)
+        space: O(N1 + N2)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - ast.diff
+      - tree.edit_distance
+      - gumtree.fine_grained
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def _extract_nodes(self, tree: ast.AST) -> List[Dict[str, Any]]:
@@ -48,9 +66,6 @@ class SearchEngineGumTreeDiffAlgo:
         return nodes
 
     def compute_tree_diff(self, old_code: str, new_code: str) -> Dict[str, Any]:
-        """
-        Computes structural node diffs and edit script between old_code and new_code.
-        """
         try:
             old_tree = ast.parse(old_code)
             new_tree = ast.parse(new_code)
@@ -103,9 +118,6 @@ class SearchEngineGumTreeDiffAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes structural AST diff between old_code and new_code.
-        """
         old_code = str(payload.get("old_code", ""))
         new_code = str(payload.get("new_code", ""))
 

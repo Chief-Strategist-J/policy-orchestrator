@@ -41,10 +41,28 @@ import math
 from typing import Dict, List, Any, Optional, Tuple
 
 
-class SearchEngineEliasFanoAlgo:
+class TransformAlgoEliasFano:
     """
-    Implements Elias-Fano encoding with low-bits packing, unary high-bits bitvector,
-    constant-time indexed access, and sub-linear successor searches.
+    --- contract:
+      id: ALGO-TRFM-05
+      name: TransformAlgoEliasFano
+      version: 1.0.0
+      category: transform
+      complexity:
+        time: O(N) encode, O(1) access
+        space: O(N * (2 + ceil(log2(U / N)))) bits
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - compression.elias_fano
+        - quasi_succinct.representation
+        - posting_list.random_access
+      input_schema:
+        sorted_integers: list[int]
+      output_schema:
+        encoding_meta: dict
+        decoded_values: list[int]
+    ---
     """
 
     def __init__(self) -> None:
@@ -56,9 +74,6 @@ class SearchEngineEliasFanoAlgo:
         self._ones_positions: List[int] = []
 
     def encode(self, sorted_integers: List[int]) -> Dict[str, Any]:
-        """
-        Encodes a sorted list of non-negative integers into Elias-Fano representation.
-        """
         if not sorted_integers:
             self._n = 0
             self._u = 0
@@ -108,9 +123,6 @@ class SearchEngineEliasFanoAlgo:
         }
 
     def access(self, index: int) -> int:
-        """
-        Retrieves the integer at position `index` in O(1) time.
-        """
         if index < 0 or index >= self._n:
             raise IndexError("Index out of bounds in Elias-Fano sequence")
 
@@ -121,15 +133,9 @@ class SearchEngineEliasFanoAlgo:
         return (high_val << self._l) | low_val
 
     def decode_all(self) -> List[int]:
-        """
-        Decodes the complete integer sequence.
-        """
         return [self.access(i) for i in range(self._n)]
 
     def next_geq(self, target: int) -> Optional[Tuple[int, int]]:
-        """
-        Finds the first (index, value) such that value >= target.
-        """
         if self._n == 0:
             return None
         low = 0
@@ -150,9 +156,6 @@ class SearchEngineEliasFanoAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Elias-Fano encoding, point lookups, and successor queries.
-        """
         integers = [int(x) for x in payload.get("integers", [])]
         access_index = payload.get("access_index")
         target_geq = payload.get("next_geq")
@@ -176,3 +179,6 @@ class SearchEngineEliasFanoAlgo:
             "next_geq_result": {"target": target_geq, "found": next_val} if target_geq is not None else None,
             "round_trip_valid": (sorted(integers) == decoded) if integers else True
         }
+
+
+SearchEngineEliasFanoAlgo = TransformAlgoEliasFano

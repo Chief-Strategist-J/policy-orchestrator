@@ -33,7 +33,25 @@ from typing import Dict, List, Any, Optional, Set
 
 class SearchEngineScipLsifIndexAlgo:
     """
-    Implements SCIP/LSIF code intelligence index generation, document indexing, and cross-reference queries.
+    --- contract:
+      id: ALGO-SRCH-88
+      name: SearchEngineScipLsifIndexAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(Symbols)
+        space: O(IndexSize)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - index.scip_lsif
+      - code.intelligence
+      - symbol.cross_reference
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def __init__(self) -> None:
@@ -41,9 +59,6 @@ class SearchEngineScipLsifIndexAlgo:
         self._documents: Dict[str, Dict[str, Any]] = {}
 
     def format_symbol_uri(self, scheme: str, manager: str, package: str, version: str, descriptor: str) -> str:
-        """
-        Formats a standardized SCIP symbol identifier.
-        """
         return f"{scheme} {manager} {package} {version} {descriptor}"
 
     def add_occurrence(
@@ -54,9 +69,6 @@ class SearchEngineScipLsifIndexAlgo:
         role: str = "reference",
         docstring: Optional[str] = None
     ) -> None:
-        """
-        Registers a symbol occurrence in a document.
-        """
         occ = {
             "document_uri": document_uri,
             "range": range_coords,
@@ -76,16 +88,10 @@ class SearchEngineScipLsifIndexAlgo:
         })
 
     def find_references(self, symbol_uri: str) -> List[Dict[str, Any]]:
-        """
-        Finds all reference occurrences of the given symbol URI.
-        """
         all_occs = self._symbol_index.get(symbol_uri, [])
         return [occ for occ in all_occs if occ["role"] == "reference"]
 
     def find_definition(self, symbol_uri: str) -> Optional[Dict[str, Any]]:
-        """
-        Finds the primary definition occurrence of the symbol URI.
-        """
         all_occs = self._symbol_index.get(symbol_uri, [])
         for occ in all_occs:
             if occ["role"] == "definition":
@@ -93,9 +99,6 @@ class SearchEngineScipLsifIndexAlgo:
         return None
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes SCIP indexing and symbol queries.
-        """
         occurrences_raw = payload.get("occurrences", [])
         query_symbol = payload.get("query_symbol")
 

@@ -36,13 +36,28 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineKWayMergeHeapAlgo:
     """
-    Implements K-way min-heap merging with deduplication and stream provenance tracking.
+    --- contract:
+      id: ALGO-SRCH-67
+      name: SearchEngineKWayMergeHeapAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(TotalPostings * log K)
+        space: O(K)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - posting.k_way_merge
+      - heap.priority_queue
+      - search.multi_term
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def merge_k_lists(self, lists: List[List[Dict[str, Any]]], deduplicate: bool = True) -> List[Dict[str, Any]]:
-        """
-        Merges K sorted lists of items, sorting by 'key' or 'id'.
-        """
         heap: List[Tuple[Any, int, int]] = []
 
         for list_idx, lst in enumerate(lists):
@@ -74,9 +89,6 @@ class SearchEngineKWayMergeHeapAlgo:
         return merged
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes K-way heap merge across multiple sorted streams.
-        """
         streams_raw = payload.get("streams", [])
         deduplicate = bool(payload.get("deduplicate", True))
 

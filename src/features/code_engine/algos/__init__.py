@@ -7,10 +7,6 @@ from src.features.code_engine.algos.search import (
     SearchEngineWorkStealingWalkerAlgo,
     SearchEngineGitAwareWalkerAlgo,
     SearchEngineGlobMatcherAlgo,
-    SearchEngineBinaryClassifierAlgo,
-    SearchEngineContentTypeProberAlgo,
-    SearchEngineSizeLineBouncerAlgo,
-    SearchEngineGeneratedCodeClassifierAlgo,
     SearchEngineTrigramIndexAlgo,
     SearchEngineSimdMemchrAlgo,
     SearchEngineAhoCorasickAlgo,
@@ -18,6 +14,42 @@ from src.features.code_engine.algos.search import (
     SearchEngineStreamingChunkScannerAlgo,
     SearchEngineContextSnippetCollectorAlgo,
     SearchEngineMmapScannerAlgo,
+)
+
+from src.features.code_engine.algos.classifier import (
+    ClassifierAlgoBinaryClassifier,
+    SearchEngineBinaryClassifierAlgo,
+    ClassifierAlgoGeneratedCode,
+    SearchEngineGeneratedCodeClassifierAlgo,
+    ClassifierAlgoContentTypeProber,
+    SearchEngineContentTypeProberAlgo,
+    ClassifierAlgoSizeLineBouncer,
+    SearchEngineSizeLineBouncerAlgo,
+)
+
+from src.features.code_engine.algos.transform import (
+    TransformAlgoBurrowsWheeler,
+    SearchEngineBurrowsWheelerTransformAlgo,
+    TransformAlgoDeltaGapEncoding,
+    SearchEngineDeltaGapEncodingAlgo,
+    TransformAlgoVarintEncoding,
+    SearchEngineVarintEncodingAlgo,
+    TransformAlgoBitPackingPforDelta,
+    SearchEngineBitPackingPforDeltaAlgo,
+    TransformAlgoEliasFano,
+    SearchEngineEliasFanoAlgo,
+    TransformAlgoLcpArrayKasai,
+    SearchEngineLcpArrayKasaiAlgo,
+    TransformAlgoAstChunking,
+    SearchEngineAstChunkingAlgo,
+    TransformAlgoBooleanQuerySimplifier,
+    SearchEngineBooleanQuerySimplifierAlgo,
+    TransformAlgoReverseInnerOptimizer,
+    SearchEngineReverseInnerOptimizerAlgo,
+    TransformAlgoRegexToTrigramQuery,
+    SearchEngineRegexToTrigramQueryAlgo,
+    TransformAlgoLiteralExtraction,
+    SearchEngineLiteralExtractionAlgo,
 )
 
 from src.features.code_engine.algos.observability import (
@@ -74,6 +106,7 @@ from src.features.code_engine.algos.graph import (
     GraphAlgoTarjanScc,
     GraphAlgoSubgraphIsomorphism,
 )
+
 from src.features.code_engine.algos.vector_filter import (
     VectorFilterAlgoPreFilter,
     VectorFilterAlgoPostFilter,
@@ -83,14 +116,11 @@ from src.features.code_engine.algos.vector_filter import (
 )
 
 __all__ = [
+    # Search
     "SearchEngineRecursiveWalkAlgo",
     "SearchEngineWorkStealingWalkerAlgo",
     "SearchEngineGitAwareWalkerAlgo",
     "SearchEngineGlobMatcherAlgo",
-    "SearchEngineBinaryClassifierAlgo",
-    "SearchEngineContentTypeProberAlgo",
-    "SearchEngineSizeLineBouncerAlgo",
-    "SearchEngineGeneratedCodeClassifierAlgo",
     "SearchEngineTrigramIndexAlgo",
     "SearchEngineSimdMemchrAlgo",
     "SearchEngineAhoCorasickAlgo",
@@ -98,6 +128,39 @@ __all__ = [
     "SearchEngineStreamingChunkScannerAlgo",
     "SearchEngineContextSnippetCollectorAlgo",
     "SearchEngineMmapScannerAlgo",
+    # Classifier
+    "ClassifierAlgoBinaryClassifier",
+    "SearchEngineBinaryClassifierAlgo",
+    "ClassifierAlgoGeneratedCode",
+    "SearchEngineGeneratedCodeClassifierAlgo",
+    "ClassifierAlgoContentTypeProber",
+    "SearchEngineContentTypeProberAlgo",
+    "ClassifierAlgoSizeLineBouncer",
+    "SearchEngineSizeLineBouncerAlgo",
+    # Transform
+    "TransformAlgoBurrowsWheeler",
+    "SearchEngineBurrowsWheelerTransformAlgo",
+    "TransformAlgoDeltaGapEncoding",
+    "SearchEngineDeltaGapEncodingAlgo",
+    "TransformAlgoVarintEncoding",
+    "SearchEngineVarintEncodingAlgo",
+    "TransformAlgoBitPackingPforDelta",
+    "SearchEngineBitPackingPforDeltaAlgo",
+    "TransformAlgoEliasFano",
+    "SearchEngineEliasFanoAlgo",
+    "TransformAlgoLcpArrayKasai",
+    "SearchEngineLcpArrayKasaiAlgo",
+    "TransformAlgoAstChunking",
+    "SearchEngineAstChunkingAlgo",
+    "TransformAlgoBooleanQuerySimplifier",
+    "SearchEngineBooleanQuerySimplifierAlgo",
+    "TransformAlgoReverseInnerOptimizer",
+    "SearchEngineReverseInnerOptimizerAlgo",
+    "TransformAlgoRegexToTrigramQuery",
+    "SearchEngineRegexToTrigramQueryAlgo",
+    "TransformAlgoLiteralExtraction",
+    "SearchEngineLiteralExtractionAlgo",
+    # Observability
     "PositionSpanTracker",
     "PositionSpan",
     "AstExtractor",
@@ -114,6 +177,7 @@ __all__ = [
     "CodeOutlineGenerator",
     "OutlineSymbol",
     "FileOutline",
+    # Update
     "CstMatcher",
     "CstMatch",
     "UpdateBatchPatcherAlgo",
@@ -121,6 +185,7 @@ __all__ = [
     "PatchResult",
     "UpdateDiffEngineAlgo",
     "UnifiedDiffResult",
+    # Vector
     "VectorAlgoL2Normalization",
     "VectorAlgoMeanCentering",
     "VectorAlgoLayerNorm",
@@ -132,6 +197,7 @@ __all__ = [
     "VectorAlgoTokenPooling",
     "VectorAlgoSemanticChunker",
     "TextChunk",
+    # Graph
     "GraphAlgoBfsTraversal",
     "GraphAlgoDfsTraversal",
     "GraphAlgoDijkstraShortestPath",
@@ -141,6 +207,7 @@ __all__ = [
     "GraphAlgoConnectedComponents",
     "GraphAlgoTarjanScc",
     "GraphAlgoSubgraphIsomorphism",
+    # Vector Filter
     "VectorFilterAlgoPreFilter",
     "VectorFilterAlgoPostFilter",
     "VectorFilterAlgoInGraphFilter",

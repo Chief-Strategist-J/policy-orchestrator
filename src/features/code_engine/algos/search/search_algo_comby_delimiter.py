@@ -29,13 +29,28 @@ from typing import Dict, List, Any, Optional, Tuple
 
 class SearchEngineCombyDelimiterAlgo:
     """
-    Implements balanced-delimiter parsing and hole-matching template transformation.
+    --- contract:
+      id: ALGO-SRCH-81
+      name: SearchEngineCombyDelimiterAlgo
+      version: 1.0.0
+      category: search
+      complexity:
+        time: O(N)
+        space: O(Matches)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+      - structural.delimiter
+      - template.matcher
+      - code.rewrite
+      input_schema:
+        query: any
+      output_schema:
+        result: any
+    ---
     """
 
     def extract_balanced(self, text: str, start_idx: int, open_char: str = "(", close_char: str = ")") -> Tuple[Optional[str], int]:
-        """
-        Extracts content within balanced delimiters starting at start_idx.
-        """
         if start_idx >= len(text) or text[start_idx] != open_char:
             return None, start_idx
 
@@ -66,9 +81,6 @@ class SearchEngineCombyDelimiterAlgo:
         target_func: str,
         replacement_func: str
     ) -> Dict[str, Any]:
-        """
-        Replaces target_func(...) calls with replacement_func(...) while capturing balanced args.
-        """
         result: List[str] = []
         matches: List[Dict[str, Any]] = []
         idx = 0
@@ -107,9 +119,6 @@ class SearchEngineCombyDelimiterAlgo:
         }
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes Comby delimiter replacement.
-        """
         code = str(payload.get("code", ""))
         target_fn = str(payload.get("target_func", "old_fn"))
         replace_fn = str(payload.get("replacement_func", "new_fn"))

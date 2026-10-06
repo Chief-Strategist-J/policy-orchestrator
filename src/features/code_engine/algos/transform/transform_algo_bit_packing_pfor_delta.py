@@ -39,9 +39,29 @@ import math
 from typing import Dict, List, Any, Optional, Tuple
 
 
-class SearchEngineBitPackingPforDeltaAlgo:
+class TransformAlgoBitPackingPforDelta:
     """
-    Implements PForDelta patched bit packing and unpacking over integer blocks.
+    --- contract:
+      id: ALGO-TRFM-04
+      name: TransformAlgoBitPackingPforDelta
+      version: 1.0.0
+      category: transform
+      complexity:
+        time: O(N)
+        space: O(N)
+      pure_function: true
+      zero_inline_comments: true
+      capability_tags:
+        - compression.pfordelta
+        - bit_packing.simd
+        - integer.compression
+      input_schema:
+        values: list[int]
+        block_size: int
+      output_schema:
+        compressed_blocks: list[dict]
+        decompressed_values: list[int]
+    ---
     """
 
     def __init__(self, block_size: int = 64, exception_ratio: float = 0.10) -> None:
@@ -61,9 +81,6 @@ class SearchEngineBitPackingPforDeltaAlgo:
         return max(1, math.ceil(math.log2(target_max + 1)))
 
     def compress_block(self, values: List[int]) -> Dict[str, Any]:
-        """
-        Compresses a single block using PForDelta bit-packing and exception list.
-        """
         if not values:
             return {"bit_width": 0, "packed_words": [], "exceptions": [], "count": 0}
 
@@ -102,9 +119,6 @@ class SearchEngineBitPackingPforDeltaAlgo:
         }
 
     def decompress_block(self, block: Dict[str, Any]) -> List[int]:
-        """
-        Decompresses a PForDelta block by unpacking bits and patching exceptions.
-        """
         b = int(block.get("bit_width", 0))
         words = block.get("packed_words", [])
         exceptions = block.get("exceptions", [])
@@ -139,9 +153,6 @@ class SearchEngineBitPackingPforDeltaAlgo:
         return unpacked
 
     def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Executes PForDelta block compression, decompression, and efficiency metrics.
-        """
         values = [int(x) for x in payload.get("values", [])]
         block_size = int(payload.get("block_size", self._block_size))
 
@@ -171,3 +182,6 @@ class SearchEngineBitPackingPforDeltaAlgo:
             "decompressed_values": decompressed_all,
             "round_trip_valid": (values == decompressed_all)
         }
+
+
+SearchEngineBitPackingPforDeltaAlgo = TransformAlgoBitPackingPforDelta
