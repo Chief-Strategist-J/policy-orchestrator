@@ -31,13 +31,13 @@ This document tracks the comprehensive architecture, completed capabilities, the
 | Category Source Directory | Total Algos Described | Implemented & Verified | Pending | Status |
 | :--- | :---: | :---: | :---: | :---: |
 | **`vectorAlgo/`** (Vector Math, Search, Lifecycle, Obs) | 200 | **200** | 0 | 🟢 100% Complete (All 4 Parts Done) |
-| **`fileIndexingAndSearching/`** (Search, AST, Diff, CST) | 200 | **50** | 150 | 🟡 25% Complete (Part 1 Done) |
+| **`fileIndexingAndSearching/`** (Search, AST, Diff, CST, Mutation) | 200 | **87** | 113 | 🟡 43.5% Complete (Bulk Search + Buffers + Diffs + Syntax/Atomic Mutation Done) |
 | **`graphs/`** (Traversal, Flow, Temporal, Distributed) | 300+ | **9** | 291+ | 🔴 3% Complete |
 | **`knowlageGraph/`** (KG Modeling, Reasoning, GNNs) | 100+ | **0** | 100+ | ⚪ Pending |
 | **`glue/`** (Composition Models, L1–L8 Pipeline Contracts) | 8 Specs | **L1 Contracts** | L2–L8 Engines | 🟡 In Progress |
-| **TOTALS** | **800+** | **268 Live** | **541+** | **Active Pipeline** |
+| **TOTALS** | **800+** | **296 Live** | **504+** | **Active Pipeline** |
 
-*Current System Metrics: 268 Algorithms, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 348 Automated Passing Tests.*
+*Current System Metrics: 296 Algorithms Live, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 388 Automated Passing Tests.*
 
 ---
 
@@ -124,12 +124,16 @@ Focuses on codebase indexing, syntax-tree transformation, fuzzy search, and veri
 - 🟢 **Part 1: Bulk Search, String Matching, Regex (#1–50)**:
   - **100% Complete (50/50 Live)**: `ALGO-SRCH-01` to `ALGO-SRCH-15`, `ALGO-OBS-16` to `ALGO-OBS-21`, `ALGO-UPD-22` to `ALGO-UPD-24`, and `ALGO-SRCH-25` to `ALGO-SRCH-50`.
   - Recursive walk, work-stealing, git-aware, glob matcher, binary classifier, MIME prober, size bouncer, codegen detector, SIMD memchr, Aho-Corasick, lazy DFA, chunk scanner, context collector, mmap scanner, Wu-Manber, Z-algorithm, Levenshtein DP distance, Myers bit-parallel, Levenshtein automaton, BK-tree, MinHash/Jaccard, fzf fuzzy scorer, regex parser, Thompson NFA, Pike VM, safe backtracking regex, subset DFA, lazy hybrid DFA, literal extraction, reverse inner optimizer, Hyperscan regex set, ReDoS protection, inverted index, trigram inverted index, positional trigram offset index, sparse n-grams, suffix array (SA-IS), Kasai LCP array, suffix automaton (DAWG), Burrows-Wheeler Transform (BWT) & LF-mapping.
+- 🟢 **Part 3 (Partial): Text Buffers & Mutations (#117–144)**:
+  - **100% Complete (12 Live)**: Gap Buffer (`ALGO-BUF-139`), Rope (`ALGO-BUF-140`), Piece Table (`ALGO-BUF-141`), Line Index (`ALGO-BUF-142`), Undo/Redo Stack (`ALGO-BUF-144`), Text Edit (`ALGO-BUF-117`), Workspace Edit (`ALGO-BUF-118`), Position Encoding (`ALGO-BUF-119`), Reverse-Order Application (`ALGO-BUF-120`), Interval Tree Overlap (`ALGO-BUF-122`), Edit Rebasing (`ALGO-BUF-123`), Idempotent Edits (`ALGO-BUF-126`).
+- 🟢 **Part 3 (Partial): Diff & Patch Refinements (#124–155)**:
+  - **100% Complete (11 Live)**: LCS DP (`ALGO-DIFF-145`), Myers $O(ND)$ (`ALGO-DIFF-146`), Linear Space Myers (`ALGO-DIFF-147`), Patience Diff (`ALGO-DIFF-148`), Histogram Diff (`ALGO-DIFF-149`), Line Hashing/Interning (`ALGO-DIFF-150`), Unified Format Parser (`ALGO-DIFF-124`), Search-Replace Block Diff (`ALGO-DIFF-125`), Word/Char Refinement (`ALGO-DIFF-151`), Three-Way Merge (`ALGO-DIFF-153`), Fuzzy Patch Application (`ALGO-DIFF-155`).
+- 🟢 **Part 3 (Partial): Syntax-Directed Transformations (#127–138)**:
+  - **100% Complete (7 Live)**: Lossless Concrete Syntax Tree (`ALGO-SYNX-127`), Red-Green Syntax Tree (`ALGO-SYNX-128`), Trivia Attachment Engine (`ALGO-SYNX-129`), Structural Tree Rewriter (`ALGO-SYNX-131`), Semantic Patch Reconciliation (`ALGO-SYNX-133`), Import Manager (`ALGO-SYNX-137`), Safe Rename Refactoring (`ALGO-SYNX-138`).
+- 🟢 **Part 4 (Partial): Atomic Transactional Application & Pre/Post Gating (#157–195)**:
+  - **100% Complete (7 Live)**: Dry-Run Mutation Planner (`ALGO-ATMC-157`), CAS Content Hash Gating (`ALGO-ATMC-159`), Write-Ahead Journal (`ALGO-ATMC-161`), Multi-File Saga Compensator (`ALGO-ATMC-163`), File Identity & Inode Preserver (`ALGO-ATMC-165`), Postcondition Verified Search (`ALGO-ATMC-184`), Exact Replace Unique Gating (`ALGO-ATMC-195`).
 - ⏳ **Part 2: Index Structures & Structural Symbol Search (#51–100)**:
   - FM-index, Patricia Radix Tree, FST (Finite State Transducers), B+ trees, Roaring Bitmaps, Galloping intersection, Block-Max WAND, SCIP/LSIF code intelligence, Call Graph, CFG, Static Single Assignment (SSA), Dataflow worklist, Taint analysis, CodeQL Datalog rules.
-- ⏳ **Part 3: Vector Retrieval, Syntax Trees, Text Buffers, Diff (#101–150)**:
-  - AST-aware chunking, code embeddings, piece-table text buffers, rope data structures, Myers diff, patience diff, GumTree AST diff, tree edit distance (Zhang-Shasha), syntax-directed refactoring.
-- ⏳ **Part 4: Diff Refinement, Safe Application & LLM Edits (#151–200)**:
-  - Precondition hash gating, semantic AST patch reconciliation, Zero-Inline-Comment extractors, multi-file atomic transactions, rollback recovery, lint boundary enforcement.
 
 ---
 
