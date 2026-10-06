@@ -34,7 +34,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineRarestFirstOrderingAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-70
+      id: ALGO-SRCH-71
       name: SearchEngineRarestFirstOrderingAlgo
       version: 1.0.0
       category: search

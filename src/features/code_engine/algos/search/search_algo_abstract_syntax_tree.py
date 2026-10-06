@@ -33,7 +33,7 @@ from typing import Dict, List, Any, Optional
 class SearchEngineAbstractSyntaxTreeAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-76
+      id: ALGO-SRCH-79
       name: SearchEngineAbstractSyntaxTreeAlgo
       version: 1.0.0
       category: search

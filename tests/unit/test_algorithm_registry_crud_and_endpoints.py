@@ -51,7 +51,7 @@ def memory_service():
 def test_sqlite_algorithm_crud_lifecycle(sqlite_service):
     # 1. Verify initial seeded count
     all_algos = sqlite_service.list_algorithms()
-    assert len(all_algos) == 242
+    assert len(all_algos) == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     # 2. Get specific algorithm
     search_01 = sqlite_service.get_algorithm("ALGO-SRCH-01")
@@ -160,8 +160,8 @@ def test_parity_verification(sqlite_service, memory_service):
     # Test SQLite parity
     parity_sqlite = sqlite_service.verify_parity_with_builtins()
     assert parity_sqlite["is_exact_parity"] is True
-    assert parity_sqlite["code_count"] == 242
-    assert parity_sqlite["db_count"] == 242
+    assert parity_sqlite["code_count"] == len(BUILTIN_ALGORITHM_CONTRACTS)
+    assert parity_sqlite["db_count"] == len(BUILTIN_ALGORITHM_CONTRACTS)
     assert len(parity_sqlite["missing_ids"]) == 0
     assert len(parity_sqlite["extra_ids"]) == 0
     assert len(parity_sqlite["mismatched_ids"]) == 0
@@ -169,8 +169,8 @@ def test_parity_verification(sqlite_service, memory_service):
     # Test InMemory parity
     parity_mem = memory_service.verify_parity_with_builtins()
     assert parity_mem["is_exact_parity"] is True
-    assert parity_mem["code_count"] == 242
-    assert parity_mem["db_count"] == 242
+    assert parity_mem["code_count"] == len(BUILTIN_ALGORITHM_CONTRACTS)
+    assert parity_mem["db_count"] == len(BUILTIN_ALGORITHM_CONTRACTS)
 
 
 def test_rest_api_algorithm_registry_endpoints():
@@ -181,7 +181,7 @@ def test_rest_api_algorithm_registry_endpoints():
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
-    assert len(body["data"]) >= 242
+    assert len(body["data"]) >= len(BUILTIN_ALGORITHM_CONTRACTS)
 
     # 2. GET single contract
     res_single = client.get("/api/v1/algorithms/registry/contracts/ALGO-SRCH-01")
@@ -230,11 +230,11 @@ def test_rest_api_algorithm_registry_endpoints():
     # 5. POST Seed
     res_seed = client.post("/api/v1/algorithms/registry/seed")
     assert res_seed.status_code == 200
-    assert res_seed.json()["data"]["seeded_algorithms"] == 242
+    assert res_seed.json()["data"]["seeded_algorithms"] == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     # 6. GET Parity check
     res_parity = client.get("/api/v1/algorithms/registry/parity")
     assert res_parity.status_code == 200
-    assert res_parity.json()["data"]["code_count"] == 242
+    assert res_parity.json()["data"]["code_count"] == len(BUILTIN_ALGORITHM_CONTRACTS)
     assert res_parity.json()["data"]["is_exact_parity"] is True
 

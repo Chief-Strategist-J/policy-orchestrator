@@ -39,8 +39,19 @@ class AlloyDBAlgorithmRegistryAdapter(AlgorithmRegistryPort):
 
     def _get_connection(self):
         import psycopg2
-        if self._conn is None or self._conn.closed != 0:
-            self._conn = psycopg2.connect(self.db_url)
+        if self._conn is not None:
+            try:
+                if self._conn.closed == 0:
+                    with self._conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                    return self._conn
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+                self._conn = None
+        self._conn = psycopg2.connect(self.db_url)
         return self._conn
 
     def register_algorithm(self, contract: AlgorithmContract) -> AlgorithmContract:

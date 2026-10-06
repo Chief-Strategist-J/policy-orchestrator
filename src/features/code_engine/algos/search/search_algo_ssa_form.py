@@ -30,7 +30,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineSsaFormAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-92
+      id: ALGO-SRCH-95
       name: SearchEngineSsaFormAlgo
       version: 1.0.0
       category: search

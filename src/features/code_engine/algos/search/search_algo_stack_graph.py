@@ -39,7 +39,7 @@ class StackGraphEdge:
 class SearchEngineStackGraphAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-86
+      id: ALGO-SRCH-89
       name: SearchEngineStackGraphAlgo
       version: 1.0.0
       category: search

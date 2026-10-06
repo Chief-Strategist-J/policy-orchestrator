@@ -39,7 +39,7 @@ class ScopeGraphNode:
 class SearchEngineScopeGraphAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-85
+      id: ALGO-SRCH-88
       name: SearchEngineScopeGraphAlgo
       version: 1.0.0
       category: search

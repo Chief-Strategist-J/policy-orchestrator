@@ -40,7 +40,7 @@ class LexicalScope:
 class SearchEngineSymbolTableAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-84
+      id: ALGO-SRCH-87
       name: SearchEngineSymbolTableAlgo
       version: 1.0.0
       category: search

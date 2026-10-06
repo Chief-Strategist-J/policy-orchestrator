@@ -32,7 +32,7 @@ from typing import Dict, List, Any, Optional
 class SearchEngineLspProtocolAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-87
+      id: ALGO-SRCH-90
       name: SearchEngineLspProtocolAlgo
       version: 1.0.0
       category: search

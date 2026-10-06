@@ -33,7 +33,7 @@ from typing import Dict, List, Any, Optional, Tuple, Set
 class SearchEngineGumTreeDiffAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-83
+      id: ALGO-SRCH-86
       name: SearchEngineGumTreeDiffAlgo
       version: 1.0.0
       category: search

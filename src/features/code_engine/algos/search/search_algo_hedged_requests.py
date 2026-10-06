@@ -32,7 +32,7 @@ from typing import Dict, List, Any, Optional, Callable
 class SearchEngineHedgedRequestsAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-74
+      id: ALGO-SRCH-75
       name: SearchEngineHedgedRequestsAlgo
       version: 1.0.0
       category: search

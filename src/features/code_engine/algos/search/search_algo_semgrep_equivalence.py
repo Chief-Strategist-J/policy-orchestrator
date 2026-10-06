@@ -32,7 +32,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineSemgrepEquivalenceAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-80
+      id: ALGO-SRCH-83
       name: SearchEngineSemgrepEquivalenceAlgo
       version: 1.0.0
       category: search

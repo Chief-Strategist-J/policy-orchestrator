@@ -35,7 +35,7 @@ from typing import Dict, List, Any, Optional, Set
 class SearchEngineTokenizerSearchAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-74
+      id: ALGO-SRCH-77
       name: SearchEngineTokenizerSearchAlgo
       version: 1.0.0
       category: search

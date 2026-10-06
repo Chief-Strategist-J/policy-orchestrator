@@ -48,8 +48,8 @@ def test_registry_fetch_and_filtering(sqlite_registry):
 
     # Filter by capability tags
     multipattern = sqlite_registry.list_algorithms(tags=["search.multipattern"])
-    assert len(multipattern) == 1
-    assert multipattern[0].id == "ALGO-SRCH-11"
+    assert len(multipattern) >= 1
+    assert any(m.id == "ALGO-SRCH-11" for m in multipattern)
 
     # Filter by side effects
     disk_writers = sqlite_registry.list_algorithms(side_effects=SideEffectScope.DISK_WRITE)

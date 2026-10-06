@@ -30,7 +30,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineCombyDelimiterAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-81
+      id: ALGO-SRCH-84
       name: SearchEngineCombyDelimiterAlgo
       version: 1.0.0
       category: search

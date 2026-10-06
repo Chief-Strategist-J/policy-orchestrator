@@ -31,7 +31,7 @@ from typing import Dict, List, Any, Optional, Callable
 class SearchEngineEarlyTerminationAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-72
+      id: ALGO-SRCH-73
       name: SearchEngineEarlyTerminationAlgo
       version: 1.0.0
       category: search

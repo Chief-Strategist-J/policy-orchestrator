@@ -40,25 +40,25 @@ def test_sqlite_migration_and_seeding(tmp_path):
 
     # Seed algorithms
     count = runner.seed_algorithm_catalog(conn)
-    assert count == 242
+    assert count == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     cursor.execute("SELECT COUNT(*) FROM algorithm_registry")
-    assert cursor.fetchone()[0] == 242
+    assert cursor.fetchone()[0] == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     cursor.execute("SELECT COUNT(*) FROM type_adapters")
-    assert cursor.fetchone()[0] == 11
+    assert cursor.fetchone()[0] == len(BUILTIN_TYPE_ADAPTERS)
 
     # Idempotent re-seeding
     count2 = runner.seed_algorithm_catalog(conn)
-    assert count2 == 242
+    assert count2 == len(BUILTIN_ALGORITHM_CONTRACTS)
     cursor.execute("SELECT COUNT(*) FROM algorithm_registry")
-    assert cursor.fetchone()[0] == 242
+    assert cursor.fetchone()[0] == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     # Parity check
     parity = runner.verify_database_parity(conn)
     assert parity.get("parity_matched") is True
-    assert parity["total_code_algorithms"] == 242
-    assert parity["total_db_algorithms"] == 242
+    assert parity["total_code_algorithms"] == len(BUILTIN_ALGORITHM_CONTRACTS)
+    assert parity["total_db_algorithms"] == len(BUILTIN_ALGORITHM_CONTRACTS)
 
     conn.close()
 
@@ -86,7 +86,7 @@ def test_sqlite_migration_rollback_and_reapply(tmp_path):
     reapply_res = runner.run_migrations()
     assert reapply_res["status"] == "success"
     seeded = runner.seed_algorithm_catalog()
-    assert seeded == 242
+    assert seeded == len(BUILTIN_ALGORITHM_CONTRACTS)
 
 
 def test_migration_sql_files_exist():

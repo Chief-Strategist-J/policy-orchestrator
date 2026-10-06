@@ -31,7 +31,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineDatalogCodeqlAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-95
+      id: ALGO-SRCH-98
       name: SearchEngineDatalogCodeqlAlgo
       version: 1.0.0
       category: search

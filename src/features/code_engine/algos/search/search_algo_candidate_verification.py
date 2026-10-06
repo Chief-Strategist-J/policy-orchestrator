@@ -37,7 +37,7 @@ from typing import Dict, List, Any, Optional
 class SearchEngineCandidateVerificationAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-71
+      id: ALGO-SRCH-72
       name: SearchEngineCandidateVerificationAlgo
       version: 1.0.0
       category: search

@@ -32,7 +32,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineIndexVersionedCacheAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-73
+      id: ALGO-SRCH-76
       name: SearchEngineIndexVersionedCacheAlgo
       version: 1.0.0
       category: search

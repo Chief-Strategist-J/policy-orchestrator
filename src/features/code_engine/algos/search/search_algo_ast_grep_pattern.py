@@ -31,7 +31,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineAstGrepPatternAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-79
+      id: ALGO-SRCH-82
       name: SearchEngineAstGrepPatternAlgo
       version: 1.0.0
       category: search

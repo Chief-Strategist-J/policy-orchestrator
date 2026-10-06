@@ -34,7 +34,7 @@ from typing import Dict, List, Any, Optional, Set
 class SearchEngineScipLsifIndexAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-88
+      id: ALGO-SRCH-91
       name: SearchEngineScipLsifIndexAlgo
       version: 1.0.0
       category: search

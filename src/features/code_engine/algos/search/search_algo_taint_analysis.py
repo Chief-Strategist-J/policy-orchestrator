@@ -30,7 +30,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineTaintAnalysisAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-94
+      id: ALGO-SRCH-97
       name: SearchEngineTaintAnalysisAlgo
       version: 1.0.0
       category: search

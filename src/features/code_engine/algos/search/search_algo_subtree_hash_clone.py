@@ -33,7 +33,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineSubtreeHashCloneAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-82
+      id: ALGO-SRCH-85
       name: SearchEngineSubtreeHashCloneAlgo
       version: 1.0.0
       category: search

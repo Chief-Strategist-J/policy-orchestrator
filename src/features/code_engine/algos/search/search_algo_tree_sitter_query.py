@@ -30,7 +30,7 @@ from typing import Dict, List, Any, Optional
 class SearchEngineTreeSitterQueryAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-78
+      id: ALGO-SRCH-81
       name: SearchEngineTreeSitterQueryAlgo
       version: 1.0.0
       category: search

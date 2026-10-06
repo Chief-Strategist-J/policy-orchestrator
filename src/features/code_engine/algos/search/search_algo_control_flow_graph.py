@@ -42,7 +42,7 @@ class BasicBlock:
 class SearchEngineControlFlowGraphAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-91
+      id: ALGO-SRCH-94
       name: SearchEngineControlFlowGraphAlgo
       version: 1.0.0
       category: search

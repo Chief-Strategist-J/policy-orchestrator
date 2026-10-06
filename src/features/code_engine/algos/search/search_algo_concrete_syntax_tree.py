@@ -51,7 +51,7 @@ class CstNode:
 class SearchEngineConcreteSyntaxTreeAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-75
+      id: ALGO-SRCH-78
       name: SearchEngineConcreteSyntaxTreeAlgo
       version: 1.0.0
       category: search

@@ -32,7 +32,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineImportDependencyGraphAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-90
+      id: ALGO-SRCH-93
       name: SearchEngineImportDependencyGraphAlgo
       version: 1.0.0
       category: search

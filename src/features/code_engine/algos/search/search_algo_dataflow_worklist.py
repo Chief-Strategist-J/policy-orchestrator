@@ -36,7 +36,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineDataflowWorklistAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-93
+      id: ALGO-SRCH-96
       name: SearchEngineDataflowWorklistAlgo
       version: 1.0.0
       category: search

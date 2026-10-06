@@ -42,7 +42,7 @@ class SyntaxTreeNode:
 class SearchEngineIncrementalParserAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-77
+      id: ALGO-SRCH-80
       name: SearchEngineIncrementalParserAlgo
       version: 1.0.0
       category: search

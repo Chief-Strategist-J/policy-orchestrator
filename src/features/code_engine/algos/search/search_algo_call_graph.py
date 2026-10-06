@@ -33,7 +33,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 class SearchEngineCallGraphAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-89
+      id: ALGO-SRCH-92
       name: SearchEngineCallGraphAlgo
       version: 1.0.0
       category: search

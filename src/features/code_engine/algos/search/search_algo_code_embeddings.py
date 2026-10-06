@@ -34,7 +34,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class SearchEngineCodeEmbeddingsAlgo:
     """
     --- contract:
-      id: ALGO-SRCH-98
+      id: ALGO-SRCH-100
       name: SearchEngineCodeEmbeddingsAlgo
       version: 1.0.0
       category: search
