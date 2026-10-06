@@ -1,31 +1,31 @@
 """
-Knowledge Graph Query Package.
+Knowledge Graph - Query Subpackage.
 """
 
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_sparql_engine import KgAlgoSparqlEngine
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_opencypher_matcher import KgAlgoOpencypherMatcher
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_gql_evaluator import KgAlgoGqlEvaluator
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_gremlin_traversal import KgAlgoGremlinTraversal
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_vf2_subgraph_isomorphism import KgAlgoVf2SubgraphIsomorphism
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_leapfrog_triejoin import KgAlgoLeapfrogTriejoin
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_join_ordering_cardinality import KgAlgoJoinOrderingCardinality
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_regular_path_queries import KgAlgoRegularPathQueries
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_federated_queries import KgAlgoFederatedQueries
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_obda_query_rewriting import KgAlgoObdaQueryRewriting
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_parameterized_templates import KgAlgoParameterizedTemplates
-from src.features.code_engine.algos.knowledge_graph.query.kg_algo_pagination_caching import KgAlgoPaginationCaching
+from .kg_algo_federated_queries import KgAlgoFederatedQueries
+from .kg_algo_gql_evaluator import KgAlgoGqlEvaluator
+from .kg_algo_gremlin_traversal import KgAlgoGremlinTraversal
+from .kg_algo_join_ordering_cardinality import KgAlgoJoinOrderingCardinality
+from .kg_algo_leapfrog_triejoin import KgAlgoLeapfrogTriejoin
+from .kg_algo_obda_query_rewriting import KgAlgoObdaQueryRewriting
+from .kg_algo_opencypher_matcher import KgAlgoOpencypherMatcher
+from .kg_algo_pagination_caching import KgAlgoPaginationCaching
+from .kg_algo_parameterized_templates import KgAlgoParameterizedTemplates
+from .kg_algo_regular_path_queries import KgAlgoRegularPathQueries
+from .kg_algo_sparql_engine import KgAlgoSparqlEngine
+from .kg_algo_vf2_subgraph_isomorphism import KgAlgoVf2SubgraphIsomorphism
 
 __all__ = [
-    "KgAlgoSparqlEngine",
-    "KgAlgoOpencypherMatcher",
+    "KgAlgoFederatedQueries",
     "KgAlgoGqlEvaluator",
     "KgAlgoGremlinTraversal",
-    "KgAlgoVf2SubgraphIsomorphism",
-    "KgAlgoLeapfrogTriejoin",
     "KgAlgoJoinOrderingCardinality",
-    "KgAlgoRegularPathQueries",
-    "KgAlgoFederatedQueries",
+    "KgAlgoLeapfrogTriejoin",
     "KgAlgoObdaQueryRewriting",
-    "KgAlgoParameterizedTemplates",
+    "KgAlgoOpencypherMatcher",
     "KgAlgoPaginationCaching",
+    "KgAlgoParameterizedTemplates",
+    "KgAlgoRegularPathQueries",
+    "KgAlgoSparqlEngine",
+    "KgAlgoVf2SubgraphIsomorphism",
 ]
