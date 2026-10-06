@@ -121,6 +121,47 @@ from src.features.code_engine.algos.buffer import (
     CodeEnginePieceTableAlgo,
     CodeEngineLineIndexAlgo,
     CodeEngineUndoRedoStackAlgo,
+    CodeEngineTextEditAlgo,
+    CodeEngineWorkspaceEditAlgo,
+    CodeEnginePositionEncodingAlgo,
+    CodeEngineReverseOrderEditAlgo,
+    CodeEngineIntervalTreeAlgo,
+    CodeEngineEditRebasingAlgo,
+    CodeEngineIdempotentEditsAlgo,
+)
+
+from src.features.code_engine.algos.diff import (
+    CodeEngineLcsDpDiffAlgo,
+    CodeEngineMyersDiffAlgo,
+    CodeEngineLinearMyersDiffAlgo,
+    CodeEnginePatienceDiffAlgo,
+    CodeEngineHistogramDiffAlgo,
+    CodeEngineLineHashingInterningAlgo,
+    CodeEngineUnifiedDiffAlgo,
+    CodeEngineSearchReplaceBlockAlgo,
+    CodeEngineWordCharRefinementAlgo,
+    CodeEngineThreeWayMergeAlgo,
+    CodeEngineFuzzyPatchAlgo,
+)
+
+from src.features.code_engine.algos.syntax_mutation import (
+    CodeEngineLosslessSyntaxTreeAlgo,
+    CodeEngineRedGreenTreeAlgo,
+    CodeEngineTriviaAttachmentAlgo,
+    CodeEngineTreeRewriterAlgo,
+    CodeEngineSemanticPatchAlgo,
+    CodeEngineImportManagerAlgo,
+    CodeEngineRenameRefactoringAlgo,
+)
+
+from src.features.code_engine.algos.atomic_mutation import (
+    CodeEngineDryRunPlannerAlgo,
+    CodeEngineCasContentHashAlgo,
+    CodeEngineWriteAheadJournalAlgo,
+    CodeEngineSagaCompensatorAlgo,
+    CodeEngineFileIdentityPreserverAlgo,
+    CodeEnginePostConditionSearchAlgo,
+    CodeEngineExactReplaceUniqueAlgo,
 )
 
 __all__ = [
@@ -174,6 +215,41 @@ __all__ = [
     "CodeEnginePieceTableAlgo",
     "CodeEngineLineIndexAlgo",
     "CodeEngineUndoRedoStackAlgo",
+    "CodeEngineTextEditAlgo",
+    "CodeEngineWorkspaceEditAlgo",
+    "CodeEnginePositionEncodingAlgo",
+    "CodeEngineReverseOrderEditAlgo",
+    "CodeEngineIntervalTreeAlgo",
+    "CodeEngineEditRebasingAlgo",
+    "CodeEngineIdempotentEditsAlgo",
+    # Diff
+    "CodeEngineLcsDpDiffAlgo",
+    "CodeEngineMyersDiffAlgo",
+    "CodeEngineLinearMyersDiffAlgo",
+    "CodeEnginePatienceDiffAlgo",
+    "CodeEngineHistogramDiffAlgo",
+    "CodeEngineLineHashingInterningAlgo",
+    "CodeEngineUnifiedDiffAlgo",
+    "CodeEngineSearchReplaceBlockAlgo",
+    "CodeEngineWordCharRefinementAlgo",
+    "CodeEngineThreeWayMergeAlgo",
+    "CodeEngineFuzzyPatchAlgo",
+    # Syntax Mutation
+    "CodeEngineLosslessSyntaxTreeAlgo",
+    "CodeEngineRedGreenTreeAlgo",
+    "CodeEngineTriviaAttachmentAlgo",
+    "CodeEngineTreeRewriterAlgo",
+    "CodeEngineSemanticPatchAlgo",
+    "CodeEngineImportManagerAlgo",
+    "CodeEngineRenameRefactoringAlgo",
+    # Atomic Mutation
+    "CodeEngineDryRunPlannerAlgo",
+    "CodeEngineCasContentHashAlgo",
+    "CodeEngineWriteAheadJournalAlgo",
+    "CodeEngineSagaCompensatorAlgo",
+    "CodeEngineFileIdentityPreserverAlgo",
+    "CodeEnginePostConditionSearchAlgo",
+    "CodeEngineExactReplaceUniqueAlgo",
     # Observability
     "PositionSpanTracker",
     "PositionSpan",
