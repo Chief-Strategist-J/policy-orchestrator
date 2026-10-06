@@ -160,8 +160,15 @@ from src.features.code_engine.algos.atomic_mutation import (
     CodeEngineWriteAheadJournalAlgo,
     CodeEngineSagaCompensatorAlgo,
     CodeEngineFileIdentityPreserverAlgo,
+    CodeEngineBuildGraphAffectedAlgo,
     CodeEnginePostConditionSearchAlgo,
     CodeEngineExactReplaceUniqueAlgo,
+    CodeEngineErrorFeedbackRetryAlgo,
+    CodeEngineSynthesizedCodemodsAlgo,
+    CodeEngineSpeculativeEditsAlgo,
+    CodeEngineScratchpadProgressAlgo,
+    CodeEngineHumanCheckpointAlgo,
+    CodeEnginePermissionSandboxAlgo,
 )
 
 __all__ = [
