@@ -32,12 +32,12 @@ This document tracks the comprehensive architecture, completed capabilities, the
 | :--- | :---: | :---: | :---: | :---: |
 | **`vectorAlgo/`** (Vector Math, Search, Lifecycle, Obs) | 200 | **200** | 0 | 🟢 100% Complete (All 4 Parts Done) |
 | **`fileIndexingAndSearching/`** (Search, AST, Diff, CST, Mutation, Verification) | 206 | **206** | 0 | 🟢 100% Complete (All 4 Parts Done) |
+| **`knowlageGraph/`** (Modeling, Storage, Query, Analytics, Reasoning, GNNs) | 200 | **100** | 100 | 🟡 50% Complete (Parts 1 & 2 Done) |
 | **`graphs/`** (Traversal, Flow, Temporal, Distributed) | 300+ | **9** | 291+ | 🔴 3% Complete |
-| **`knowlageGraph/`** (KG Modeling, Storage, Reasoning, GNNs) | 200 | **50** | 150 | 🟡 25% Complete (Part 1 Done) |
 | **`glue/`** (Composition Models, L1–L8 Pipeline Contracts) | 8 Specs | **L1 Contracts** | L2–L8 Engines | 🟡 In Progress |
-| **TOTALS** | **900+** | **465 Live** | **441+** | **Active Pipeline** |
+| **TOTALS** | **900+** | **515 Live** | **391+** | **Active Pipeline** |
 
-*Current System Metrics: 465 Algorithms Live, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 445 Automated Passing Tests.*
+*Current System Metrics: 515 Algorithms Live, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 406 Automated Targeted Unit Tests Passing in ~2.2s.*
 
 ---
 
@@ -159,8 +159,12 @@ Focuses on enterprise Knowledge Graph construction, semantic querying, ontology 
     - Extraction Pipeline: Sentence Segmentation (`ALGO-KG-25`), Named Entity Recognition (`ALGO-KG-26`), Entity Linking & Disambiguation (`ALGO-KG-27`), Coreference Resolution (`ALGO-KG-28`), Supervised Relation Extraction (`ALGO-KG-29`), Open Information Extraction (`ALGO-KG-30`), Schema-Guided LLM Extractor (`ALGO-KG-31`), Event Extraction (`ALGO-KG-32`), Attribute & Value Normalization (`ALGO-KG-33`), Structured Table Extractor (`ALGO-KG-34`).
     - Entity Resolution: Blocking Resolution (`ALGO-KG-35`), Fellegi-Sunter Linkage (`ALGO-KG-36`), Similarity Joins (`ALGO-KG-37`), Match Pair Clustering (`ALGO-KG-38`), Record Canonicalization & Golden Records (`ALGO-KG-39`), Relation Canonicalization (`ALGO-KG-40`).
     - Ontology & Quality: Ontology Alignment (`ALGO-KG-41`), R2RML Relational-to-RDF (`ALGO-KG-42`), Hearst Pattern Taxonomy Induction (`ALGO-KG-43`), Entity Type Inference (`ALGO-KG-44`), LLM Ontology Synthesis (`ALGO-KG-45`), Schema Evolution & Compatibility (`ALGO-KG-46`), Property Graph Constraints (`ALGO-KG-47`), Data Quality Dimensions Evaluator (`ALGO-KG-48`), Relation Inverse/Symmetric Normalizer (`ALGO-KG-49`), Truth Discovery & Fact Confidence (`ALGO-KG-50`).
-- ⏳ **Section 2: Querying, Graph Algorithms, and Reasoning (#51–100)**:
-  - SPARQL 1.1, openCypher, GQL, Gremlin, Subgraph Matching (VF2), Leapfrog Triejoin, 2-Hop Reachability, Brandes Betweenness, Personalized PageRank, RDFS Entailment, OWL 2 RL/EL, Rete Forward Chaining, Datalog Semi-Naive, Tableau Reasoner.
+- 🟢 **Section 2: Querying, Graph Algorithms, and Reasoning (#51–100)**:
+  - **100% Complete (50/50 Live)**:
+    - Query Languages & Optimization: SPARQL 1.1 (`ALGO-KG-51`), openCypher Matcher (`ALGO-KG-52`), GQL ISO/IEC 39075 Evaluator (`ALGO-KG-53`), Gremlin Step Traversal (`ALGO-KG-54`), VF2 Subgraph Isomorphism (`ALGO-KG-55`), Leapfrog Triejoin (`ALGO-KG-56`), Greedy Join Ordering & Cardinality (`ALGO-KG-57`), Regular Path Queries (`ALGO-KG-58`), Federated Query Merger (`ALGO-KG-59`), OBDA Query Rewriting (`ALGO-KG-60`), Parameterized Query Templates (`ALGO-KG-61`), Result Caching & Cursor Pagination (`ALGO-KG-62`).
+    - Graph Traversal & Paths: BFS Traversal (`ALGO-KG-63`), DFS Cycle Traversal (`ALGO-KG-64`), Bidirectional BFS (`ALGO-KG-65`), Dijkstra Shortest Path (`ALGO-KG-66`), A* Heuristic Search (`ALGO-KG-67`), Yen's K-Shortest Paths (`ALGO-KG-68`), Random Walk with Restart (`ALGO-KG-69`), Metapath Traversal (`ALGO-KG-70`), 2-Hop Labeling Reachability (`ALGO-KG-71`), Transitive Closure Matrix (`ALGO-KG-72`).
+    - Graph Analytics & Centrality: In/Out Degree Centrality (`ALGO-KG-73`), PageRank Power Iteration (`ALGO-KG-74`), Personalized PageRank (`ALGO-KG-75`), Brandes Betweenness Centrality (`ALGO-KG-76`), Closeness & Harmonic Centrality (`ALGO-KG-77`), HITS Hubs & Authorities (`ALGO-KG-78`), Union-Find Connected Components (`ALGO-KG-79`), Tarjan Strongly Connected Components (`ALGO-KG-80`), Louvain Modularity Community Detection (`ALGO-KG-81`), Leiden Community Refiner (`ALGO-KG-82`), Label Propagation (`ALGO-KG-83`), K-Core Subgraph Decomposition (`ALGO-KG-84`).
+    - Ontology Reasoning & Logic: RDFS Entailment (`ALGO-KG-85`), OWL 2 RL Axiom Reasoner (`ALGO-KG-86`), Rete Forward Chaining (`ALGO-KG-87`), Backward Chaining Goal Prover (`ALGO-KG-88`), Datalog Semi-Naive (`ALGO-KG-89`), Materialization Planner (`ALGO-KG-90`), DRed Deletion Maintenance (`ALGO-KG-91`), owl:sameAs Congruence (`ALGO-KG-92`), Tableau Satisfiability Reasoner (`ALGO-KG-93`), OWL 2 EL Classifier (`ALGO-KG-94`), AMIE Inductive Rule Mining (`ALGO-KG-95`), Open vs Closed World Evaluator (`ALGO-KG-96`), Inconsistency Justification MUS (`ALGO-KG-97`), Lukasiewicz Probabilistic Soft Logic (`ALGO-KG-98`), Allen's 13 Temporal Interval Algebra (`ALGO-KG-99`), Inconsistency Minimal Repair (`ALGO-KG-100`).
 - ⏳ **Section 3: Embeddings & Graph Machine Learning (#101–150)**:
   - TransE, RotatE, ComplEx, DistMult, TuckER, ConvE, DeepWalk, Node2Vec, Metapath2Vec, GCN, GraphSAGE, GAT, R-GCN, CompGCN, HGT, SEAL Link Prediction.
 - ⏳ **Section 4: Knowledge Graphs + LLM Operations & Observability (#151–200)**:
