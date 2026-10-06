@@ -31,13 +31,13 @@ This document tracks the comprehensive architecture, completed capabilities, the
 | Category Source Directory | Total Algos Described | Implemented & Verified | Pending | Status |
 | :--- | :---: | :---: | :---: | :---: |
 | **`vectorAlgo/`** (Vector Math, Search, Lifecycle, Obs) | 200 | **200** | 0 | 🟢 100% Complete (All 4 Parts Done) |
-| **`fileIndexingAndSearching/`** (Search, AST, Diff, CST) | 200 | **24** | 176 | 🟠 12% Complete |
+| **`fileIndexingAndSearching/`** (Search, AST, Diff, CST) | 200 | **50** | 150 | 🟡 25% Complete (Part 1 Done) |
 | **`graphs/`** (Traversal, Flow, Temporal, Distributed) | 300+ | **9** | 291+ | 🔴 3% Complete |
 | **`knowlageGraph/`** (KG Modeling, Reasoning, GNNs) | 100+ | **0** | 100+ | ⚪ Pending |
 | **`glue/`** (Composition Models, L1–L8 Pipeline Contracts) | 8 Specs | **L1 Contracts** | L2–L8 Engines | 🟡 In Progress |
-| **TOTALS** | **800+** | **242 Live** | **567+** | **Active Pipeline** |
+| **TOTALS** | **800+** | **268 Live** | **541+** | **Active Pipeline** |
 
-*Current System Metrics: 242 Algorithms, 262 FastAPI Routes, 236 Documented OpenAPI Paths, 243 CLI Aliases, 289 Automated Passing Tests.*
+*Current System Metrics: 268 Algorithms, 288 FastAPI Routes, 262 Documented OpenAPI Paths, 269 CLI Aliases, 348 Automated Passing Tests.*
 
 ---
 
@@ -121,9 +121,9 @@ This document tracks the comprehensive architecture, completed capabilities, the
 ### 2. `policies/rules/algos/fileIndexingAndSearching/` (200 Total Algorithms)
 Focuses on codebase indexing, syntax-tree transformation, fuzzy search, and verified diff application.
 
-- 🟡 **Part 1: Bulk Search, String Matching, Regex (#1–50)**:
-  - 24 implemented: `ALGO-SRCH-01`–`15` (Recursive walk, work-stealing, git-aware, glob matcher, trigram, SIMD memchr, Aho-Corasick, lazy DFA, mmap scanner), `ALGO-OBS-16`–`21` (Span tracker, tree-sitter, CST matcher, symbol scope, comments, imports), `ALGO-UPD-22`–`24` (AST replace, unified patch, 3-way merge).
-  - 26 pending: Boyer-Moore-Horspool, Teddy multi-string SIMD, Bitap fuzzy bitwise matching, Suffix Automaton, Aho-Corasick with wildcards, Zoekt inverted trigram indexing, streaming multi-file regex pipelines.
+- 🟢 **Part 1: Bulk Search, String Matching, Regex (#1–50)**:
+  - **100% Complete (50/50 Live)**: `ALGO-SRCH-01` to `ALGO-SRCH-15`, `ALGO-OBS-16` to `ALGO-OBS-21`, `ALGO-UPD-22` to `ALGO-UPD-24`, and `ALGO-SRCH-25` to `ALGO-SRCH-50`.
+  - Recursive walk, work-stealing, git-aware, glob matcher, binary classifier, MIME prober, size bouncer, codegen detector, SIMD memchr, Aho-Corasick, lazy DFA, chunk scanner, context collector, mmap scanner, Wu-Manber, Z-algorithm, Levenshtein DP distance, Myers bit-parallel, Levenshtein automaton, BK-tree, MinHash/Jaccard, fzf fuzzy scorer, regex parser, Thompson NFA, Pike VM, safe backtracking regex, subset DFA, lazy hybrid DFA, literal extraction, reverse inner optimizer, Hyperscan regex set, ReDoS protection, inverted index, trigram inverted index, positional trigram offset index, sparse n-grams, suffix array (SA-IS), Kasai LCP array, suffix automaton (DAWG), Burrows-Wheeler Transform (BWT) & LF-mapping.
 - ⏳ **Part 2: Index Structures & Structural Symbol Search (#51–100)**:
   - FM-index, Patricia Radix Tree, FST (Finite State Transducers), B+ trees, Roaring Bitmaps, Galloping intersection, Block-Max WAND, SCIP/LSIF code intelligence, Call Graph, CFG, Static Single Assignment (SSA), Dataflow worklist, Taint analysis, CodeQL Datalog rules.
 - ⏳ **Part 3: Vector Retrieval, Syntax Trees, Text Buffers, Diff (#101–150)**:

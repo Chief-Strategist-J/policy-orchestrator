@@ -80,6 +80,82 @@ from src.features.code_engine.algos.search import (
     SearchEngineStreamingChunkScannerAlgo,
     SearchEngineContextSnippetCollectorAlgo,
     SearchEngineMmapScannerAlgo,
+    SearchEngineWuManberAlgo,
+    SearchEngineZAlgorithmAlgo,
+    SearchEngineLevenshteinDistanceAlgo,
+    SearchEngineMyersBitParallelAlgo,
+    SearchEngineLevenshteinAutomatonAlgo,
+    SearchEngineBkTreeAlgo,
+    SearchEngineMinHashJaccardAlgo,
+    SearchEngineFzfFuzzyAlgo,
+    SearchEngineRegexParserAlgo,
+    SearchEngineThompsonNfaAlgo,
+    SearchEnginePikeVmAlgo,
+    SearchEngineBacktrackingRegexAlgo,
+    SearchEngineSubsetDfaAlgo,
+    SearchEngineLazyHybridDfaAlgo,
+    SearchEngineLiteralExtractionAlgo,
+    SearchEngineReverseInnerOptimizerAlgo,
+    SearchEngineHyperscanRegexSetAlgo,
+    SearchEngineReDosProtectionAlgo,
+    SearchEngineInvertedIndexAlgo,
+    SearchEngineTrigramInvertedIndexAlgo,
+    SearchEnginePositionalTrigramIndexAlgo,
+    SearchEngineSparseNgramsAlgo,
+    SearchEngineSuffixArraySaisAlgo,
+    SearchEngineLcpArrayKasaiAlgo,
+    SearchEngineSuffixAutomatonAlgo,
+    SearchEngineBurrowsWheelerTransformAlgo,
+    SearchEngineFmIndexAlgo,
+    SearchEngineTrieAlgo,
+    SearchEngineRadixTreeAlgo,
+    SearchEngineFstAlgo,
+    SearchEngineBPlusTreeAlgo,
+    SearchEngineLsmTreeAlgo,
+    SearchEngineBloomFilterAlgo,
+    SearchEngineXorFilterAlgo,
+    SearchEnginePostingListAlgo,
+    SearchEngineDeltaGapEncodingAlgo,
+    SearchEngineVarintEncodingAlgo,
+    SearchEngineBitPackingPforDeltaAlgo,
+    SearchEngineEliasFanoAlgo,
+    SearchEngineRoaringBitmapAlgo,
+    SearchEngineMergeIntersectionAlgo,
+    SearchEngineGallopingIntersectionAlgo,
+    SearchEngineKWayMergeHeapAlgo,
+    SearchEngineBlockMaxWandAlgo,
+    SearchEngineRegexToTrigramQueryAlgo,
+    SearchEngineBooleanQuerySimplifierAlgo,
+    SearchEngineRarestFirstOrderingAlgo,
+    SearchEngineCandidateVerificationAlgo,
+    SearchEngineEarlyTerminationAlgo,
+    SearchEngineScatterGatherAlgo,
+    SearchEngineHedgedRequestsAlgo,
+    SearchEngineIndexVersionedCacheAlgo,
+    SearchEngineTokenizerSearchAlgo,
+    SearchEngineConcreteSyntaxTreeAlgo,
+    SearchEngineAbstractSyntaxTreeAlgo,
+    SearchEngineIncrementalParserAlgo,
+    SearchEngineTreeSitterQueryAlgo,
+    SearchEngineAstGrepPatternAlgo,
+    SearchEngineSemgrepEquivalenceAlgo,
+    SearchEngineCombyDelimiterAlgo,
+    SearchEngineSubtreeHashCloneAlgo,
+    SearchEngineGumTreeDiffAlgo,
+    SearchEngineSymbolTableAlgo,
+    SearchEngineScopeGraphAlgo,
+    SearchEngineStackGraphAlgo,
+    SearchEngineLspProtocolAlgo,
+    SearchEngineScipLsifIndexAlgo,
+    SearchEngineCallGraphAlgo,
+    SearchEngineImportDependencyGraphAlgo,
+    SearchEngineControlFlowGraphAlgo,
+    SearchEngineSsaFormAlgo,
+    SearchEngineDataflowWorklistAlgo,
+    SearchEngineTaintAnalysisAlgo,
+    SearchEngineDatalogCodeqlAlgo,
+    SearchEngineAstChunkingAlgo,
+    SearchEngineCodeEmbeddingsAlgo,
 )
 
 from src.features.code_engine.algos.observability import (
@@ -705,6 +781,361 @@ class CodeEngineService:
             needle = merged.get("pattern", merged.get("needle", ""))
             matches = SearchEngineMmapScannerAlgo.scan_file(file_path, needle=needle)
             return {"file_path": file_path, "matches_count": len(matches), "matches": matches}
+
+        elif algo_id == "ALGO-SRCH-25":
+            text = merged.get("text", "")
+            patterns = merged.get("patterns", [])
+            block_size = merged.get("block_size") or 2
+            matches = SearchEngineWuManberAlgo.execute(text, patterns=patterns, block_size=block_size)
+            return {"matches": matches, "total_matches": len(matches)}
+
+        elif algo_id == "ALGO-SRCH-26":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            delimiter = merged.get("delimiter", "$")
+            return SearchEngineZAlgorithmAlgo.execute(text, pattern=pattern, delimiter=delimiter)
+
+        elif algo_id == "ALGO-SRCH-27":
+            source = merged.get("source", "")
+            target = merged.get("target", "")
+            ins_c = merged.get("insert_cost", 1)
+            del_c = merged.get("delete_cost", 1)
+            sub_c = merged.get("substitute_cost", 1)
+            inc_m = merged.get("include_matrix", False)
+            return SearchEngineLevenshteinDistanceAlgo.execute(
+                source=source, target=target, insert_cost=ins_c, delete_cost=del_c, substitute_cost=sub_c, include_matrix=inc_m
+            )
+
+        elif algo_id == "ALGO-SRCH-28":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            max_dist = merged.get("max_distance", 2)
+            matches = SearchEngineMyersBitParallelAlgo.execute(text, pattern=pattern, max_distance=max_dist)
+            return {"matches": matches, "total_matches": len(matches)}
+
+        elif algo_id == "ALGO-SRCH-29":
+            pattern = merged.get("pattern", "")
+            candidates = merged.get("candidates", [])
+            max_dist = merged.get("max_distance", 2)
+            filtered = SearchEngineLevenshteinAutomatonAlgo.execute(pattern=pattern, candidates=candidates, max_distance=max_dist)
+            return {"candidates_evaluated": len(candidates), "matches": filtered}
+
+        elif algo_id == "ALGO-SRCH-30":
+            dictionary = merged.get("dictionary", [])
+            query = merged.get("query", "")
+            max_dist = merged.get("max_distance", 2)
+            matches = SearchEngineBkTreeAlgo.execute(dictionary=dictionary, query=query, max_distance=max_dist)
+            return {"query": query, "matches": matches, "total_matches": len(matches)}
+
+        elif algo_id == "ALGO-SRCH-31":
+            documents = merged.get("documents", [])
+            num_perm = merged.get("num_perm", 64)
+            shingle_size = merged.get("shingle_size", 3)
+            bands = merged.get("bands", 16)
+            thresh = merged.get("similarity_threshold", 0.5)
+            return SearchEngineMinHashJaccardAlgo.execute(
+                documents=documents, num_perm=num_perm, shingle_size=shingle_size, bands=bands, similarity_threshold=thresh
+            )
+
+        elif algo_id == "ALGO-SRCH-32":
+            candidates = merged.get("candidates", [])
+            query = merged.get("query", "")
+            case_sens = merged.get("case_sensitive", False)
+            scored = SearchEngineFzfFuzzyAlgo.execute(candidates=candidates, query=query, case_sensitive=case_sens)
+            return {"query": query, "matches": scored, "total_matches": len(scored)}
+
+        elif algo_id == "ALGO-SRCH-33":
+            pattern = merged.get("pattern", "")
+            return SearchEngineRegexParserAlgo.execute(pattern=pattern)
+
+        elif algo_id == "ALGO-SRCH-34":
+            pattern = merged.get("pattern", "")
+            return SearchEngineThompsonNfaAlgo.execute(pattern=pattern)
+
+        elif algo_id == "ALGO-SRCH-35":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            matches = SearchEnginePikeVmAlgo.execute(text=text, pattern=pattern)
+            return {"matches": matches, "total_matches": len(matches)}
+
+        elif algo_id == "ALGO-SRCH-36":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            max_steps = merged.get("max_steps", 50000)
+            return SearchEngineBacktrackingRegexAlgo.execute(text=text, pattern=pattern, max_steps=max_steps)
+
+        elif algo_id == "ALGO-SRCH-37":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            return SearchEngineSubsetDfaAlgo.execute(text=text, pattern=pattern)
+
+        elif algo_id == "ALGO-SRCH-38":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            max_states = merged.get("max_cached_states", 1000)
+            return SearchEngineLazyHybridDfaAlgo.execute(text=text, pattern=pattern, max_cached_states=max_states)
+
+        elif algo_id == "ALGO-SRCH-39":
+            pattern = merged.get("pattern", "")
+            min_len = merged.get("min_literal_length", 2)
+            return SearchEngineLiteralExtractionAlgo.execute(pattern=pattern, min_literal_length=min_len)
+
+        elif algo_id == "ALGO-SRCH-40":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            lookback = merged.get("max_lookback", 128)
+            return SearchEngineReverseInnerOptimizerAlgo.execute(text=text, pattern=pattern, max_lookback=lookback)
+
+        elif algo_id == "ALGO-SRCH-41":
+            text = merged.get("text", "")
+            rules = merged.get("rules", [])
+            return SearchEngineHyperscanRegexSetAlgo.execute(text=text, rules=rules)
+
+        elif algo_id == "ALGO-SRCH-42":
+            pattern = merged.get("pattern", "")
+            return SearchEngineReDosProtectionAlgo.execute(pattern=pattern)
+
+        elif algo_id == "ALGO-SRCH-43":
+            documents = merged.get("documents", [])
+            terms = merged.get("query_terms", [])
+            op = merged.get("operation", "AND")
+            return SearchEngineInvertedIndexAlgo.execute(documents=documents, query_terms=terms, operation=op)
+
+        elif algo_id == "ALGO-SRCH-44":
+            documents = merged.get("documents", [])
+            query = merged.get("query", "")
+            return SearchEngineTrigramInvertedIndexAlgo.execute(documents=documents, query=query)
+
+        elif algo_id == "ALGO-SRCH-45":
+            documents = merged.get("documents", [])
+            query = merged.get("query", "")
+            matches = SearchEnginePositionalTrigramIndexAlgo.execute(documents=documents, query=query)
+            return {"matches": matches, "total_matches": len(matches)}
+
+        elif algo_id == "ALGO-SRCH-46":
+            text = merged.get("text", "")
+            min_len = merged.get("min_gram_len", 3)
+            max_len = merged.get("max_gram_len", 8)
+            return SearchEngineSparseNgramsAlgo.execute(text=text, min_gram_len=min_len, max_gram_len=max_len)
+
+        elif algo_id == "ALGO-SRCH-47":
+            text = merged.get("text", "")
+            pattern = merged.get("pattern", "")
+            return SearchEngineSuffixArraySaisAlgo.execute(text=text, pattern=pattern)
+
+        elif algo_id == "ALGO-SRCH-48":
+            text = merged.get("text", "")
+            return SearchEngineLcpArrayKasaiAlgo.execute(text=text)
+
+        elif algo_id == "ALGO-SRCH-49":
+            text = merged.get("text", "")
+            query = merged.get("query", "")
+            return SearchEngineSuffixAutomatonAlgo.execute(text=text, query=query)
+
+        elif algo_id == "ALGO-SRCH-50":
+            text = merged.get("text", "")
+            sentinel = merged.get("sentinel", "$")
+            return SearchEngineBurrowsWheelerTransformAlgo.execute(text=text, sentinel=sentinel)
+
+        elif algo_id == "ALGO-SRCH-51":
+            algo_fm = SearchEngineFmIndexAlgo()
+            return algo_fm.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-52":
+            algo_trie = SearchEngineTrieAlgo()
+            return algo_trie.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-53":
+            algo_radix = SearchEngineRadixTreeAlgo()
+            return algo_radix.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-54":
+            algo_fst = SearchEngineFstAlgo()
+            return algo_fst.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-55":
+            algo_bplus = SearchEngineBPlusTreeAlgo()
+            return algo_bplus.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-56":
+            algo_lsm = SearchEngineLsmTreeAlgo()
+            return algo_lsm.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-57":
+            algo_bloom = SearchEngineBloomFilterAlgo()
+            return algo_bloom.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-58":
+            algo_xor = SearchEngineXorFilterAlgo()
+            return algo_xor.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-59":
+            algo_posting = SearchEnginePostingListAlgo()
+            return algo_posting.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-60":
+            algo_delta = SearchEngineDeltaGapEncodingAlgo()
+            return algo_delta.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-61":
+            algo_varint = SearchEngineVarintEncodingAlgo()
+            return algo_varint.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-62":
+            algo_pfor = SearchEngineBitPackingPforDeltaAlgo()
+            return algo_pfor.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-63":
+            algo_ef = SearchEngineEliasFanoAlgo()
+            return algo_ef.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-64":
+            algo_roaring = SearchEngineRoaringBitmapAlgo()
+            return algo_roaring.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-65":
+            algo_merge = SearchEngineMergeIntersectionAlgo()
+            return algo_merge.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-66":
+            algo_gallop = SearchEngineGallopingIntersectionAlgo()
+            return algo_gallop.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-67":
+            algo_kway = SearchEngineKWayMergeHeapAlgo()
+            return algo_kway.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-68":
+            algo_wand = SearchEngineBlockMaxWandAlgo()
+            return algo_wand.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-69":
+            algo_r2t = SearchEngineRegexToTrigramQueryAlgo()
+            return algo_r2t.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-70":
+            algo_bqs = SearchEngineBooleanQuerySimplifierAlgo()
+            return algo_bqs.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-71":
+            algo_rarest = SearchEngineRarestFirstOrderingAlgo()
+            return algo_rarest.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-72":
+            algo_verify = SearchEngineCandidateVerificationAlgo()
+            return algo_verify.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-73":
+            algo_early = SearchEngineEarlyTerminationAlgo()
+            return algo_early.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-74":
+            algo_scatter = SearchEngineScatterGatherAlgo()
+            return algo_scatter.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-75":
+            algo_hedge = SearchEngineHedgedRequestsAlgo()
+            return algo_hedge.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-76":
+            algo_vcache = SearchEngineIndexVersionedCacheAlgo()
+            return algo_vcache.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-77":
+            algo_tok = SearchEngineTokenizerSearchAlgo()
+            return algo_tok.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-78":
+            algo_cst = SearchEngineConcreteSyntaxTreeAlgo()
+            return algo_cst.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-79":
+            algo_ast = SearchEngineAbstractSyntaxTreeAlgo()
+            return algo_ast.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-80":
+            algo_inc = SearchEngineIncrementalParserAlgo()
+            return algo_inc.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-81":
+            algo_tsq = SearchEngineTreeSitterQueryAlgo()
+            return algo_tsq.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-82":
+            algo_grep = SearchEngineAstGrepPatternAlgo()
+            return algo_grep.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-83":
+            algo_sem = SearchEngineSemgrepEquivalenceAlgo()
+            return algo_sem.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-84":
+            algo_comby = SearchEngineCombyDelimiterAlgo()
+            return algo_comby.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-85":
+            algo_clone = SearchEngineSubtreeHashCloneAlgo()
+            return algo_clone.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-86":
+            algo_gum = SearchEngineGumTreeDiffAlgo()
+            return algo_gum.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-87":
+            algo_sym = SearchEngineSymbolTableAlgo()
+            return algo_sym.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-88":
+            algo_scope = SearchEngineScopeGraphAlgo()
+            return algo_scope.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-89":
+            algo_stack = SearchEngineStackGraphAlgo()
+            return algo_stack.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-90":
+            algo_lsp = SearchEngineLspProtocolAlgo()
+            return algo_lsp.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-91":
+            algo_scip = SearchEngineScipLsifIndexAlgo()
+            return algo_scip.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-92":
+            algo_call = SearchEngineCallGraphAlgo()
+            return algo_call.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-93":
+            algo_dep = SearchEngineImportDependencyGraphAlgo()
+            return algo_dep.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-94":
+            algo_cfg = SearchEngineControlFlowGraphAlgo()
+            return algo_cfg.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-95":
+            algo_ssa = SearchEngineSsaFormAlgo()
+            return algo_ssa.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-96":
+            algo_df = SearchEngineDataflowWorklistAlgo()
+            return algo_df.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-97":
+            algo_taint = SearchEngineTaintAnalysisAlgo()
+            return algo_taint.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-98":
+            algo_datalog = SearchEngineDatalogCodeqlAlgo()
+            return algo_datalog.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-99":
+            algo_chunk = SearchEngineAstChunkingAlgo()
+            return algo_chunk.execute(merged)
+
+        elif algo_id == "ALGO-SRCH-100":
+            algo_embed = SearchEngineCodeEmbeddingsAlgo()
+            return algo_embed.execute(merged)
 
         elif algo_id == "ALGO-OBS-16":
             content = merged.get("content", "")

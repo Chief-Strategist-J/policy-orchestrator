@@ -30,14 +30,14 @@ def test_api_list_algorithm_contracts(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["statusCode"] == 200
-    assert json_data["data"]["total_contracts"] == 242
+    assert json_data["data"]["total_contracts"] == 268
 
 
 def test_api_filter_contracts_by_category(client):
     response = client.get("/api/v1/algos/contracts?category=search")
     assert response.status_code == 200
     json_data = response.json()
-    assert json_data["data"]["total_contracts"] == 15
+    assert json_data["data"]["total_contracts"] == 41
 
 
 def test_api_get_single_contract(client):
@@ -255,3 +255,40 @@ def test_api_vector_filter_partitioned_endpoint(client):
     json_data = response.json()
     assert json_data["success"] is True
     assert json_data["data"]["partition_size"] == 1
+
+
+def test_api_search_wu_manber_endpoint(client):
+    payload = {"text": "the quick brown fox", "patterns": ["quick", "fox"], "block_size": 2}
+    response = client.post("/api/v1/algos/search/wu-manber", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["total_matches"] >= 2
+
+
+def test_api_search_levenshtein_distance_endpoint(client):
+    payload = {"source": "kitten", "target": "sitting", "include_matrix": False}
+    response = client.post("/api/v1/algos/search/levenshtein-distance", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["distance"] == 3
+
+
+def test_api_search_fzf_fuzzy_endpoint(client):
+    payload = {"candidates": ["src/service.py", "tests/test.py"], "query": "srv"}
+    response = client.post("/api/v1/algos/search/fzf-fuzzy", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["total_matches"] >= 1
+
+
+def test_api_search_bwt_endpoint(client):
+    payload = {"text": "banana", "sentinel": "$"}
+    response = client.post("/api/v1/algos/search/burrows-wheeler-transform", json=payload)
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["success"] is True
+    assert json_data["data"]["reconstructed_text"] == "banana"
+
