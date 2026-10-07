@@ -294,7 +294,7 @@ def test_resource_constrained_shortest_path() -> None:
 
 
 def test_pareto_shortest_path() -> None:
-    adj = {
+    adj: Dict[str, List[Tuple[str, Tuple[float, float]]]] = {
         "A": [("B", (10.0, 2.0)), ("B", (2.0, 10.0))],
         "B": [("C", (5.0, 5.0))],
         "C": [],

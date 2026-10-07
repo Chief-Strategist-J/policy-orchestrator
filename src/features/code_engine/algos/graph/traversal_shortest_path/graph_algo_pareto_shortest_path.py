@@ -5,7 +5,7 @@ under multiple conflicting objective criteria (e.g. latency, cost, risk).
 """
 
 import heapq
-from typing import Dict, Generic, Hashable, List, Optional, Tuple, TypeVar
+from typing import Dict, Generic, Hashable, List, Mapping, Optional, Sequence, Tuple, TypeVar
 
 TNode = TypeVar("TNode", bound=Hashable)
 
@@ -23,9 +23,10 @@ class GraphAlgoParetoShortestPath(Generic[TNode]):
     ---
     """
 
-    def __init__(self, adjacency: Dict[TNode, List[Tuple[TNode, Tuple[float, ...]]]]) -> None:
+    def __init__(self, adjacency: Mapping[TNode, Sequence[Tuple[TNode, Sequence[float]]]]) -> None:
         self._adj: Dict[TNode, List[Tuple[TNode, Tuple[float, ...]]]] = {
-            u: list(edges) for u, edges in adjacency.items()
+            u: [(v, tuple(float(x) for x in vec)) for v, vec in edges]
+            for u, edges in adjacency.items()
         }
         for u in list(self._adj.keys()):
             for v, _ in self._adj[u]:
