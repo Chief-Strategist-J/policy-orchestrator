@@ -73,7 +73,7 @@ class GraphAlgoHeavyLightDecomposition(Generic[TNode]):
                     self._adj[v] = []
 
         self._nodes: List[TNode] = sorted(list(self._adj.keys()), key=lambda x: str(x))
-        self._root: TNode = root if root is not None else (self._nodes[0] if self._nodes else None)
+        self._root: Optional[TNode] = root if root is not None else (self._nodes[0] if self._nodes else None)
         
         self._parent: Dict[TNode, Optional[TNode]] = {}
         self._depth: Dict[TNode, int] = {}
@@ -87,8 +87,11 @@ class GraphAlgoHeavyLightDecomposition(Generic[TNode]):
             self._decompose()
 
     def _decompose(self) -> None:
+        if self._root is None:
+            return
+        root: TNode = self._root
         order: List[TNode] = []
-        stack: List[Tuple[TNode, Optional[TNode], int]] = [(self._root, None, 0)]
+        stack: List[Tuple[TNode, Optional[TNode], int]] = [(root, None, 0)]
         visited = set()
 
         while stack:
