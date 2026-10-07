@@ -81,6 +81,24 @@ router.include_router(graph_embeddings_gnn_router)
 from .routers.graph_systems_router import router as graph_systems_router
 router.include_router(graph_systems_router)
 
+from .routers.knowledge_graph_modeling_storage_router import router as knowledge_graph_modeling_storage_router
+router.include_router(knowledge_graph_modeling_storage_router)
+
+from .routers.knowledge_graph_query_reasoning_router import router as knowledge_graph_query_reasoning_router
+router.include_router(knowledge_graph_query_reasoning_router)
+
+from .routers.knowledge_graph_embeddings_gnn_router import router as knowledge_graph_embeddings_gnn_router
+router.include_router(knowledge_graph_embeddings_gnn_router)
+
+from .routers.knowledge_graph_ops_llm_observability_router import router as knowledge_graph_ops_llm_observability_router
+router.include_router(knowledge_graph_ops_llm_observability_router)
+
+from .routers.code_engine_diff_buffer_router import router as code_engine_diff_buffer_router
+router.include_router(code_engine_diff_buffer_router)
+
+from .routers.code_engine_mutation_router import router as code_engine_mutation_router
+router.include_router(code_engine_mutation_router)
+
 from .routers.algorithm_registry_router import router as algorithm_registry_router
 router.include_router(algorithm_registry_router)
 
