@@ -56,28 +56,5 @@ flowchart TD
     Delivery --> Output["✅  Deterministic & 100% Rule-Compliant Code"]:::client
 ```
 
----
-
-## 🏆 926 Production Algorithm Engines Breakdown
-
-| Category | Algorithms | Scope & Capabilities | Dedicated REST Router |
-| :--- | :---: | :--- | :--- |
-| **Vector Math & Quantization** | **200** | Tokenization, pooling, Matryoshka slicing, whitening, PCA, UMAP, scalar & product quantization (PQ, SQ, RVQ, IVFPQ), sparse projection, HNSW, DiskANN, Vamana, LSH, RRF, ColBERT MaxSim, CDC, Raft, t-digest. | `vector_transform_router.py`<br>`vector_search_router.py`<br>`vector_filter_router.py`<br>`vector_update_router.py`<br>`vector_observability_router.py` |
-| **File Indexing & AST** | **206** | SIMD memchr, Aho-Corasick, DFA, Levenshtein automaton, Myers bit-parallel, FM-Index, Trie, Radix, FST, B+ Tree, LSM, Bloom/Xor filters, Roaring Bitmaps, AST/CST parsers, LibCST, Red-Green trees, Myers diff, CAS. | `search_router.py`<br>`observability_router.py`<br>`code_engine_diff_buffer_router.py`<br>`code_engine_mutation_router.py` |
-| **Knowledge Graph & GNNs** | **200** | RDF Triples, OWL 2 Axioms, SHACL Shapes, CSR, Hexastore, Entity Resolution, SPARQL 1.1, openCypher, GQL, Leapfrog Triejoin, PageRank, Louvain, TransE, RotatE, GCN, GraphSAGE, GAT, R-GCN, GraphRAG. | `knowledge_graph_modeling_storage_router.py`<br>`knowledge_graph_query_reasoning_router.py`<br>`knowledge_graph_embeddings_gnn_router.py`<br>`knowledge_graph_ops_llm_observability_router.py` |
-| **Graph Analytics & Systems** | **320** | Adjacency Matrix, CSR/CSC, GraphBLAS, BFS, DFS, Dijkstra, Bidirectional A*, Johnson's, Thorup, Floyd-Warshall, Tarjan SCC, Dinic flow, Push-Relabel, Brandes Betweenness, Louvain, Leiden, Spectral Bisection, PERT/CPM. | `graph_representation_router.py`<br>`graph_traversal_router.py`<br>`graph_connectivity_router.py`<br>`graph_centrality_router.py`<br>`graph_communities_spectral_router.py`<br>`graph_dynamic_streaming_router.py`<br>`graph_systems_router.py` |
-| **TOTALS** | **926 Live** | **Complete Deterministic Algorithmic Core** | **700 Dedicated Mounted Endpoints** |
-
----
-
-## ⚡ 3-Tier Execution System
-
-Every algorithm is accessible via three standardized interfaces:
-
-| Tier | Target Audience | Syntax Style | Output Format |
-| :--- | :--- | :--- | :--- |
-| **Tier 1: Normal Command** | Beginners, Interactive Terminal | `policy-orchestrator run <alias> [payload]` | Plain text header + Formatted JSON |
-| **Tier 2: Developer Command** | Power Users, CI/CD, Scripting | `policy-orchestrator exec <ALGO-ID> [payload]` | Raw JSON or specialized ASCII tables |
-| **Tier 3: Code Command** | Microservices, Python SDK, Agents | `POST /api/v1/algos/...`<br>`CodeEngineService.execute_algorithm()` | Strict RFC Envelope (`{success, statusCode, data, errors, meta}`) |
 
 
