@@ -13,7 +13,15 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: HEAVY-LIGHT DECOMPOSITION (ALGO-GRAPH-TREE-6
    - Space Complexity: O(V) chain indices and segment boundaries.
    - Purity: Pure functional transformation, deterministic, zero side-effects.
 
-3. AGENT CONTRACT:
+3. INPUT PARAMETERS:
+   - `tree_adjacency` (Dict[TNode, List[TNode]]): Adjacency map representing tree structure.
+   - `root` (Optional[TNode]): Explicit root node, or auto-selected lowest node ID.
+
+4. OUTPUT PARAMETERS:
+   - `get_path_segments(u, v)` (List[Tuple[int, int]]): Ordered list of contiguous 1D segment intervals.
+   - `get_subtree_interval(u)` (Tuple[int, int]): Subtree contiguous interval [L, R].
+
+5. AGENT CONTRACT:
    - Role: Analyst.
    - Guarantees: Contiguous segment numbering for all heavy path chains.
 ================================================================================
@@ -125,7 +133,7 @@ class GraphAlgoHeavyLightDecomposition(Generic[TNode]):
             self._heavy[u] = heavy_child
 
         self._cur_pos = 0
-        hld_stack: List[Tuple[TNode, TNode]] = [(self._root, self._root)]
+        hld_stack: List[Tuple[TNode, TNode]] = [(root, root)]
 
         while hld_stack:
             u, h = hld_stack.pop()
