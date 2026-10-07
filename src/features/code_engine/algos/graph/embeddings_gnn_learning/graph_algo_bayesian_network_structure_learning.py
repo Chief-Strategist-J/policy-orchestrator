@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import collections
 import math
-from typing import Any, Collection, Dict, Generic, Hashable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Any, Collection, Dict, Generic, Hashable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 TNode = TypeVar("TNode", bound=Hashable)
 
@@ -116,7 +116,12 @@ class GraphAlgoBayesianNetworkStructureLearning(Generic[TNode]):
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
-            best_op: Optional[Tuple[str, TNode, TNode, float]] = None
+            best_op: Optional[
+                Union[
+                    Tuple[str, TNode, TNode, float],
+                    Tuple[str, TNode, TNode, float, float],
+                ]
+            ] = None
             best_delta = 0.0
 
             for u in var_list:
@@ -159,21 +164,28 @@ class GraphAlgoBayesianNetworkStructureLearning(Generic[TNode]):
 
             op_type = best_op[0]
             if op_type == "add":
-                _, u, v, new_sc = best_op
-                parents[v].add(u)
-                node_scores[v] = new_sc
+                u_op = best_op[1]
+                v_op = best_op[2]
+                new_sc = best_op[3]
+                parents[v_op].add(u_op)
+                node_scores[v_op] = new_sc
                 total_score += best_delta
             elif op_type == "delete":
-                _, u, v, new_sc = best_op
-                parents[v].remove(u)
-                node_scores[v] = new_sc
+                u_op = best_op[1]
+                v_op = best_op[2]
+                new_sc = best_op[3]
+                parents[v_op].remove(u_op)
+                node_scores[v_op] = new_sc
                 total_score += best_delta
-            elif op_type == "reverse":
-                _, u, v, sc_v, sc_u = best_op
-                parents[v].remove(u)
-                parents[u].add(v)
-                node_scores[v] = sc_v
-                node_scores[u] = sc_u
+            elif op_type == "reverse" and len(best_op) == 5:
+                u_op = best_op[1]
+                v_op = best_op[2]
+                sc_v = best_op[3]
+                sc_u = best_op[4]
+                parents[v_op].remove(u_op)
+                parents[u_op].add(v_op)
+                node_scores[v_op] = sc_v
+                node_scores[u_op] = sc_u
                 total_score += best_delta
 
         dag_adj: Dict[TNode, List[TNode]] = {v: [] for v in var_list}
