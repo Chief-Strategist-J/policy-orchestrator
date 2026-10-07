@@ -29,34 +29,30 @@
 
 ## 🎯 What This Package Delivers
 
-```
-                                  ┌────────────────────────────────────────────────────────┐
-                                  │             DEVELOPER / AGENT WORKFLOW                 │
-                                  └─────────────────────────┬──────────────────────────────┘
-                                                            │
-                                                            ▼
- ╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
- ║                                POLICY ORCHESTRATOR & NEURON ENGINE                                            ║
- ╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
- ║                                                                                                               ║
- ║  1. NEURON AST TOKEN COMPRESSOR (95% Drop)   2. SYNAPTIC EPISODIC MEMORY MATRIX                              ║
- ║  • AST Chunking & Slicing (ALGO-TRFM-99)     • Bitemporal Fact Modeler (ALGO-KG-12)                          ║
- ║  • Red-Green Lossless Tree (ALGO-SYNX-128)   • Think-on-Graph Beam Search (ALGO-KG-176)                      ║
- ║  • Suffix Automaton DAWG (ALGO-SRCH-49)      • Episodic Memory Consolidator (ALGO-KG-185)                    ║
- ║                                                                                                               ║
- ║  3. 926 DETERMINISTIC ALGORITHM ENGINES      4. STRICT POLICY COMPILER FIREWALL                              ║
- ║  • Vector Math & Quantization (200 Algos)    • SHACL Constraint Guard (ALGO-KG-166)                          ║
- ║  • File Indexing, AST, Diff (206 Algos)      • Zero-Inline-Comment AST Linter                                ║
- ║  • Knowledge Graph & GNNs (200 Algos)        • Hexagonal Import Graph Enforcer (ALGO-SRCH-93)                ║
- ║  • Graph Analytics & Systems (320 Algos)     • Universal Naming Matrix Gate                                  ║
- ║                                                                                                               ║
- ╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-                                                            │
-                                                            ▼
-                                  ┌────────────────────────────────────────────────────────┐
-                                  │     700 MOUNTED REST API ENDPOINTS / PYTHON SDK        │
-                                  │           (/api/v1/algos/... | CLI | Code)             │
-                                  └────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef neuron fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef algo fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef gateway fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+
+    Dev[Developer / AI Agent Workflow]:::client --> Ingest[Neuron Input Gateway]:::neuron
+
+    subgraph CoreEngine ["Policy Orchestrator & Neuron Engine"]
+        Ingest --> Compressor["1. AST Token Compressor (95% Drop)\n• AST Chunking (ALGO-TRFM-99)\n• Red-Green Lossless Tree (ALGO-SYNX-128)\n• Suffix Automaton DAWG (ALGO-SRCH-49)"]:::neuron
+        
+        Ingest --> SynapticMem["2. Synaptic Episodic Memory Matrix\n• Bitemporal Fact Modeler (ALGO-KG-12)\n• Think-on-Graph Beam Search (ALGO-KG-176)\n• Episodic Memory Consolidator (ALGO-KG-185)"]:::neuron
+
+        Compressor --> Dispatcher["Algorithmic Dispatcher & Composer"]:::algo
+        SynapticMem --> Dispatcher
+
+        Dispatcher --> Algos[("3. 926 Deterministic Compiled Algos\n• Vector Math (200 Algos)\n• AST & File Indexing (206 Algos)\n• Knowledge Graph & GNNs (200 Algos)\n• Graph Analytics (320 Algos)")]:::algo
+
+        Algos --> Firewall["4. Strict Policy Compiler Firewall\n• SHACL Constraint Guard (ALGO-KG-166)\n• Zero-Inline-Comment AST Linter\n• Hexagonal Import Graph Enforcer (ALGO-SRCH-93)\n• Universal Naming Matrix Gate"]:::neuron
+    end
+
+    Firewall --> Delivery["700 Mounted REST Endpoints & Python SDK\n(/api/v1/algos/... | CLI | Code)"]:::gateway
+    Delivery --> Output[Deterministic & 100% Rule-Compliant Code]:::client
 ```
 
 ---

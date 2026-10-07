@@ -26,30 +26,34 @@ This document outlines the architectural backlog, completed achievements, and th
 
 👉 **Detailed Architecture & Strategic SWOT Analysis**: [docs/NEURON_ARCHITECTURE_AND_SWOT.md](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/docs/NEURON_ARCHITECTURE_AND_SWOT.md)
 
-```
-                                  ┌────────────────────────────────────────────────────────┐
-                                  │             USER / AGENT INTERACTION                   │
-                                  └─────────────────────────┬──────────────────────────────┘
-                                                            │
-                                                            ▼
-                                   ┌───────────────────────────────────────────────────────┐
-                                   │         NEURON CONTEXT COMPRESSION & MEMORY           │
-                                   ├───────────────────────────────────────────────────────┤
-                                   │ 1. Structural AST Slicer (85%+ Token Reduction)       │
-                                   │    - Tree-Sitter + LibCST Red-Green Subtree Pruner    │
-                                   │    - Eliminates comments, whitespace & uncalled ASTs  │
-                                   │ 2. Synaptic Knowledge Graph Memory Matrix            │
-                                   │    - Bitemporal Episodic Graph & Fact Consolidator   │
-                                   │    - Invariant & Decision Tracking across turns       │
-                                   │ 3. Strict Rule Enforcer (policies/rules/ Guards)      │
-                                   │    - SHACL + Datalog Policy Proof Engine              │
-                                   │    - Zero-Inline-Comment & Hexagonal Invariant Verifier│
-                                   └────────────────────────┬──────────────────────────────┘
-                                                            │ Minimal Compressed Context (10x Token Savings)
-                                                            ▼
-                                  ┌────────────────────────────────────────────────────────┐
-                                  │          LLM REASONING CORE (Fast & Focused)           │
-                                  └────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef neuron fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef algo fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef llm fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+
+    User[User / Agent Interaction]:::client --> Ingest[Neuron Gateway]:::neuron
+
+    subgraph NeuronSubsystem ["Neuron Context Compression & Memory Matrix"]
+        Ingest --> ASTSlice["1. Structural AST Slicer (85%+ Token Drop)\n• Tree-Sitter + LibCST Red-Green Subtree Pruner\n• Eliminates uncalled ASTs & whitespace"]:::neuron
+        
+        Ingest --> SynapticMem["2. Synaptic Knowledge Graph Memory Matrix\n• Bitemporal Episodic Graph & Fact Consolidator\n• Invariant & Decision Tracking across turns"]:::neuron
+
+        ASTSlice --> Dispatcher["Algorithmic Offload Engine"]:::algo
+        SynapticMem --> Dispatcher
+
+        Dispatcher --> Algos[("926 Native Deterministic Algorithms\nMath, Quant, Graph, Diff, Search")]:::algo
+        Algos --> ContextPrep["Compressed Context Assembler\n(~1,200 Tokens | 95% Reduction)"]:::neuron
+    end
+
+    ContextPrep --> LLMCore[LLM Reasoning Core\nFast & Focused <1.5s TTFT]:::llm
+    LLMCore --> Candidate[Candidate Code / Action]:::llm
+
+    subgraph PolicyGate ["Deterministic Rule Firewall"]
+        Candidate --> RuleEnforce["3. Strict Rule Enforcer (policies/rules/ Guards)\n• SHACL + Datalog Policy Proof Engine\n• Zero-Inline-Comment & Hexagonal Invariant Verifier"]:::neuron
+        RuleEnforce --> VerifiedOut[Verified 100% Rule-Compliant Code]:::client
+    end
 ```
 
 - [ ] **1. Neuron Context Pruner & Token Compressor (`neuron_compressor.py`)**
