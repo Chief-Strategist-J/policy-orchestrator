@@ -121,37 +121,44 @@ class GraphAlgoSteensgaardPointsToAnalysis(Generic[TNode]):
             rq = find(q)
 
             if kind == "addr":
-                if points_to[rp] is None:
+                pt_rp = points_to[rp]
+                if pt_rp is None:
                     points_to[rp] = rq
                 else:
-                    union(points_to[rp], rq)
+                    union(pt_rp, rq)
 
             elif kind == "copy":
-                if points_to[rq] is not None:
-                    if points_to[rp] is None:
-                        points_to[rp] = points_to[rq]
+                pt_rq = points_to[rq]
+                if pt_rq is not None:
+                    pt_rp = points_to[rp]
+                    if pt_rp is None:
+                        points_to[rp] = pt_rq
                     else:
-                        union(points_to[rp], points_to[rq])
+                        union(pt_rp, pt_rq)
 
             elif kind == "load":
                 pt_q = points_to[rq]
                 if pt_q is not None:
                     r_pt_q = find(pt_q)
-                    if points_to[r_pt_q] is not None:
-                        if points_to[rp] is None:
-                            points_to[rp] = points_to[r_pt_q]
+                    target_q = points_to[r_pt_q]
+                    if target_q is not None:
+                        pt_rp = points_to[rp]
+                        if pt_rp is None:
+                            points_to[rp] = target_q
                         else:
-                            union(points_to[rp], points_to[r_pt_q])
+                            union(pt_rp, target_q)
 
             elif kind == "store":
                 pt_p = points_to[rp]
                 if pt_p is not None:
                     r_pt_p = find(pt_p)
-                    if points_to[rq] is not None:
-                        if points_to[r_pt_p] is None:
-                            points_to[r_pt_p] = points_to[rq]
+                    pt_rq = points_to[rq]
+                    if pt_rq is not None:
+                        target_p = points_to[r_pt_p]
+                        if target_p is None:
+                            points_to[r_pt_p] = pt_rq
                         else:
-                            union(points_to[r_pt_p], points_to[rq])
+                            union(target_p, pt_rq)
 
         equiv_classes: Dict[str, str] = {v: find(v) for v in all_vars}
 
