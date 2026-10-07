@@ -738,7 +738,7 @@ paths:
 
   /api/v1/algos/graph/astar:
     post:
-      summary: A* Heuristic Search (ALGO-GRAPH-04)
+      summary: A* Heuristic Search (ALGO-GRAPH-04 / ALGO-KG-67)
       operationId: graphAstar
       requestBody:
         required: true
@@ -769,6 +769,514 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/astar-query-plan:
+    post:
+      summary: A* Database Pushdown Query Plan Generator
+      operationId: graphAstarQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_id, target_id]
+              properties:
+                mode:
+                  type: string
+                  enum: [projected, procedure]
+                  default: projected
+                  description: Query mode ('projected' for GDS catalog or 'procedure' for APOC)
+                source_id: { type: string, description: Unique start node identifier }
+                target_id: { type: string, description: Unique destination target node identifier }
+                graph_name: { type: string, default: default_graph, description: Graph catalog name }
+                rel_type: { type: string, default: CONNECTED_TO, description: Relationship type }
+                weight_prop: { type: string, default: cost, description: Relationship weight property }
+                latitude_prop: { type: string, default: latitude, description: Latitude property }
+                longitude_prop: { type: string, default: longitude, description: Longitude property }
+      responses:
+        '200':
+          description: Parameterized Cypher/GQL query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/bfs-query-plan:
+    post:
+      summary: BFS Traversal Query Plan Generator
+      operationId: graphBfsQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_node]
+              properties:
+                start_node: { type: string, description: Root traversal node }
+                max_depth: { type: integer, default: 3, description: Maximum depth limit }
+      responses:
+        '200':
+          description: Parameterized Cypher traversal query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dfs-query-plan:
+    post:
+      summary: DFS Traversal Query Plan Generator
+      operationId: graphDfsQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_node]
+              properties:
+                start_node: { type: string, description: Root traversal node }
+                max_depth: { type: integer, default: 3, description: Maximum depth limit }
+      responses:
+        '200':
+          description: Parameterized Cypher traversal query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/bidirectional-bfs-query-plan:
+    post:
+      summary: Bidirectional BFS Query Plan Generator
+      operationId: graphBidirectionalBfsQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_id, target_id]
+              properties:
+                source_id: { type: string, description: Source origin node }
+                target_id: { type: string, description: Destination target node }
+      responses:
+        '200':
+          description: Parameterized Cypher shortest path query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dijkstra-query-plan:
+    post:
+      summary: Dijkstra Shortest Path Query Plan Generator
+      operationId: graphDijkstraQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name, source_id]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                source_id: { type: string, description: Source origin node }
+                target_id: { type: string, description: Destination target node }
+      responses:
+        '200':
+          description: Parameterized GDS Dijkstra query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/yens-query-plan:
+    post:
+      summary: Yen's K-Shortest Paths Query Plan Generator
+      operationId: graphYensQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name, source_id, target_id]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                source_id: { type: string, description: Source origin node }
+                target_id: { type: string, description: Destination target node }
+                k: { type: integer, default: 3, description: Number of paths }
+      responses:
+        '200':
+          description: Parameterized GDS Yen's query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/pagerank-query-plan:
+    post:
+      summary: PageRank Centrality Query Plan Generator
+      operationId: graphPageRankQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                damping_factor: { type: number, default: 0.85 }
+                max_iterations: { type: integer, default: 20 }
+                tolerance: { type: number, default: 1e-7 }
+      responses:
+        '200':
+          description: Parameterized GDS PageRank query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/personalized-pagerank-query-plan:
+    post:
+      summary: Personalized PageRank Query Plan Generator
+      operationId: graphPersonalizedPageRankQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name, seed_node]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                seed_node: { type: string, description: Origin seed node }
+                damping_factor: { type: number, default: 0.85 }
+                max_iterations: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Parameterized GDS Personalized PageRank query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/degree-centrality-query-plan:
+    post:
+      summary: Degree Centrality Query Plan Generator
+      operationId: graphDegreeCentralityQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                orientation: { type: string, default: NATURAL }
+      responses:
+        '200':
+          description: Parameterized GDS Degree Centrality query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/betweenness-query-plan:
+    post:
+      summary: Betweenness Centrality Query Plan Generator
+      operationId: graphBetweennessQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+      responses:
+        '200':
+          description: Parameterized GDS Betweenness query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/harmonic-closeness-query-plan:
+    post:
+      summary: Harmonic Closeness Centrality Query Plan Generator
+      operationId: graphHarmonicClosenessQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+      responses:
+        '200':
+          description: Parameterized GDS Harmonic Closeness query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/hits-centrality-query-plan:
+    post:
+      summary: HITS Centrality Query Plan Generator
+      operationId: graphHitsCentralityQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                iterations: { type: integer, default: 15 }
+      responses:
+        '200':
+          description: Parameterized GDS HITS query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/connected-components-query-plan:
+    post:
+      summary: Connected Components Query Plan Generator
+      operationId: graphConnectedComponentsQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+      responses:
+        '200':
+          description: Parameterized GDS WCC query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/tarjan-scc-query-plan:
+    post:
+      summary: Tarjan SCC Query Plan Generator
+      operationId: graphTarjanSccQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+      responses:
+        '200':
+          description: Parameterized GDS SCC query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/louvain-query-plan:
+    post:
+      summary: Louvain Community Detection Query Plan Generator
+      operationId: graphLouvainQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                max_levels: { type: integer, default: 10 }
+                max_iterations: { type: integer, default: 15 }
+      responses:
+        '200':
+          description: Parameterized GDS Louvain query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/leiden-query-plan:
+    post:
+      summary: Leiden Community Detection Query Plan Generator
+      operationId: graphLeidenQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                max_levels: { type: integer, default: 10 }
+                gamma: { type: number, default: 1.0 }
+      responses:
+        '200':
+          description: Parameterized GDS Leiden query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/label-propagation-query-plan:
+    post:
+      summary: Label Propagation Query Plan Generator
+      operationId: graphLabelPropagationQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                max_iterations: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Parameterized GDS Label Propagation query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/k-core-query-plan:
+    post:
+      summary: K-Core Subgraph Decomposition Query Plan Generator
+      operationId: graphKCoreQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                k: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: Parameterized GDS K-Core query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/random-walk-query-plan:
+    post:
+      summary: Random Walk with Restart Query Plan Generator
+      operationId: graphRandomWalkQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [graph_name, start_node]
+              properties:
+                graph_name: { type: string, default: default_graph, description: GDS graph catalog name }
+                start_node: { type: string, description: Seed start node }
+                walk_length: { type: integer, default: 500 }
+                walks_per_node: { type: integer, default: 1 }
+                restart_probability: { type: number, default: 0.15 }
+      responses:
+        '200':
+          description: Parameterized GDS Random Walk query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/metapath-query-plan:
+    post:
+      summary: Metapath Constrained Traversal Query Plan Generator
+      operationId: graphMetapathQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_node, metapath]
+              properties:
+                start_node: { type: string, description: Starting node }
+                metapath:
+                  type: array
+                  items: { type: string }
+                  description: Ordered edge types
+                max_hops: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Parameterized Cypher Metapath query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/two-hop-query-plan:
+    post:
+      summary: 2-Hop Cover Reachability Query Plan Generator
+      operationId: graphTwoHopQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_id, target_id]
+              properties:
+                source_id: { type: string, description: Origin source node }
+                target_id: { type: string, description: Destination target node }
+      responses:
+        '200':
+          description: Parameterized Cypher 2-hop query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/transitive-closure-query-plan:
+    post:
+      summary: Transitive Closure Reachability Query Plan Generator
+      operationId: graphTransitiveClosureQueryPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_id]
+              properties:
+                source_id: { type: string, description: Origin source node }
+                max_depth: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Parameterized Cypher Transitive Closure query plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+
 
   /api/v1/algos/graph/pagerank:
     post:

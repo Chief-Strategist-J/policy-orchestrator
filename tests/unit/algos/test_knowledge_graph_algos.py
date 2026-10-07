@@ -481,7 +481,92 @@ def test_astar_search():
     algo = KgAlgoAstarSearch()
     adj = {"A": [("B", 1.0), ("C", 5.0)], "B": [("C", 1.0)]}
     h = {"A": 2.0, "B": 1.0, "C": 0.0}
-    assert algo.search(adj, h, "A", "C")["found"] is True
+    res = algo.search(adj, h, "A", "C")
+    assert res["found"] is True
+    assert res["cost"] == 2.0
+    assert res["path"] == ["A", "B", "C"]
+
+
+def test_astar_search_generic_custom_model():
+    from dataclasses import dataclass
+
+    @dataclass(frozen=True)
+    class CustomNode:
+        id: str
+        x: float
+        y: float
+
+    algo = KgAlgoAstarSearch()
+    n1 = CustomNode("n1", 0.0, 0.0)
+    n2 = CustomNode("n2", 1.0, 1.0)
+    n3 = CustomNode("n3", 2.0, 2.0)
+
+    # Simulated database / custom lazy expansion
+    def lazy_db_neighbors(node: CustomNode):
+        if node.id == "n1":
+            return [(n2, 1.5), (n3, 10.0)]
+        elif node.id == "n2":
+            return [(n3, 1.5)]
+        return []
+
+    # Dynamic Euclidean distance heuristic
+    def euclidean_heuristic(node: CustomNode):
+        return ((node.x - n3.x) ** 2 + (node.y - n3.y) ** 2) ** 0.5
+
+    res = algo.search_generic(
+        source=n1,
+        target=n3,
+        get_neighbors=lazy_db_neighbors,
+        heuristic_fn=euclidean_heuristic,
+        key_fn=lambda n: n.id,
+    )
+    assert res["found"] is True
+    assert res["cost"] == 3.0
+    assert [n.id for n in res["path"]] == ["n1", "n2", "n3"]
+
+
+def test_astar_neo4j_query_builders():
+    algo = KgAlgoAstarSearch()
+    gds = algo.build_neo4j_gds_query("myGraph", "A", "B")
+    assert "FLOW_GET_PROJECTED_ASTAR_SHORTEST_PATH" in gds["query_name"]
+    assert gds["params"]["source_id"] == "A"
+
+    apoc = algo.build_neo4j_apoc_query("A", "B")
+    assert "FLOW_GET_PROCEDURE_ASTAR_SHORTEST_PATH" in apoc["query_name"]
+    assert apoc["params"]["target_id"] == "B"
+
+
+def test_astar_search_with_graph_store_adapter():
+    from src.domain.ports.graph_port import GraphStorePort, GraphNode, GraphRelationship, GraphQueryResult
+
+    class MockThirdPartyGraphDatabaseAdapter(GraphStorePort):
+        def __init__(self):
+            self.graph = {
+                "S1": [GraphNode(id="S2", label="Service", properties={"weight": 1.2})],
+                "S2": [GraphNode(id="S3", label="Service", properties={"weight": 2.5})],
+                "S3": [],
+            }
+
+        def find_neighbors(self, node_id: str, rel_type=None, direction="OUTGOING"):
+            return self.graph.get(node_id, [])
+
+        def upsert_node(self, node): pass
+        def upsert_relationship(self, relationship): pass
+        def query_cypher(self, query, parameters=None): return GraphQueryResult()
+        def find_shortest_path(self, start_id, end_id): return []
+        def count_nodes(self): return 3
+        def count_relationships(self): return 2
+        def clear(self): pass
+
+    adapter = MockThirdPartyGraphDatabaseAdapter()
+    algo = KgAlgoAstarSearch()
+    res = algo.search_with_store(store=adapter, source_id="S1", target_id="S3")
+    assert res["found"] is True
+    assert res["cost"] == 3.7
+    assert res["path"] == ["S1", "S2", "S3"]
+
+
+
 
 def test_yens_k_shortest_paths():
     algo = KgAlgoYensKShortestPaths()
@@ -546,28 +631,164 @@ def test_connected_components():
     algo = KgAlgoConnectedComponents()
     assert algo.find_components(["A", "B", "C"], [("A", "B")])["component_count"] == 2
 
+
+def test_connected_components_generic_and_store():
+    algo = KgAlgoConnectedComponents()
+    nodes = ["N1", "N2", "N3", "N4"]
+    adj = {"N1": ["N2"], "N2": ["N1"], "N3": ["N4"], "N4": ["N3"]}
+    res = algo.find_components_generic(nodes=nodes, neighbor_provider=lambda n: adj.get(n, []))
+    assert res["component_count"] == 2
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_CONNECTED_COMPONENTS"
+
+
 def test_tarjan_scc():
     algo = KgAlgoTarjanScc()
     assert algo.compute_scc(["A", "B"], [("A", "B"), ("B", "A")])["scc_count"] == 1
+
+
+def test_tarjan_scc_generic_and_store():
+    algo = KgAlgoTarjanScc()
+    nodes = ["1", "2", "3"]
+    adj = {"1": ["2"], "2": ["1"], "3": []}
+    res = algo.compute_scc_generic(nodes=nodes, get_outgoing=lambda n: adj.get(n, []))
+    assert res["scc_count"] == 2
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_STRONGLY_CONNECTED_COMPONENTS"
+
 
 def test_louvain_community():
     algo = KgAlgoLouvainCommunity()
     assert algo.detect_communities(["A", "B", "C", "D"], [("A", "B"), ("C", "D")])["community_count"] >= 2
 
+
+def test_louvain_community_generic_and_store():
+    algo = KgAlgoLouvainCommunity()
+    nodes = ["A", "B", "C", "D"]
+    adj = {"A": ["B"], "B": ["A"], "C": ["D"], "D": ["C"]}
+    res = algo.detect_communities_generic(nodes=nodes, neighbor_provider=lambda n: adj.get(n, []))
+    assert res["community_count"] == 2
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_LOUVAIN_COMMUNITIES"
+
+
 def test_leiden_community():
     algo = KgAlgoLeidenCommunity()
     assert algo.refine_communities(["A", "B", "C", "D"], [("A", "B"), ("C", "D")])["community_count"] >= 2
+
+
+def test_leiden_community_generic_and_store():
+    algo = KgAlgoLeidenCommunity()
+    nodes = ["A", "B", "C", "D"]
+    adj = {"A": ["B"], "B": ["A"], "C": ["D"], "D": ["C"]}
+    res = algo.refine_communities_generic(nodes=nodes, neighbor_provider=lambda n: adj.get(n, []))
+    assert res["community_count"] == 2
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_LEIDEN_COMMUNITIES"
+
 
 def test_label_propagation():
     algo = KgAlgoLabelPropagation()
     res = algo.propagate_labels(["A", "B"], [("A", "B")], initial_labels={"A": "red"})
     assert res["assigned_labels"]["B"] == "red"
 
+
+def test_label_propagation_generic_and_store():
+    algo = KgAlgoLabelPropagation()
+    nodes = ["A", "B", "C"]
+    adj = {"A": ["B"], "B": ["A", "C"], "C": ["B"]}
+    res = algo.propagate_labels_generic(
+        nodes=nodes,
+        neighbor_provider=lambda n: adj.get(n, []),
+        initial_labels={"A": "team1", "C": "team2"},
+    )
+    assert res["assigned_labels"]["A"] == "team1"
+    assert res["assigned_labels"]["C"] == "team2"
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_LABEL_PROPAGATION"
+
+
 def test_k_core_decomposition():
     algo = KgAlgoKCoreDecomposition()
     nodes = ["A", "B", "C", "D"]
     edges = [("A", "B"), ("B", "C"), ("C", "A"), ("C", "D")]
     assert len(algo.extract_k_core(nodes, edges, k=2)["k_core_nodes"]) == 3
+
+
+def test_k_core_decomposition_generic_and_store():
+    algo = KgAlgoKCoreDecomposition()
+    nodes = ["A", "B", "C", "D"]
+    adj = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B", "D"], "D": ["C"]}
+    res = algo.extract_k_core_generic(nodes=nodes, neighbor_provider=lambda n: adj.get(n, []), k=2)
+    assert res["k_core_size"] == 3
+    assert "D" not in res["k_core_nodes"]
+    q = algo.build_cypher_query("my_graph", k=2)
+    assert q["query_name"] == "FLOW_GET_K_CORE_DECOMPOSITION"
+
+
+def test_hits_centrality_generic_and_store():
+    algo = KgAlgoHitsCentrality()
+    nodes = ["A", "B"]
+    out_adj = {"A": ["B"], "B": []}
+    in_adj = {"A": [], "B": ["A"]}
+    res = algo.compute_hits_generic(
+        nodes=nodes,
+        get_outgoing=lambda n: out_adj.get(n, []),
+        get_incoming=lambda n: in_adj.get(n, []),
+    )
+    assert res["hubs"]["A"] > 0
+    q = algo.build_cypher_query("my_graph")
+    assert q["query_name"] == "FLOW_GET_HITS_CENTRALITY"
+
+
+def test_random_walk_restart_generic():
+    algo = KgAlgoRandomWalkRestart()
+    adj = {"A": ["B"], "B": ["C"], "C": ["A"]}
+    res = algo.run_walk_generic(start_node="A", neighbor_provider=lambda n: adj.get(n, []), num_steps=50, seed=42)
+    assert len(res["visit_frequencies"]) >= 1
+    q = algo.build_cypher_query("my_graph", start_node="A")
+    assert q["query_name"] == "FLOW_GET_RANDOM_WALK_RESTART"
+
+
+def test_metapath_traversal_generic():
+    algo = KgAlgoMetapathTraversal()
+    def typed_nbrs(node: str, rel: str):
+        if node == "user1" and rel == "wrote":
+            return ["paper1"]
+        if node == "paper1" and rel == "cited":
+            return ["paper2"]
+        return []
+
+    res = algo.traverse_metapath_generic(
+        start_nodes=["user1"],
+        get_typed_neighbors=typed_nbrs,
+        metapath=["wrote", "cited"],
+    )
+    assert res["target_nodes"] == ["paper2"]
+    q = algo.build_cypher_query("user1", ["wrote", "cited"])
+    assert q["query_name"] == "FLOW_GET_METAPATH_TRAVERSAL"
+
+
+def test_two_hop_labeling_generic():
+    algo = KgAlgoTwoHopLabeling()
+    l_out = {"u1": {"hub1"}}
+    l_in = {"v1": {"hub1"}}
+    assert algo.is_reachable_generic(l_out, l_in, "u1", "v1") is True
+    assert algo.is_reachable_generic(l_out, l_in, "u1", "v2") is False
+    q = algo.build_cypher_query("u1", "v1")
+    assert q["query_name"] == "FLOW_GET_TWO_HOP_REACHABILITY"
+
+
+def test_transitive_closure_generic():
+    algo = KgAlgoTransitiveClosure()
+    adj = {"A": ["B"], "B": ["C"], "C": []}
+    res = algo.compute_closure_generic(nodes=["A", "B", "C"], neighbor_provider=lambda n: adj.get(n, []))
+    assert res["reachability_map"]["A"] == ["B", "C"]
+    assert res["reachability_map"]["B"] == ["C"]
+    assert res["reachability_map"]["C"] == []
+    q = algo.build_cypher_query("A")
+    assert q["query_name"] == "FLOW_GET_TRANSITIVE_CLOSURE"
+
 
 # ==================== 7. REASONING TESTS ====================
 

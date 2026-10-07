@@ -292,3 +292,27 @@ def test_api_search_bwt_endpoint(client):
     assert json_data["success"] is True
     assert json_data["data"]["reconstructed_text"] == "banana"
 
+
+def test_api_graph_query_plan_endpoints(client):
+    # Test BFS query plan
+    res = client.post("/api/v1/algos/graph/bfs-query-plan", json={"start_node": "n1", "max_depth": 2})
+    assert res.status_code == 200
+    assert "BFS_TRAVERSAL" in res.json()["data"]["query_name"]
+
+    # Test PageRank query plan
+    res = client.post("/api/v1/algos/graph/pagerank-query-plan", json={"graph_name": "prod_graph"})
+    assert res.status_code == 200
+    assert "PAGERANK_CENTRALITY" in res.json()["data"]["query_name"]
+
+    # Test Louvain query plan
+    res = client.post("/api/v1/algos/graph/louvain-query-plan", json={"graph_name": "social_graph"})
+    assert res.status_code == 200
+    assert "LOUVAIN_COMMUNITIES" in res.json()["data"]["query_name"]
+
+    # Test Metapath query plan
+    res = client.post("/api/v1/algos/graph/metapath-query-plan", json={"start_node": "A", "metapath": ["KNOWS", "WORKS_AT"]})
+    assert res.status_code == 200
+    assert "METAPATH_TRAVERSAL" in res.json()["data"]["query_name"]
+
+
+
