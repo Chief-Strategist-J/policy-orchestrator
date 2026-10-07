@@ -21,107 +21,116 @@ This document outlines the architectural backlog, completed achievements, and th
 
 ## 🚀 Active Roadmap: What to Build Next
 
-### 🔴 Phase 1: Algorithmic Glue & Composition Engine (`glue/` L2–L8)
+### 🧠 Phase 1: "Neuron" — Algorithmic Neuro-Memory & Rule-Guided Context Compressor (Flagship P0)
+*Vision: Eliminating LLM token bloat, context rot, and forgetfulness by wiring our 926 deterministic algorithms into an intelligent synaptic memory and token compression engine that strictly enforces `policies/rules/`.*
+
+```
+                                  ┌────────────────────────────────────────────────────────┐
+                                  │             USER / AGENT INTERACTION                   │
+                                  └─────────────────────────┬──────────────────────────────┘
+                                                            │
+                                                            ▼
+                                   ┌───────────────────────────────────────────────────────┐
+                                   │         NEURON CONTEXT COMPRESSION & MEMORY           │
+                                   ├───────────────────────────────────────────────────────┤
+                                   │ 1. Structural AST Slicer (85%+ Token Reduction)       │
+                                   │    - Tree-Sitter + LibCST Red-Green Subtree Pruner    │
+                                   │    - Eliminates comments, whitespace & uncalled ASTs  │
+                                   │ 2. Synaptic Knowledge Graph Memory Matrix            │
+                                   │    - Bitemporal Episodic Graph & Fact Consolidator   │
+                                   │    - Invariant & Decision Tracking across turns       │
+                                   │ 3. Strict Rule Enforcer (policies/rules/ Guards)      │
+                                   │    - SHACL + Datalog Policy Proof Engine              │
+                                   │    - Zero-Inline-Comment & Hexagonal Invariant Verifier│
+                                   └────────────────────────┬──────────────────────────────┘
+                                                            │ Minimal Compressed Context (10x Token Savings)
+                                                            ▼
+                                  ┌────────────────────────────────────────────────────────┐
+                                  │          LLM REASONING CORE (Fast & Focused)           │
+                                  └────────────────────────────────────────────────────────┘
+```
+
+- [ ] **1. Neuron Context Pruner & Token Compressor (`neuron_compressor.py`)**
+  - **Algorithmic Foundation**: AST Chunking (`ALGO-TRFM-99`), Red-Green Lossless Tree (`ALGO-SYNX-128`), Suffix Automaton DAWG (`ALGO-SRCH-49`), Roaring Bitmaps (`ALGO-SRCH-64`), Context Condenser & Triple Pruner (`ALGO-KG-183`).
+  - **Mechanism**: Instead of dumping raw file trees or 1000-line source files into the prompt, Neuron extracts only the relevant call graph slice, type signatures, and dependency contracts, shrinking prompt token payload by **80%–95%**.
+  - **Deliverable**: `src/features/neuron/neuron_compressor.py` with benchmark token comparison tests.
+
+- [ ] **2. Synaptic Episodic Memory & Long-Term Recall Matrix (`neuron_memory.py`)**
+  - **Algorithmic Foundation**: Bitemporal Fact Modeler (`ALGO-KG-12`), Agent Working Memory (`ALGO-KG-181`), Multi-Hop Dynamic Planner (`ALGO-KG-182`), Episodic Memory Consolidator (`ALGO-KG-185`), Datalog Semi-Naive Reasoner (`ALGO-KG-89`).
+  - **Mechanism**: Never forgets architectural decisions, user preferences, or file changes. Stores past decisions and system states as a bitemporal knowledge graph. When a new turn begins, it recalls exact logical nodes using Think-on-Graph (`ALGO-KG-176`) rather than bloated conversation history.
+  - **Deliverable**: `src/features/neuron/neuron_memory.py` & SQLite/Graph persistent memory store.
+
+- [ ] **3. Strict Rule Invariant & Policy Enforcer (`neuron_policy_guard.py`)**
+  - **Algorithmic Foundation**: SHACL Constraint Validator (`ALGO-KG-166`), Datalog CodeQL (`ALGO-SRCH-98`), AST Metavariable Matcher (`ALGO-SRCH-82`), Taint Analysis Worklist (`ALGO-SRCH-97`).
+  - **Mechanism**: Injects strict policy rules from `policies/rules/` (Hexagonal architecture, Zero-inline-comments, 3-tier wiring, universal naming matrix, ASCII change/memory logs) into agent constraints and verifies code outputs deterministically before applying mutations.
+  - **Deliverable**: `src/features/neuron/neuron_policy_guard.py`.
+
+- [ ] **4. Dynamic Algorithm Dispatcher & Optimizer (`neuron_dispatcher.py`)**
+  - **Algorithmic Foundation**: Automatic Composition L3 (`pipeline_synthesizer.py`), Execution Controller L4 (`execution_controller.py`), Topological Kahn Sort (`ALGO-ATMC-170`), Dynamic Memory Arena L5 (`memory_arena.py`).
+  - **Mechanism**: Whenever the agent needs computation (search, diff, clustering, graph analytics, embeddings, AST rewrites), Neuron delegates the subtask directly to the optimal compiled deterministic algorithm (C/Python/SQLite) rather than asking the LLM to hallucinate or manually code it.
+  - **Deliverable**: `src/features/neuron/neuron_dispatcher.py`.
+
+---
+
+### 🔴 Phase 2: Algorithmic Glue & Composition Engine (`glue/` L2–L8)
 *Focus: Turning isolated deterministic algorithms into dynamic, type-safe, speculative execution DAGs.*
 
-- [ ] **1. Composition-Models-L2 (DAG Execution Engine)**
-  - Implement dynamic DAG executor supporting sequential, branching, parallel fan-out/fan-in, and speculative race execution.
-  - Implement topological execution order with dependency resolution and cycle prevention.
-  - Deliverable: `src/features/code_engine/composition/dag_engine.py` & unit test suite.
+- [ ] **5. Composition-Models-L2 (DAG Execution Engine)**
+  - Dynamic DAG executor supporting sequential, branching, parallel fan-out/fan-in, and speculative race execution.
+  - Deliverable: `src/features/code_engine/composition/dag_engine.py`.
 
-- [ ] **2. Automatic-Composition-L3 (Type-Driven Pipeline Synthesizer)**
-  - Auto-synthesize executable algorithm chains by resolving source input type to target output type using registered `G4TypeAdapter` bridges.
-  - Shortest-path search over the algorithm type-compatibility graph to auto-generate data pipelines.
+- [ ] **6. Automatic-Composition-L3 (Type-Driven Pipeline Synthesizer)**
+  - Auto-synthesize algorithm execution chains using registered `G4TypeAdapter` bridges and type-compatibility graphs.
   - Deliverable: `src/features/code_engine/composition/pipeline_synthesizer.py`.
 
-- [ ] **3. Execution-Control-L4 (Resilience & Lifecycle Management)**
-  - W3C Context propagation, hierarchical cancellation tokens, per-step distributed deadlines/timeouts.
-  - Adaptive circuit breakers, sliding-window error-budget tracking, and exponential backoff retry policies with jitter.
+- [ ] **7. Execution-Control-L4 (Resilience & Lifecycle Management)**
+  - W3C Context propagation, hierarchical cancellation tokens, per-step deadlines, adaptive circuit breakers.
   - Deliverable: `src/features/code_engine/composition/execution_controller.py`.
 
-- [ ] **4. Scope-and-Data-Flow-L5 (Zero-Copy Buffer Passing & Memory Arenas)**
-  - High-throughput shared memory arena for massive graph and vector representations without serialization overhead.
-  - Ephemeral pipeline memory scopes with automatic garbage reclamation upon DAG step completion.
+- [ ] **8. Scope-and-Data-Flow-L5 (Zero-Copy Buffer Passing & Memory Arenas)**
+  - Shared memory arena for graph and vector representations without serialization overhead.
   - Deliverable: `src/features/code_engine/composition/memory_arena.py`.
 
-- [ ] **5. Safety-and-Verification-L6 (Formal Guards & Taint Tracking)**
-  - Pre- and post-condition formal verification guards per algorithm execution step.
-  - Dynamic taint analysis engine preventing untrusted user input from reaching destructive file system or mutation algorithms.
+- [ ] **9. Safety-and-Verification-L6 (Formal Guards & Taint Tracking)**
+  - Pre- and post-condition formal verification guards and dynamic taint tracking.
   - Deliverable: `src/features/code_engine/composition/safety_guard.py`.
 
-- [ ] **6. Matching-Data-Binding-L7 (Structural Metavariable Pattern Matcher)**
+- [ ] **10. Matching-Data-Binding-L7 (Structural Metavariable Pattern Matcher)**
   - AST metavariable capture and structural template binding engine for syntax-tree transformations.
-  - Bidirectional data-binding between pipeline step outputs and downstream parameter slots.
   - Deliverable: `src/features/code_engine/composition/pattern_matcher.py`.
 
-- [ ] **7. Lang-Ref-L8 (Declarative Workflow DSL & Runner)**
-  - Human-readable YAML/JSON declarative pipeline specification schema (`.pipeline.yaml`).
-  - Pipeline parser, validator, compiler, and CLI runner (`policy-orchestrator run-pipeline`).
+- [ ] **11. Lang-Ref-L8 (Declarative Workflow DSL & Runner)**
+  - Human-readable YAML/JSON declarative pipeline specification schema (`.pipeline.yaml`) and CLI runner.
   - Deliverable: `src/features/code_engine/composition/workflow_dsl.py`.
 
 ---
 
-### 🟠 Phase 2: Orchestration & Multi-Agent Swarm Runtime
+### 🟠 Phase 3: Orchestration & Multi-Agent Swarm Runtime
 *Focus: Activating the 1000+ Declarative Agent Catalog with real-time streaming and collaborative swarms.*
 
-- [ ] **8. Dynamic Multi-Agent Swarm Coordinator**
-  - Implement centralized multi-agent orchestration runtime capable of instantiating and coordinating any agent from the `AgentManifest` catalog.
-  - Inter-agent message passing bus, consensus voting, and subtask delegation protocols.
-  - Deliverable: `src/features/orchestration/agent_swarm_coordinator.py`.
-
-- [ ] **9. Real-Time Streaming Telemetry & SSE Endpoint**
-  - Server-Sent Events (SSE) router at `/api/v1/agent/stream` emitting step-by-step reasoning tokens, tool invocations, and algorithm execution spans.
-  - WebSocket bidirectional stream for interactive agent steering and human-in-the-loop approvals.
-  - Deliverable: `src/api/rest/v1/routers/streaming_router.py`.
-
-- [ ] **10. Multi-Project Workspace Batch Synchronizer**
-  - Background indexing daemon and CLI command (`policy-orchestrator sync --all`) to scan, index, and build vector/graph representations across monorepos and multi-repo workspaces.
-  - Incremental change watcher leveraging CDC and Merkle Tree hashing.
-  - Deliverable: `src/features/indexing/workspace_synchronizer.py`.
-
-- [ ] **11. GraphRAG Hybrid Fusion Engine**
-  - Fusion retriever combining Neo4j/Knowledge-Graph subgraph traversals with dense vector embeddings and BM25 sparse retrieval.
-  - Cross-Encoder reciprocal rank fusion (RRF) reranking stage feeding structured context directly into agent prompts.
-  - Deliverable: `src/features/retrieval/graph_rag_engine.py`.
+- [ ] **12. Dynamic Multi-Agent Swarm Coordinator (`agent_swarm_coordinator.py`)**: Inter-agent message passing bus, consensus voting, and subtask delegation protocols.
+- [ ] **13. Real-Time Streaming Telemetry & SSE (`streaming_router.py`)**: Server-Sent Events endpoint (`/api/v1/agent/stream`) and WebSocket stream for live reasoning tokens and step execution.
+- [ ] **14. Multi-Project Workspace Batch Synchronizer (`workspace_synchronizer.py`)**: Background indexing daemon (`policy-orchestrator sync --all`) using CDC and Merkle Tree change detection.
+- [ ] **15. GraphRAG Hybrid Fusion Engine (`graph_rag_engine.py`)**: Multi-hop Knowledge Graph subgraph traversals fused with dense vector retrieval and cross-encoder RRF reranking.
 
 ---
 
-### 🟡 Phase 3: Policy Evolution, Governance & Automation
+### 🟡 Phase 4: Policy Evolution, Governance & Automation
 *Focus: Self-healing codebases, automated policy generation, and CI/CD policy enforcement.*
 
-- [ ] **12. AST-Safe Automated Zero-Inline-Comment Migrator & Linter**
-  - Automated `libcst` / `tree-sitter` AST refactoring tool that extracts inline comments and promotes them to structured module headers.
-  - Pre-commit hook and CI gate enforcing the Zero-Inline-Comment doctrine across all Python files.
-  - Deliverable: `src/features/governance/comment_migrator.py`.
-
-- [ ] **13. Self-Updating Policy Proposal Engine (Automated PR Generator)**
-  - Engine analyzing policy violations, test failures, and telemetry drift to autonomously draft policy updates and generate GitHub pull requests.
-  - Automated semantic regression testing for proposed policy rules.
-  - Deliverable: `src/features/governance/policy_proposal_engine.py`.
-
-- [ ] **14. CloudEvents Git Webhook Consumer**
-  - Ingestion service for GitHub/GitLab webhook events (`pull_request.opened`, `push`).
-  - Automated PR scanning against active architecture policies, reporting structured review comments and check runs.
-  - Deliverable: `src/api/rest/v1/routers/webhook_router.py`.
+- [ ] **16. AST-Safe Automated Zero-Inline-Comment Migrator & Linter (`comment_migrator.py`)**: Automated `libcst` / `tree-sitter` AST refactoring tool and CI gate enforcing the zero-comment doctrine.
+- [ ] **17. Self-Updating Policy Proposal Engine (`policy_proposal_engine.py`)**: Autonomous regression-tested policy proposal generator creating GitHub pull requests from drift data.
+- [ ] **18. CloudEvents Git Webhook Consumer (`webhook_router.py`)**: Webhook handler evaluating incoming PRs against active architecture rules.
 
 ---
 
-### 🟢 Phase 4: Enterprise Observability, Resilience & Scaling
+### 🟢 Phase 5: Enterprise Observability, Resilience & Scaling
 *Focus: Distributed tracing, durable workflows, and multi-tenant performance optimization.*
 
-- [ ] **15. OpenTelemetry OTLP Exporter & Prometheus Metrics**
-  - Native OTLP span exporter streaming distributed traces to Jaeger / Grafana Tempo.
-  - Prometheus `/metrics` endpoint exposing algorithm latency histograms, cache hit ratios, error rates, and tenant quotas.
-  - Deliverable: `src/infrastructure/observability/otlp_exporter.py`.
+- [ ] **19. OpenTelemetry OTLP Exporter & Prometheus Metrics (`otlp_exporter.py`)**: Native OTLP exporter for Jaeger/Tempo and Prometheus `/metrics` endpoint.
+- [ ] **20. Temporal / Durable Execution Worker (`temporal_worker.py`)**: Resumable, fault-tolerant workflow workers for multi-hour repository migrations.
+- [ ] **21. Comprehensive E2E Performance Benchmark & Load Testing (`load_test_catalog.py`)**: Locust / k6 load tests validating p95 <50ms latency across all 700 endpoints.
 
-- [ ] **16. Temporal / Durable Execution Worker**
-  - Temporal workflow integration for fault-tolerant, resumable execution of large-scale multi-hour codebase transformations and repository migrations.
-  - Deliverable: `src/infrastructure/workflows/temporal_worker.py`.
-
-- [ ] **17. Comprehensive E2E Performance Benchmark & Load Testing**
-  - Locust / k6 load testing suite simulating concurrent requests across all 700 REST endpoints.
-  - p95 latency validation (<50ms for in-memory graph algorithms, <100ms for vector search).
-  - Deliverable: `tests/benchmarks/load_test_catalog.py`.
 
 ---
 
