@@ -24,6 +24,8 @@ This document outlines the architectural backlog, completed achievements, and th
 ### 🧠 Phase 1: "Neuron" — Algorithmic Neuro-Memory & Rule-Guided Context Compressor (Flagship P0)
 *Vision: Eliminating LLM token bloat, context rot, and forgetfulness by wiring our 926 deterministic algorithms into an intelligent synaptic memory and token compression engine that strictly enforces `policies/rules/`.*
 
+👉 **Detailed Architecture & Strategic SWOT Analysis**: [docs/NEURON_ARCHITECTURE_AND_SWOT.md](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/docs/NEURON_ARCHITECTURE_AND_SWOT.md)
+
 ```
                                   ┌────────────────────────────────────────────────────────┐
                                   │             USER / AGENT INTERACTION                   │
