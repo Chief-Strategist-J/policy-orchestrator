@@ -4948,6 +4948,362 @@ paths:
         '200':
           description: Two-phase atomic commit ensuring vectors and security ACLs become visible simultaneously.
           content:
+  /api/v1/algos/graph/systems/register-allocation:
+    post:
+      summary: Register Allocation by Graph Coloring (ALGO-GRAPH-SYS-301)
+      operationId: graphSystemsRegisterAllocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Chaitin-Briggs graph coloring register allocation with optimistic spilling.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/critical-path-pert:
+    post:
+      summary: Critical Path Method & PERT Schedule Analysis (ALGO-GRAPH-SYS-302)
+      operationId: graphSystemsCriticalPathPert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: CPM forward/backward passes and PERT schedule variance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/coffman-graham-scheduling:
+    post:
+      summary: Coffman-Graham Scheduling & Bounded-Width Layering (ALGO-GRAPH-SYS-303)
+      operationId: graphSystemsCoffmanGraham
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Multiprocessor task scheduling with lexicographic labeling.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/heft-scheduling:
+    post:
+      summary: Heterogeneous Earliest Finish Time (HEFT) Scheduling (ALGO-GRAPH-SYS-304)
+      operationId: graphSystemsHeftScheduling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Heterogeneous multiprocessor list-scheduling with insertion gap filling.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/build-system-dependencies:
+    post:
+      summary: Build System Dependency Graphs with Early Cutoff (ALGO-GRAPH-SYS-305)
+      operationId: graphSystemsBuildDependencies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Incremental build system with verifying traces and early cutoff.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/tracing-garbage-collection:
+    post:
+      summary: Tracing Garbage Collection (ALGO-GRAPH-SYS-306)
+      operationId: graphSystemsTracingGc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Mark-sweep and tri-color concurrent reachability garbage collection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/bacon-rajan-cycle-collection:
+    post:
+      summary: Bacon-Rajan Cycle Collection (ALGO-GRAPH-SYS-307)
+      operationId: graphSystemsBaconRajan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Trial deletion cycle detection for reference counting runtimes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/chandy-misra-haas-deadlock:
+    post:
+      summary: Chandy-Misra-Haas Distributed Deadlock Detection (ALGO-GRAPH-SYS-308)
+      operationId: graphSystemsDeadlockDetection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Edge-chasing probe protocol for distributed deadlock cycle detection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/gossip-epidemic-protocols:
+    post:
+      summary: Gossip & Epidemic Dissemination Protocols (ALGO-GRAPH-SYS-309)
+      operationId: graphSystemsGossipProtocol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Push, pull, and push-pull epidemic gossip dissemination simulation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/consensus-averaging-laplacian:
+    post:
+      summary: Consensus Averaging via Laplacian Dynamics & Push-Sum (ALGO-GRAPH-SYS-310)
+      operationId: graphSystemsConsensusAveraging
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Decentralized network consensus averaging with convergence tracking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/network-reliability-monte-carlo:
+    post:
+      summary: Network Reliability Monte Carlo Estimation (ALGO-GRAPH-SYS-311)
+      operationId: graphSystemsNetworkReliability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Two-terminal and all-terminal network reliability with confidence intervals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/link-state-distance-vector-routing:
+    post:
+      summary: Link-State & Distance-Vector Routing (ALGO-GRAPH-SYS-312)
+      operationId: graphSystemsRoutingProtocols
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OSPF link-state Dijkstra forwarding tables and RIP distance-vector routing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/path-vector-bgp-routing:
+    post:
+      summary: Path-Vector BGP Routing & Gao-Rexford Policies (ALGO-GRAPH-SYS-313)
+      operationId: graphSystemsBgpRouting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: BGP-4 inter-domain path-vector routing with valley-free export policies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/spanning-tree-protocol-stp:
+    post:
+      summary: Spanning Tree Protocol (IEEE 802.1D / RSTP) (ALGO-GRAPH-SYS-314)
+      operationId: graphSystemsSpanningTree
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Layer 2 root bridge election and loop-free port blocking spanning tree.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/force-directed-layout:
+    post:
+      summary: Force-Directed Layout (ALGO-GRAPH-SYS-315)
+      operationId: graphSystemsForceDirectedLayout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 2D spatial graph embedding using Fruchterman-Reingold spring-electrical simulation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/sugiyama-hierarchical-layout:
+    post:
+      summary: Sugiyama Hierarchical Layered Layout (ALGO-GRAPH-SYS-316)
+      operationId: graphSystemsSugiyamaLayout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Directed graph layered layout with cycle removal and barycentric crossing reduction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/edge-bundling-visualization:
+    post:
+      summary: Force-Directed Edge Bundling (ALGO-GRAPH-SYS-317)
+      operationId: graphSystemsEdgeBundling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Clutter reduction via physical attraction between compatible graph edge segments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/geometric-delaunay-voronoi-emst:
+    post:
+      summary: Geometric Graphs Delaunay, Voronoi & Euclidean MST (ALGO-GRAPH-SYS-318)
+      operationId: graphSystemsGeometricGraphs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Planar Delaunay triangulation, dual Voronoi partition, and O(N log N) Euclidean MST.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/map-matching-hmm-viterbi:
+    post:
+      summary: Map Matching HMM with Viterbi Decoding (ALGO-GRAPH-SYS-319)
+      operationId: graphSystemsMapMatching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Snapping noisy GPS trajectory coordinates to underlying road network segments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/systems/attack-graph-path-analysis:
+    post:
+      summary: Attack Graph Path Analysis (ALGO-GRAPH-SYS-320)
+      operationId: graphSystemsAttackGraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: MulVAL-style logic derivation attack paths and minimum-cut defense sets.
+          content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'

@@ -60,6 +60,9 @@ router.include_router(vector_update_router)
 from .routers.vector_observability_router import router as vector_observability_router
 router.include_router(vector_observability_router)
 
+from .routers.graph_systems_router import router as graph_systems_router
+router.include_router(graph_systems_router)
+
 from .routers.algorithm_registry_router import router as algorithm_registry_router
 router.include_router(algorithm_registry_router)
 
