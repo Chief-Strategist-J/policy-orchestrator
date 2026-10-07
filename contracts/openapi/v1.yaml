@@ -5308,6 +5308,294 @@ paths:
               schema:
                 $ref: '#/components/schemas/Envelope_AlgoResponse'
 
+  /api/v1/algos/graph/traversal/direction-optimizing-bfs:
+    post:
+      summary: Direction-Optimizing BFS (ALGO-GRAPH-TRV-13)
+      operationId: graphTraversalDirectionOptimizingBfs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Hybrid top-down / bottom-up direction-optimizing BFS traversal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/traversal/contraction-hierarchies:
+    post:
+      summary: Contraction Hierarchies Routing (ALGO-GRAPH-TRV-21)
+      operationId: graphTraversalContractionHierarchies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Bidirectional CH query on node-contracted shortcut graph.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/flows/boruvka-mst:
+    post:
+      summary: Boruvka Minimum Spanning Tree (ALGO-GRAPH-TREE-63)
+      operationId: graphFlowsBoruvkaMst
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Parallel component contraction MST computation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/flows/edmonds-karp-max-flow:
+    post:
+      summary: Edmonds-Karp Maximum Network Flow (ALGO-GRAPH-FLOW-74)
+      operationId: graphFlowsEdmondsKarp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Shortest augmenting path max flow computation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/flows/dinic-max-flow:
+    post:
+      summary: Dinic Maximum Network Flow (ALGO-GRAPH-FLOW-75)
+      operationId: graphFlowsDinic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Layered level graph and blocking flow max flow.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/flows/karger-min-cut:
+    post:
+      summary: Karger Randomized Minimum Cut (ALGO-GRAPH-FLOW-79)
+      operationId: graphFlowsKargerMinCut
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Randomized edge contraction global minimum cut.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/flows/hopcroft-karp-matching:
+    post:
+      summary: Hopcroft-Karp Bipartite Matching (ALGO-GRAPH-MATCH-84)
+      operationId: graphFlowsHopcroftKarp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Maximum cardinality bipartite matching.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/centrality/betweenness:
+    post:
+      summary: Brandes Betweenness Centrality (ALGO-GRAPH-CENT-109)
+      operationId: graphCentralityBetweenness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Exact vertex and edge betweenness centrality.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/centrality/densest-subgraph:
+    post:
+      summary: Densest Subgraph Peeling (ALGO-GRAPH-DENSE-129)
+      operationId: graphCentralityDensestSubgraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Charikar greedy peeling 2-approximation densest subgraph.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/communities/leiden-cpm:
+    post:
+      summary: Leiden Constant Potts Model Community Detection (ALGO-GRAPH-COMM-152)
+      operationId: graphCommunitiesLeidenCpm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Resolution-limit-free CPM community detection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/communities/weisfeiler-lehman-isomorphism:
+    post:
+      summary: Weisfeiler-Lehman Graph Isomorphism & Hashing (ALGO-GRAPH-ISO-181)
+      operationId: graphCommunitiesWeisfeilerLehman
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: 1-WL color refinement canonical graph certificates and hashing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dynamic/incremental-topo-sort:
+    post:
+      summary: Pearce-Kelly Incremental Topological Sort (ALGO-GRAPH-DYN-202)
+      operationId: graphDynamicIncrementalTopoSort
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Online DAG topological sort maintenance with cycle certificates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/dynamic/midas-anomaly-detection:
+    post:
+      summary: MIDAS Streaming Graph Anomaly Detection (ALGO-GRAPH-TEMP-215)
+      operationId: graphDynamicMidasAnomaly
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Microcluster anomaly scoring in streaming edge arrivals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/embeddings/textrank:
+    post:
+      summary: TextRank Keyword & Sentence Ranking (ALGO-GRAPH-RANK-285)
+      operationId: graphEmbeddingsTextRank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Graph-based random-walk ranking for keywords and sentences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/embeddings/d-separation:
+    post:
+      summary: Bayes-Ball D-Separation Causal Reachability (ALGO-GRAPH-CAUSAL-279)
+      operationId: graphEmbeddingsDSeparation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Linear-time DAG conditional independence and d-separation test.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
+  /api/v1/algos/graph/embeddings/andersen-points-to:
+    post:
+      summary: Andersen Points-To Analysis (ALGO-GRAPH-PROG-299)
+      operationId: graphEmbeddingsAndersenPointsTo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Inclusion-based pointer constraint graph fixpoint analysis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope_AlgoResponse'
+
 components:
   schemas:
     ResponseMeta:

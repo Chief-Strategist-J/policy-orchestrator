@@ -60,6 +60,24 @@ router.include_router(vector_update_router)
 from .routers.vector_observability_router import router as vector_observability_router
 router.include_router(vector_observability_router)
 
+from .routers.graph_representation_traversal_router import router as graph_representation_traversal_router
+router.include_router(graph_representation_traversal_router)
+
+from .routers.graph_connectivity_flows_router import router as graph_connectivity_flows_router
+router.include_router(graph_connectivity_flows_router)
+
+from .routers.graph_centrality_dense_router import router as graph_centrality_dense_router
+router.include_router(graph_centrality_dense_router)
+
+from .routers.graph_communities_spectral_router import router as graph_communities_spectral_router
+router.include_router(graph_communities_spectral_router)
+
+from .routers.graph_dynamic_streaming_router import router as graph_dynamic_streaming_router
+router.include_router(graph_dynamic_streaming_router)
+
+from .routers.graph_embeddings_gnn_router import router as graph_embeddings_gnn_router
+router.include_router(graph_embeddings_gnn_router)
+
 from .routers.graph_systems_router import router as graph_systems_router
 router.include_router(graph_systems_router)
 
