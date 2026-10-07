@@ -30,29 +30,30 @@
 ## 🎯 What This Package Delivers
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#1e1e2e", "primaryTextColor": "#cdd6f4", "primaryBorderColor": "#89b4fa", "lineColor": "#a6adc8", "secondaryColor": "#181825", "tertiaryColor": "#11111b", "background": "#1e1e2e", "mainBkg": "#1e1e2e", "nodeBorder": "#89b4fa", "clusterBkg": "#181825", "clusterBorder": "#45475a", "titleColor": "#cdd6f4", "edgeLabelBackground": "#313244", "fontFamily": "ui-monospace, monospace"}}}%%
 flowchart TD
-    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef neuron fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef algo fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-    classDef gateway fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    classDef client fill:#1e3a5f,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
+    classDef neuron fill:#3d1f00,stroke:#fe8019,stroke-width:2px,color:#cdd6f4;
+    classDef algo fill:#1a3300,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef gateway fill:#2d1b4e,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4;
 
-    Dev[Developer / AI Agent Workflow]:::client --> Ingest[Neuron Input Gateway]:::neuron
+    Dev["🖥️  Developer / AI Agent Workflow"]:::client --> Ingest["⚡ Neuron Input Gateway"]:::neuron
 
-    subgraph CoreEngine ["Policy Orchestrator & Neuron Engine"]
-        Ingest --> Compressor["1. AST Token Compressor (95% Drop)\n• AST Chunking (ALGO-TRFM-99)\n• Red-Green Lossless Tree (ALGO-SYNX-128)\n• Suffix Automaton DAWG (ALGO-SRCH-49)"]:::neuron
-        
-        Ingest --> SynapticMem["2. Synaptic Episodic Memory Matrix\n• Bitemporal Fact Modeler (ALGO-KG-12)\n• Think-on-Graph Beam Search (ALGO-KG-176)\n• Episodic Memory Consolidator (ALGO-KG-185)"]:::neuron
+    subgraph CoreEngine ["🧠  Policy Orchestrator & Neuron Engine"]
+        Ingest --> Compressor["1. AST Token Compressor — 95% Drop\n─────────────────────────────\n• AST Chunking          ALGO-TRFM-99\n• Red-Green Tree        ALGO-SYNX-128\n• Suffix Automaton DAWG ALGO-SRCH-49"]:::neuron
 
-        Compressor --> Dispatcher["Algorithmic Dispatcher & Composer"]:::algo
+        Ingest --> SynapticMem["2. Synaptic Episodic Memory Matrix\n─────────────────────────────\n• Bitemporal Fact Model  ALGO-KG-12\n• Think-on-Graph Beam    ALGO-KG-176\n• Episodic Consolidator  ALGO-KG-185"]:::neuron
+
+        Compressor --> Dispatcher["🔀  Algorithmic Dispatcher & Composer"]:::algo
         SynapticMem --> Dispatcher
 
-        Dispatcher --> Algos[("3. 926 Deterministic Compiled Algos\n• Vector Math (200 Algos)\n• AST & File Indexing (206 Algos)\n• Knowledge Graph & GNNs (200 Algos)\n• Graph Analytics (320 Algos)")]:::algo
+        Dispatcher --> Algos[("3. 926 Deterministic Compiled Algos\n──────────────────────────────────\n• Vector Math          200 Algos\n• AST & File Indexing  206 Algos\n• Knowledge Graph GNNs 200 Algos\n• Graph Analytics      320 Algos")]:::algo
 
-        Algos --> Firewall["4. Strict Policy Compiler Firewall\n• SHACL Constraint Guard (ALGO-KG-166)\n• Zero-Inline-Comment AST Linter\n• Hexagonal Import Graph Enforcer (ALGO-SRCH-93)\n• Universal Naming Matrix Gate"]:::neuron
+        Algos --> Firewall["4. Strict Policy Compiler Firewall\n──────────────────────────────────\n• SHACL Constraint Guard   ALGO-KG-166\n• Zero-Inline-Comment Linter\n• Hexagonal Import Enforcer ALGO-SRCH-93\n• Universal Naming Matrix Gate"]:::neuron
     end
 
-    Firewall --> Delivery["700 Mounted REST Endpoints & Python SDK\n(/api/v1/algos/... | CLI | Code)"]:::gateway
-    Delivery --> Output[Deterministic & 100% Rule-Compliant Code]:::client
+    Firewall --> Delivery["🚀  700 REST Endpoints & Python SDK\n/api/v1/algos/... | CLI | Code"]:::gateway
+    Delivery --> Output["✅  Deterministic & 100% Rule-Compliant Code"]:::client
 ```
 
 ---
@@ -79,69 +80,4 @@ Every algorithm is accessible via three standardized interfaces:
 | **Tier 2: Developer Command** | Power Users, CI/CD, Scripting | `policy-orchestrator exec <ALGO-ID> [payload]` | Raw JSON or specialized ASCII tables |
 | **Tier 3: Code Command** | Microservices, Python SDK, Agents | `POST /api/v1/algos/...`<br>`CodeEngineService.execute_algorithm()` | Strict RFC Envelope (`{success, statusCode, data, errors, meta}`) |
 
----
 
-## 🧠 The Neuron Engine: Solving LLM Token Bloat & Forgetfulness
-
-Read the full technical specification and SWOT analysis:
-👉 **[docs/NEURON_ARCHITECTURE_AND_SWOT.md](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/docs/NEURON_ARCHITECTURE_AND_SWOT.md)**  
-👉 **[docs/adr/ADR-0001-neuron-algorithmic-neuro-memory-and-context-compressor.md](file:///home/btpl-lap-22/live/llm-obs-infra/policies/policy-orchestrator/docs/adr/ADR-0001-neuron-algorithmic-neuro-memory-and-context-compressor.md)**
-
-### Token Cost Savings Breakdown
-
-```
-STANDARD AGENT (No Neuron):
-Prompt Payload: [==================== 35,000 Tokens ====================]
-Processing Time: ────────────────────── 15.2s ──────────────────────► ($90.00 / day)
-
-NEURON AGENT (With Algorithmic Neuro-Compression):
-Neuron Prep: 0.004s (AST Slice + Graph Query)
-Prompt Payload: [= 1,200 Tokens =] (95% Reduction)
-Processing Time: ── 1.1s ──► ($3.60 / day | >$31,000 Annual Savings)
-```
-
----
-
-## 🚀 Quickstart
-
-### 1. Installation
-
-```bash
-cd policies/policy-orchestrator
-pip install -e .
-```
-
-### 2. Discovering & Running Algorithms
-
-```bash
-# List all 926 algorithms with descriptions
-policy-orchestrator list
-
-# Run Dijkstra Shortest Path
-policy-orchestrator run dijkstra '{"graph": {"A":{"B":1,"C":4},"B":{"C":2,"D":5},"C":{"D":1},"D":{}}, "start_node": "A", "target_node": "D"}'
-
-# Execute direct AST Linter for Zero-Inline-Comments
-policy-orchestrator lint src/my_file.py
-```
-
-### 3. Launching the REST API (700 Endpoints)
-
-```bash
-uvicorn src.api.rest.v1.router:app --host 0.0.0.0 --port 8000 --reload
-```
-Interactive OpenAPI documentation will be live at `http://localhost:8000/docs`.
-
-### 4. Running Unit Tests
-
-```bash
-python3 -m pytest tests/
-```
-
----
-
-## 📜 Architectural Invariants
-
-1. **Hexagonal Architecture (Ports & Adapters)**: Domain logic is 100% decoupled from concrete external SDKs and database drivers.
-2. **Zero-Inline-Comment Doctrine**: Zero comments permitted inside function bodies or loops. Standardized top-level module headers only.
-3. **Open Standards**: W3C Distributed Trace Context (`traceparent`), CloudEvents 1.0, OpenAPI 3.1 with uniform `{meta, data, errors}` envelopes.
-4. **Deterministic Rollbacks**: All update algorithms support dry-run preview and atomic commit/rollback.
