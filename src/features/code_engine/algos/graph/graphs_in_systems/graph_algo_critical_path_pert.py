@@ -81,8 +81,8 @@ class GraphAlgoCriticalPathPert(Generic[TNode]):
     ) -> Dict[str, Any]:
         """Performs forward/backward passes to compute critical path and slack."""
         all_nodes: Set[TNode] = set(dependency_dag.keys())
-        for succs in dependency_dag.values():
-            all_nodes.update(succs)
+        for successors_coll in dependency_dag.values():
+            all_nodes.update(successors_coll)
         all_nodes.update(durations.keys())
 
         node_list = list(all_nodes)
