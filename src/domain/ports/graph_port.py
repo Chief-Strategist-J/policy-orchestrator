@@ -78,6 +78,26 @@ class GraphStorePort(ABC):
         pass
 
     @abstractmethod
+    def get_node(self, node_id: str) -> Optional[GraphNode]:
+        pass
+
+    @abstractmethod
+    def find_node(self, query: str) -> Optional[GraphNode]:
+        pass
+
+    @abstractmethod
+    def get_incoming_relationships(self, node_id: str) -> List[GraphRelationship]:
+        pass
+
+    @abstractmethod
+    def get_outgoing_relationships(self, node_id: str) -> List[GraphRelationship]:
+        pass
+
+    @abstractmethod
+    def delete_node(self, node_id: str) -> bool:
+        pass
+
+    @abstractmethod
     def count_nodes(self) -> int:
         pass
 
@@ -88,3 +108,4 @@ class GraphStorePort(ABC):
     @abstractmethod
     def clear(self) -> None:
         pass
+

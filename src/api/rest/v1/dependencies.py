@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional
 from src.features.rag.service.rag_service import RAGService
 from src.features.audit.service.audit_service import AuditService
 from src.features.agent.service.agent_service import AgentService
-from src.features.knowledge_graph.service.knowledge_graph_service import KnowledgeGraphService
+from src.features.file_structure.service.file_structure_service import FileStructureDomainService
 from src.infra.adapters.knowledge.policy_rules_loader import PolicyRulesMarkdownLoader
 from src.infra.adapters.vector.in_memory_vector_adapter import InMemoryCosineVectorAdapter
 from src.infra.adapters.vector.qdrant_vector_adapter import QdrantVectorAdapter
@@ -135,9 +135,8 @@ def get_orchestrator_services() -> Dict[str, Any]:
         search_provider=search_provider,
         tool_registry=tool_registry,
     )
-    graph_svc = KnowledgeGraphService(
+    file_structure_svc = FileStructureDomainService(
         graph_store=graph_store,
-        knowledge_source=knowledge_source,
     )
 
     from src.features.code_engine.service.algorithm_registry_service import AlgorithmRegistryService
@@ -147,7 +146,8 @@ def get_orchestrator_services() -> Dict[str, Any]:
         "rag": rag_svc,
         "audit": audit_svc,
         "agent": agent_svc,
-        "graph": graph_svc,
+        "graph": file_structure_svc,
+        "file_structure": file_structure_svc,
         "agent_registry": agent_registry,
         "tool_registry": tool_registry,
         "algo_registry": algo_registry,
@@ -173,4 +173,8 @@ def get_code_engine_service() -> CodeEngineService:
 
 def get_algorithm_registry_service() -> Any:
     return get_services()["algo_registry_service"]
+
+
+def get_graph_store() -> Any:
+    return get_services()["graph"].graph_store
 

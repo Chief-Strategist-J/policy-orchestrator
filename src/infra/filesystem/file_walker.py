@@ -17,7 +17,7 @@ ALGORITHM & ARCHITECTURE BLUEPRINT: BOUNDED REPOSITORY FILESYSTEM WALKER
    - Deterministic Ordering: Emits directory entries in sorted lexicographical order.
 
 3. ERROR HANDLING & SECURITY INVARIANTS:
-   - Symlinks resolving outside the root directory are blocked (G1 Path Allowlist).
+   - Symlinks resolving outside the root directory are blocked.
    - Permission errors (EACCES) are caught gracefully without aborting traversal.
 ================================================================================
 """
@@ -29,7 +29,8 @@ from typing import List, Set, Generator
 DEFAULT_IGNORED_DIRS: Set[str] = {
     ".git", "node_modules", "dist", "build", ".next", "vendor",
     ".idea", ".vscode", "__pycache__", ".turbo", "coverage",
-    "data", "brain", ".gemini", "scratch", "tmp", "bin"
+    "data", "brain", ".gemini", "scratch", "tmp", "bin",
+    "venv", ".venv", "env", ".env", ".pytest_cache", ".mypy_cache", ".ruff_cache"
 }
 
 def stream_repository_files(

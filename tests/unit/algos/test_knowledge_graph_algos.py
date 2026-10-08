@@ -557,6 +557,11 @@ def test_astar_search_with_graph_store_adapter():
         def count_nodes(self): return 3
         def count_relationships(self): return 2
         def clear(self): pass
+        def get_node(self, node_id): return None
+        def find_node(self, query): return None
+        def delete_node(self, node_id): return True
+        def get_incoming_relationships(self, node_id): return []
+        def get_outgoing_relationships(self, node_id): return []
 
     adapter = MockThirdPartyGraphDatabaseAdapter()
     algo = KgAlgoAstarSearch()

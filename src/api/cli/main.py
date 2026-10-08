@@ -3272,6 +3272,379 @@ def handle_migrate_command(args: argparse.Namespace) -> int:
 
 
 
+def resolve_graph_adapter(args: argparse.Namespace):
+    from src.infra.adapters.graph.in_memory_graph_adapter import InMemoryGraphAdapter
+    from src.infra.adapters.graph.neo4j_adapter import Neo4jGraphAdapter
+    store = getattr(args, "store", None)
+    neo4j_flag = getattr(args, "neo4j", False)
+    if neo4j_flag or store == "neo4j" or os.environ.get("GRAPH_STORE") == "neo4j":
+        return Neo4jGraphAdapter()
+    return InMemoryGraphAdapter()
+
+
+def handle_scaffold_feature_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    feature_name = getattr(args, "feature_name", None) or getattr(args, "name_flag", None) or getattr(args, "name", None)
+    if not feature_name:
+        print("Error: Feature name is required.")
+        return 1
+
+    owner = getattr(args, "owner", None)
+    status = getattr(args, "status", "active")
+    flags = getattr(args, "flags", None) or getattr(args, "flag", None)
+    migrations = getattr(args, "migrations", None) or getattr(args, "migration", None)
+    contract_version = getattr(args, "contract_version", "v1")
+
+    res = service.scaffold_feature(
+        feature_name=feature_name,
+        base_dir=getattr(args, "base_dir", "src/features"),
+        package_root=getattr(args, "package_root", None),
+        with_router=not getattr(args, "no_router", False),
+        with_handler=not getattr(args, "no_handler", False),
+        with_route_rules=not getattr(args, "no_route_rules", False),
+        port_type=getattr(args, "port_type", "local"),
+        owner=owner,
+        status=status,
+        flags=flags,
+        migrations=migrations,
+        contract_version=contract_version,
+    )
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+    else:
+        print(f"Scaffolded Feature: {res['feature']}")
+        print(f"Target Directory: {res['target_dir']}")
+        print(f"Total Files Created: {res['total_files']}")
+        for f in res.get("files_created", []):
+            print(f"  + {f}")
+        print(f"Knowledge Graph Synced: {res.get('graph_synced', True)} (Status: {status}, Owner: {owner or '@'+res['feature']+'-team'})")
+    return 0
+
+
+def handle_scaffold_package_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    package_name = getattr(args, "package_name", None) or getattr(args, "name", None)
+    if not package_name:
+        print("Error: Package name is required.")
+        return 1
+
+    res = service.scaffold_package(
+        package_name=package_name,
+        base_dir=getattr(args, "base_dir", "."),
+    )
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+    else:
+        print(f"Scaffolded Package: {res['package']}")
+        print(f"Target Root: {res['target_root']}")
+        print(f"Directories Scaffolded: {res['directories_scaffolded']}")
+        print(f"Files Created: {res['files_created']}")
+        print(f"Knowledge Graph Synced: {res.get('graph_synced', True)}")
+    return 0
+
+
+def handle_impact_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    target_id = getattr(args, "target_id", None) or getattr(args, "target", None)
+    if not target_id:
+        print("Error: Target ID or file path is required.")
+        return 1
+
+    direction = getattr(args, "direction", "UPSTREAM").upper()
+    max_depth = int(getattr(args, "max_depth", 6))
+
+    service.graph_sync.sync_feature_dag(target_id)
+
+    report = service.analyze_node_impact(
+        target_id=target_id,
+        direction=direction,
+        max_depth=max_depth,
+    )
+    if getattr(args, "json", False):
+        out = {
+            "target_id": report.target_id,
+            "target_label": report.target_label,
+            "direction": report.direction,
+            "blast_radius_score": report.blast_radius_score,
+            "risk_level": report.risk_level,
+            "impacted_nodes": [
+                {
+                    "id": n.id,
+                    "label": n.label,
+                    "path": n.path,
+                    "depth": n.depth,
+                    "relationship": n.relationship,
+                    "risk_factor": n.risk_factor,
+                }
+                for n in report.impacted_nodes
+            ],
+            "affected_layers": report.affected_layers,
+            "potential_breaking_risks": report.potential_breaking_risks,
+            "required_verification_commands": report.required_verification_commands,
+            "recommended_mitigation_recipe": report.recommended_mitigation_recipe,
+        }
+        print(json.dumps(out, indent=2))
+    else:
+        print("================================================================================")
+        print("ARCHITECTURAL IMPACT & BLAST RADIUS ANALYSIS REPORT")
+        print("================================================================================")
+        print(f"Target Node: {report.target_id} (Label: {report.target_label})")
+        print(f"Direction: {report.direction} | Max Depth: {max_depth}")
+        print(f"Risk Classification: {report.risk_level} | Blast Radius Score: {report.blast_radius_score}")
+        print("--------------------------------------------------------------------------------")
+        print(f"Impacted Nodes ({len(report.impacted_nodes)} total):")
+        for node in report.impacted_nodes:
+            print(f"  [{node.relationship}] Depth {node.depth}: {node.label} ({node.id}) -> {node.path} [Risk: {node.risk_factor}]")
+        print("--------------------------------------------------------------------------------")
+        print("Required Verification Commands:")
+        for cmd in report.required_verification_commands:
+            print(f"  $ {cmd}")
+        print("--------------------------------------------------------------------------------")
+        print(f"Mitigation: {report.recommended_mitigation_recipe}")
+    return 0
+
+
+def handle_feature_map_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    feature_name = getattr(args, "feature_name", None) or getattr(args, "name", None)
+    if not feature_name:
+        print("Error: Feature name is required.")
+        return 1
+
+    service.graph_sync.sync_feature_dag(feature_name)
+    f_map = service.get_feature_map(feature_name)
+
+    if getattr(args, "json", False):
+        print(json.dumps(f_map, indent=2))
+    else:
+        print("================================================================================")
+        print(f"ARCHITECTURAL MAP FOR FEATURE: {f_map['feature']}")
+        print("================================================================================")
+        print(f"Context Boundary: {f_map.get('context', {}).get('file_path')}")
+        print(f"Public Facade:    {f_map.get('facade', {}).get('file_path')}")
+        print(f"Domain Types:     {f_map.get('types', {}).get('file_path')}")
+        print(f"Schema ACL:       {f_map.get('schema', {}).get('file_path')}")
+        print(f"REST Router:      {f_map.get('router', {}).get('file_path')} (Prefix: {f_map.get('router', {}).get('route_prefix')})")
+        print(f"Route Rules:      {f_map.get('route_rules', {}).get('file_path')}")
+        print(f"REST Handler:     {f_map.get('handler', {}).get('file_path')}")
+        print(f"Domain Service:   {f_map.get('service', {}).get('file_path')}")
+        print(f"Business Rules:   {f_map.get('rules', {}).get('file_path')}")
+        print(f"State Machine:    {f_map.get('machine', {}).get('file_path')}")
+        print(f"Workflow DAG:     {f_map.get('workflow', {}).get('file_path')}")
+        print(f"Repository Port:  {f_map.get('repository', {}).get('port')}")
+        print(f"Repository Impl:  {f_map.get('repository', {}).get('adapter')}")
+        print(f"Named SQL:        {f_map.get('repository', {}).get('queries')}")
+    return 0
+
+
+def handle_package_summary_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    package_name = getattr(args, "package_name", None) or getattr(args, "name_flag", None) or getattr(args, "name", None)
+    if not package_name:
+        print("Error: Package name is required.")
+        return 1
+
+    summary = service.get_package_summary(package_name)
+    if getattr(args, "json", False):
+        print(json.dumps(summary, indent=2))
+    else:
+        print("================================================================================")
+        print(f"PACKAGE PORTFOLIO SUMMARY: {summary['package']}")
+        print("================================================================================")
+        print(f"Total Features Registered: {summary['total_features']}")
+        print("--------------------------------------------------------------------------------")
+        for idx, feat in enumerate(summary.get("features", []), start=1):
+            print(f"  {idx}. Feature: {feat['feature_name']}")
+            print(f"     Status:     {feat['status']}")
+            print(f"     Owner:      {feat['owner']}")
+            print(f"     Flag:       {feat['flags']}")
+            print(f"     Migration:  {feat['migrations']}")
+            print(f"     Contract:   {feat.get('contract_version', 'v1')}")
+        print("================================================================================")
+    return 0
+
+
+def handle_feature_files_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    feature_name = getattr(args, "feature_name", None) or getattr(args, "name_flag", None) or getattr(args, "name", None)
+    if not feature_name:
+        print("Error: Feature name is required.")
+        return 1
+
+    package_name = getattr(args, "package_name", None) or getattr(args, "package", None)
+    res = service.get_feature_files(feature_name, package_name)
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+    else:
+        print("================================================================================")
+        print(f"FEATURE FILE MANIFEST: {res['feature']} (Total Files: {res['total_files']})")
+        print("================================================================================")
+        for f in res.get("files", []):
+            print(f"  [{f['layer']}] {f['role']}: {f['path']}")
+        print("================================================================================")
+    return 0
+
+
+def handle_graph_scan_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    root_dir = getattr(args, "root_dir", None) or getattr(args, "dir", ".")
+
+    res = service.scan_and_sync_workspace(root_dir=root_dir)
+    if getattr(args, "json", False):
+        print(json.dumps(res, indent=2))
+    else:
+        print(f"Workspace Scan Complete: {res.get('status')}")
+        print(f"Current State: {res.get('state')}")
+        stats = res.get("stats", {})
+        print(f"Indexed Files: {stats.get('indexed_files', 0)}")
+    return 0
+
+
+def handle_file_lineage_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+    file_path = getattr(args, "file_path", None) or getattr(args, "file", None)
+    if not file_path:
+        print("Error: Target file path or node ID is required.")
+        return 1
+
+    try:
+        max_depth = getattr(args, "max_depth", 5) or 5
+        lineage = service.get_file_lineage(file_path, max_depth=max_depth)
+    except Exception as exc:
+        print(f"Error resolving lineage: {exc}")
+        return 1
+
+    if getattr(args, "json", False):
+        print(json.dumps(lineage, indent=2))
+    else:
+        t = lineage["target"]
+        s = lineage["summary"]
+        print("================================================================================")
+        print("ARCHITECTURAL FILE LINEAGE & DEPENDENCY NEXUS")
+        print("================================================================================")
+        print(f"Target Node:     {t['node_id']}")
+        print(f"Role / Label:    {t['label']} [{t['layer']}]")
+        print(f"File Path:       {t['file_path']}")
+        if t.get("feature_name"):
+            print(f"Feature:         {t['feature_name']} (Package: {t.get('package_name', 'root')})")
+        print("--------------------------------------------------------------------------------")
+        print(f"Direct Upstream:   {s['direct_upstream_count']} callers/parents")
+        print(f"Direct Downstream: {s['direct_downstream_count']} dependencies/children")
+        print(f"Blast Radius:      {s['transitive_upstream_count']} transitive callers | {s['transitive_downstream_count']} transitive dependents")
+        print("--------------------------------------------------------------------------------")
+        print("DIRECT UPSTREAM (Who depends on or invokes this file):")
+        if lineage["direct_upstream"]:
+            for u in lineage["direct_upstream"]:
+                print(f"  <- [{u['relationship']}] {u['label']} ({u['file_path']})")
+        else:
+            print("  (None - this is a root ingress or standalone entry point)")
+
+        print("--------------------------------------------------------------------------------")
+        print("DIRECT DOWNSTREAM (What this file depends on or calls):")
+        if lineage["direct_downstream"]:
+            for d in lineage["direct_downstream"]:
+                print(f"  -> [{d['relationship']}] {d['label']} ({d['file_path']})")
+        else:
+            print("  (None - this is a terminal leaf node)")
+        print("================================================================================")
+    return 0
+
+
+def handle_create_file_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+
+    file_path = getattr(args, "path", None) or getattr(args, "file_path", None)
+    role = getattr(args, "role", None)
+    rel_type = getattr(args, "rel_type", None) or getattr(args, "rel", None)
+    target = getattr(args, "target", None)
+    direction = getattr(args, "direction", "outgoing")
+    package_root = getattr(args, "package_root", None)
+    feature_name = getattr(args, "feature_name", None)
+
+    if not file_path or not role or not rel_type or not target:
+        print("Error: --path, --role, --rel, and --target are all REQUIRED parameters to create an architecturally linked file.")
+        return 1
+
+    try:
+        res = service.create_file_with_relationship(
+            file_path=file_path,
+            role=role,
+            rel_type=rel_type,
+            target_file_or_node=target,
+            direction=direction,
+            package_root=package_root,
+            feature_name=feature_name,
+        )
+        if getattr(args, "json", False):
+            print(json.dumps(res, indent=2))
+        else:
+            print("================================================================================")
+            print("FILE CREATED & ARCHITECTURALLY LINKED")
+            print("================================================================================")
+            print(f"File Path:    {res['file_path']}")
+            print(f"Role / Label: {res['role']}")
+            rel = res["graph_sync"]["relationship"]
+            print(f"Relationship: {rel['source_id']} -[:{rel['rel_type']}]-> {rel['target_id']}")
+            print("================================================================================")
+        return 0
+    except Exception as exc:
+        print(f"Error creating file: {exc}")
+        return 1
+
+
+def handle_link_file_command(args: argparse.Namespace) -> int:
+    from src.features.file_structure.service.file_structure_service import FileStructureDomainService
+
+    adapter = resolve_graph_adapter(args)
+    service = FileStructureDomainService(graph_store=adapter)
+
+    source = getattr(args, "source", None)
+    rel_type = getattr(args, "rel_type", None) or getattr(args, "rel", None)
+    target = getattr(args, "target", None)
+
+    if not source or not rel_type or not target:
+        print("Error: --source, --rel, and --target are all REQUIRED parameters to link files.")
+        return 1
+
+    try:
+        res = service.link_files(source=source, rel_type=rel_type, target=target)
+        if getattr(args, "json", False):
+            print(json.dumps(res, indent=2))
+        else:
+            print(f"Successfully linked: {res['source_id']} -[:{res['relationship_type']}]-> {res['target_id']}")
+        return 0
+    except Exception as exc:
+        print(f"Error linking files: {exc}")
+        return 1
+
+
 def handle_serve_command(args: argparse.Namespace) -> int:
     import uvicorn
     os.environ["POLICY_RULES_DIR"] = args.rules_dir
@@ -3438,6 +3811,99 @@ def build_parser() -> argparse.ArgumentParser:
     policy_parser.add_argument("--path", default="policies/rules/edgeCases/algos/agent-operating-contract.md", help="Contract path")
     policy_parser.add_argument("--json", action="store_true", help="Output report as JSON")
 
+    # Scaffolding & Knowledge Graph Subcommands
+    scaffold_feat_p = subparsers.add_parser("scaffold-feature", aliases=["feature-scaffold"], help="Scaffold isolated 10-role feature structure with router & handler")
+    scaffold_feat_p.add_argument("feature_name", nargs="?", default=None, help="Name of the feature (snake_case or kebab-case)")
+    scaffold_feat_p.add_argument("--name", dest="name_flag", default=None, help="Feature name flag")
+    scaffold_feat_p.add_argument("--base-dir", default="src/features", help="Base directory (default: src/features)")
+    scaffold_feat_p.add_argument("--package-root", default=None, help="Optional parent package root directory")
+    scaffold_feat_p.add_argument("--no-router", action="store_true", help="Skip router generation")
+    scaffold_feat_p.add_argument("--no-handler", action="store_true", help="Skip handler generation")
+    scaffold_feat_p.add_argument("--no-route-rules", action="store_true", help="Skip route rules generation")
+    scaffold_feat_p.add_argument("--port-type", choices=["local", "shared"], default="local", help="Repository port type")
+    scaffold_feat_p.add_argument("--owner", default=None, help="Owning team handle (e.g. @payments-team)")
+    scaffold_feat_p.add_argument("--status", choices=["active", "deprecated", "sunset"], default="active", help="Feature lifecycle status")
+    scaffold_feat_p.add_argument("--flags", "--flag", dest="flags", default=None, help="Feature flag toggle name")
+    scaffold_feat_p.add_argument("--migrations", "--migration", dest="migrations", default=None, help="Associated DDL migration name")
+    scaffold_feat_p.add_argument("--contract-version", default="v1", help="API Contract major version")
+    scaffold_feat_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    scaffold_feat_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    scaffold_feat_p.add_argument("--json", action="store_true", help="Output result as JSON")
+
+    scaffold_pkg_p = subparsers.add_parser("scaffold-package", aliases=["package-scaffold"], help="Scaffold unified 1-to-10 package structure with .gitkeep hierarchy")
+    scaffold_pkg_p.add_argument("package_name", nargs="?", default=None, help="Name of the package")
+    scaffold_pkg_p.add_argument("--name", dest="name_flag", default=None, help="Package name flag")
+    scaffold_pkg_p.add_argument("--base-dir", default=".", help="Base directory (default: .)")
+    scaffold_pkg_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    scaffold_pkg_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    scaffold_pkg_p.add_argument("--json", action="store_true", help="Output result as JSON")
+
+    impact_p = subparsers.add_parser("impact", aliases=["impact-analysis"], help="Analyze upstream/downstream architectural blast radius & risks")
+    impact_p.add_argument("target_id", nargs="?", default=None, help="Target node ID, feature name, or file path")
+    impact_p.add_argument("--target", dest="target_flag", default=None, help="Target identifier flag")
+    impact_p.add_argument("--direction", choices=["UPSTREAM", "DOWNSTREAM", "upstream", "downstream"], default="UPSTREAM", help="Search direction")
+    impact_p.add_argument("--max-depth", type=int, default=6, help="Maximum search traversal depth")
+    impact_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    impact_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    impact_p.add_argument("--json", action="store_true", help="Output analysis report as JSON")
+
+    feat_map_p = subparsers.add_parser("feature-map", aliases=["map"], help="Resolve complete feature route/handler/port/query architecture mapping")
+    feat_map_p.add_argument("feature_name", nargs="?", default=None, help="Name of the feature")
+    feat_map_p.add_argument("--name", dest="name_flag", default=None, help="Feature name flag")
+    feat_map_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    feat_map_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    feat_map_p.add_argument("--json", action="store_true", help="Output mapping as JSON")
+
+    pkg_summary_p = subparsers.add_parser("package-summary", aliases=["pkg-summary"], help="Get rapid count and registry details of all features in a package")
+    pkg_summary_p.add_argument("package_name", nargs="?", default=None, help="Name of the package")
+    pkg_summary_p.add_argument("--name", dest="name_flag", default=None, help="Package name flag")
+    pkg_summary_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    pkg_summary_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    pkg_summary_p.add_argument("--json", action="store_true", help="Output summary as JSON")
+
+    feat_files_p = subparsers.add_parser("feature-files", aliases=["feat-files"], help="List all canonical files and layers belonging to a feature")
+    feat_files_p.add_argument("feature_name", nargs="?", default=None, help="Name of the feature")
+    feat_files_p.add_argument("--name", dest="name_flag", default=None, help="Feature name flag")
+    feat_files_p.add_argument("--package", dest="package_name", default=None, help="Optional parent package name")
+    feat_files_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    feat_files_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    feat_files_p.add_argument("--json", action="store_true", help="Output file list as JSON")
+
+    graph_sync_p = subparsers.add_parser("graph-scan", aliases=["graph-sync"], help="Scan and index repository files into Architectural Knowledge Graph")
+    graph_sync_p.add_argument("root_dir", nargs="?", default=".", help="Root directory to scan")
+    graph_sync_p.add_argument("--dir", dest="dir_flag", default=None, help="Explicit root directory flag")
+    graph_sync_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    graph_sync_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    graph_sync_p.add_argument("--json", action="store_true", help="Output scan stats as JSON")
+
+    lineage_p = subparsers.add_parser("file-lineage", aliases=["file-relations", "file-deps", "lineage"], help="Resolve upstream, downstream, and full dependency nexus of any file")
+    lineage_p.add_argument("file_path", nargs="?", default=None, help="Target file path or node ID")
+    lineage_p.add_argument("--file", dest="file", default=None, help="Explicit target file path")
+    lineage_p.add_argument("--depth", dest="max_depth", type=int, default=5, help="Maximum traversal depth")
+    lineage_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    lineage_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    lineage_p.add_argument("--json", action="store_true", help="Output lineage as JSON")
+
+    create_file_p = subparsers.add_parser("create-file", aliases=["add-file"], help="Create an architectural file with mandatory upstream/downstream relationship")
+    create_file_p.add_argument("--path", required=True, help="File path to create")
+    create_file_p.add_argument("--role", required=True, help="Architectural role / node label (e.g. DomainService, RuleSet, RepositoryAdapter, etc.)")
+    create_file_p.add_argument("--rel", "--rel-type", dest="rel_type", required=True, help="Relationship type (e.g. INVOKES_DOMAIN, ENFORCES_RULES, CONSUMES_PORT, IMPORTS_SHARED, etc.)")
+    create_file_p.add_argument("--target", required=True, help="Target file path or node ID to link to/from")
+    create_file_p.add_argument("--direction", choices=["outgoing", "incoming"], default="outgoing", help="Direction: outgoing (new_file -> target) or incoming (target -> new_file)")
+    create_file_p.add_argument("--package-root", default=None, help="Package root directory")
+    create_file_p.add_argument("--feature", dest="feature_name", default=None, help="Feature name")
+    create_file_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    create_file_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    create_file_p.add_argument("--json", action="store_true", help="Output result as JSON")
+
+    link_file_p = subparsers.add_parser("link-file", aliases=["link-nodes", "connect-files"], help="Link two architectural files or nodes with a typed relationship")
+    link_file_p.add_argument("--source", required=True, help="Source file path or node ID")
+    link_file_p.add_argument("--rel", "--rel-type", dest="rel_type", required=True, help="Relationship type")
+    link_file_p.add_argument("--target", required=True, help="Target file path or node ID")
+    link_file_p.add_argument("--store", choices=["memory", "neo4j"], default="memory", help="Graph storage backend")
+    link_file_p.add_argument("--neo4j", action="store_true", help="Use live Neo4j graph storage")
+    link_file_p.add_argument("--json", action="store_true", help="Output result as JSON")
+
     serve_parser = subparsers.add_parser("serve", help="Launch FastAPI REST server")
     serve_parser.add_argument("--host", default="0.0.0.0", help="Bind host")
     serve_parser.add_argument("--port", type=int, default=8000, help="Bind port")
@@ -3457,6 +3923,7 @@ def main() -> None:
         args.patterns = args.patterns_flag
     if hasattr(args, "dir_flag") and args.dir_flag:
         args.directory = args.dir_flag
+        args.root_dir = args.dir_flag
     if hasattr(args, "root_flag") and args.root_flag:
         args.root = args.root_flag
     if hasattr(args, "file_flag") and args.file_flag:
@@ -3471,6 +3938,11 @@ def main() -> None:
         args.input = args.input_flag
     if hasattr(args, "algos_flag") and args.algos_flag:
         args.algos = args.algos_flag
+    if hasattr(args, "name_flag") and args.name_flag:
+        args.feature_name = args.name_flag
+        args.package_name = args.name_flag
+    if hasattr(args, "target_flag") and args.target_flag:
+        args.target_id = args.target_flag
 
     if hasattr(args, "alias_flag") and args.alias_flag:
         args.alias = args.alias_flag
@@ -3498,6 +3970,29 @@ def main() -> None:
         "agent": handle_agent_command,
         "refactor": handle_refactor_command,
         "policy-check": handle_policy_check_command,
+        "scaffold-feature": handle_scaffold_feature_command,
+        "feature-scaffold": handle_scaffold_feature_command,
+        "scaffold-package": handle_scaffold_package_command,
+        "package-scaffold": handle_scaffold_package_command,
+        "impact": handle_impact_command,
+        "impact-analysis": handle_impact_command,
+        "feature-map": handle_feature_map_command,
+        "map": handle_feature_map_command,
+        "package-summary": handle_package_summary_command,
+        "pkg-summary": handle_package_summary_command,
+        "feature-files": handle_feature_files_command,
+        "feat-files": handle_feature_files_command,
+        "graph-scan": handle_graph_scan_command,
+        "graph-sync": handle_graph_scan_command,
+        "file-lineage": handle_file_lineage_command,
+        "file-relations": handle_file_lineage_command,
+        "file-deps": handle_file_lineage_command,
+        "lineage": handle_file_lineage_command,
+        "create-file": handle_create_file_command,
+        "add-file": handle_create_file_command,
+        "link-file": handle_link_file_command,
+        "link-nodes": handle_link_file_command,
+        "connect-files": handle_link_file_command,
         "serve": handle_serve_command,
     }
 
@@ -3508,3 +4003,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
