@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import math
 import pytest
-from src.features.code_engine.algos.nn.dropout_inverted.impl import NnAlgoDropoutInverted
-from src.features.code_engine.algos.nn.early_stopping_checkpointing.impl import NnAlgoEarlyStoppingCheckpointing
-from src.features.code_engine.algos.nn.embedding_lookup.impl import NnAlgoEmbeddingLookup
-from src.features.code_engine.algos.nn.fast_convolution_im2col_winograd.impl import NnAlgoFastConvolutionIm2colWinograd
-from src.features.code_engine.algos.nn.feature_pyramid_networks.impl import NnAlgoFeaturePyramidNetworks
-from src.features.code_engine.algos.nn.focal_loss.impl import NnAlgoFocalLoss
-from src.features.code_engine.algos.nn.forward_mode_differentiation.impl import NnAlgoForwardModeDifferentiation
-from src.features.code_engine.algos.nn.gated_linear_units.impl import NnAlgoGatedLinearUnits
-from src.features.code_engine.algos.nn.gradient_checking.impl import NnAlgoGradientChecking
-from src.features.code_engine.algos.nn.gradient_checkpointing.impl import NnAlgoGradientCheckpointing
-from src.features.code_engine.algos.nn.gradient_clipping.impl import NnAlgoGradientClipping
-from src.features.code_engine.algos.nn.group_instance_norm.impl import NnAlgoGroupInstanceNorm
-from src.features.code_engine.algos.nn.gru_cell.impl import NnAlgoGRUCell
-from src.features.code_engine.algos.nn.he_kaiming_init.impl import NnAlgoHeKaimingInit
-from src.features.code_engine.algos.nn.image_data_augmentation.impl import NnAlgoImageDataAugmentation
-from src.features.code_engine.algos.nn.inception_multibranch_blocks.impl import NnAlgoInceptionMultibranchBlocks
-from src.features.code_engine.algos.nn.inverted_residuals_linear_bottleneck.impl import NnAlgoInvertedResidualsLinearBottleneck
-from src.features.code_engine.algos.nn.kl_divergence_loss.impl import NnAlgoKlDivergenceLoss
-from src.features.code_engine.algos.nn.label_smoothing.impl import NnAlgoLabelSmoothing
-from src.features.code_engine.algos.nn.lars_lamb_optimizer.impl import NnAlgoLarsLambOptimizer
-from src.features.code_engine.algos.nn.layer_backpropagation.impl import NnAlgoLayerBackpropagation
-from src.features.code_engine.algos.nn.layer_normalization.impl import NnAlgoLayerNormalization
-from src.features.code_engine.algos.nn.learning_rate_warmup.impl import NnAlgoLearningRateWarmup
-from src.features.code_engine.algos.nn.linear_layer.impl import NnAlgoLinearAffineLayer
-from src.features.code_engine.algos.nn.lion_optimizer.impl import NnAlgoLionOptimizer
+from src.features.code_engine.algos.nn.regularization_augmentation.dropout_inverted.impl import NnAlgoDropoutInverted
+from src.features.code_engine.algos.nn.regularization_augmentation.early_stopping_checkpointing.impl import NnAlgoEarlyStoppingCheckpointing
+from src.features.code_engine.algos.nn.building_blocks.embedding_lookup.impl import NnAlgoEmbeddingLookup
+from src.features.code_engine.algos.nn.convolutional.fast_convolution_im2col_winograd.impl import NnAlgoFastConvolutionIm2colWinograd
+from src.features.code_engine.algos.nn.convolutional.feature_pyramid_networks.impl import NnAlgoFeaturePyramidNetworks
+from src.features.code_engine.algos.nn.losses.focal_loss.impl import NnAlgoFocalLoss
+from src.features.code_engine.algos.nn.autodiff.forward_mode_differentiation.impl import NnAlgoForwardModeDifferentiation
+from src.features.code_engine.algos.nn.building_blocks.gated_linear_units.impl import NnAlgoGatedLinearUnits
+from src.features.code_engine.algos.nn.autodiff.gradient_checking.impl import NnAlgoGradientChecking
+from src.features.code_engine.algos.nn.autodiff.gradient_checkpointing.impl import NnAlgoGradientCheckpointing
+from src.features.code_engine.algos.nn.autodiff.gradient_clipping.impl import NnAlgoGradientClipping
+from src.features.code_engine.algos.nn.normalization.group_instance_norm.impl import NnAlgoGroupInstanceNorm
+from src.features.code_engine.algos.nn.recurrent_sequence.gru_cell.impl import NnAlgoGRUCell
+from src.features.code_engine.algos.nn.schedules_init.he_kaiming_init.impl import NnAlgoHeKaimingInit
+from src.features.code_engine.algos.nn.regularization_augmentation.image_data_augmentation.impl import NnAlgoImageDataAugmentation
+from src.features.code_engine.algos.nn.convolutional.inception_multibranch_blocks.impl import NnAlgoInceptionMultibranchBlocks
+from src.features.code_engine.algos.nn.convolutional.inverted_residuals_linear_bottleneck.impl import NnAlgoInvertedResidualsLinearBottleneck
+from src.features.code_engine.algos.nn.losses.kl_divergence_loss.impl import NnAlgoKlDivergenceLoss
+from src.features.code_engine.algos.nn.losses.label_smoothing.impl import NnAlgoLabelSmoothing
+from src.features.code_engine.algos.nn.optimizers.lars_lamb_optimizer.impl import NnAlgoLarsLambOptimizer
+from src.features.code_engine.algos.nn.autodiff.layer_backpropagation.impl import NnAlgoLayerBackpropagation
+from src.features.code_engine.algos.nn.normalization.layer_normalization.impl import NnAlgoLayerNormalization
+from src.features.code_engine.algos.nn.schedules_init.learning_rate_warmup.impl import NnAlgoLearningRateWarmup
+from src.features.code_engine.algos.nn.building_blocks.linear_layer.impl import NnAlgoLinearAffineLayer
+from src.features.code_engine.algos.nn.optimizers.lion_optimizer.impl import NnAlgoLionOptimizer
 
 
 def test_26_dropout_inverted():

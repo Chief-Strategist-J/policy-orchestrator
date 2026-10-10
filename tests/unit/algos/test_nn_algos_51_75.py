@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import math
 import pytest
-from src.features.code_engine.algos.nn.lookahead_weight_averaging.impl import NnAlgoLookaheadWeightAveraging
-from src.features.code_engine.algos.nn.lstm_cell.impl import NnAlgoLSTMCell
-from src.features.code_engine.algos.nn.maximal_update_param.impl import NnAlgoMaximalUpdateParam
-from src.features.code_engine.algos.nn.metric_learning_losses.impl import NnAlgoMetricLearningLosses
-from src.features.code_engine.algos.nn.mixup_cutmix.impl import NnAlgoMixupCutmix
-from src.features.code_engine.algos.nn.mlp_feedforward.impl import NnAlgoMlpFeedforward
-from src.features.code_engine.algos.nn.momentum_nesterov.impl import NnAlgoMomentumNesterov
-from src.features.code_engine.algos.nn.multitask_loss_balancing.impl import NnAlgoMultitaskLossBalancing
-from src.features.code_engine.algos.nn.non_maximum_suppression.impl import NnAlgoNonMaximumSuppression
-from src.features.code_engine.algos.nn.normalization_placement.impl import NnAlgoNormalizationPlacement
-from src.features.code_engine.algos.nn.one_by_one_convolution_bottleneck.impl import NnAlgoOneByOneConvolutionBottleneck
-from src.features.code_engine.algos.nn.overlap_segmentation_losses.impl import NnAlgoOverlapSegmentationLosses
-from src.features.code_engine.algos.nn.perceptron_learning.impl import NnAlgoPerceptronLearning
-from src.features.code_engine.algos.nn.pointer_networks_copy_mechanism.impl import NnAlgoPointerNetworksCopyMechanism
-from src.features.code_engine.algos.nn.pooling_layers.impl import NnAlgoPoolingLayers
-from src.features.code_engine.algos.nn.qk_norm_logit_soft_capping.impl import NnAlgoQkNormLogitSoftCapping
-from src.features.code_engine.algos.nn.receptive_field_analysis.impl import NnAlgoReceptiveFieldAnalysis, LayerSpec
-from src.features.code_engine.algos.nn.regression_losses.impl import NnAlgoRegressionLosses
-from src.features.code_engine.algos.nn.relu_family.impl import NnAlgoReluFamily
-from src.features.code_engine.algos.nn.reparameterization_gumbel.impl import NnAlgoReparameterizationGumbel
-from src.features.code_engine.algos.nn.residual_connection.impl import NnAlgoResidualConnection
-from src.features.code_engine.algos.nn.resnet_residual_blocks.impl import NnAlgoResnetResidualBlocks
-from src.features.code_engine.algos.nn.reverse_mode_autodiff.impl import NnAlgoReverseModeAutodiff
-from src.features.code_engine.algos.nn.rms_norm.impl import NnAlgoRmsNorm
-from src.features.code_engine.algos.nn.rmsprop_optimizer.impl import NnAlgoRmspropOptimizer
+from src.features.code_engine.algos.nn.optimizers.lookahead_weight_averaging.impl import NnAlgoLookaheadWeightAveraging
+from src.features.code_engine.algos.nn.recurrent_sequence.lstm_cell.impl import NnAlgoLSTMCell
+from src.features.code_engine.algos.nn.schedules_init.maximal_update_param.impl import NnAlgoMaximalUpdateParam
+from src.features.code_engine.algos.nn.losses.metric_learning_losses.impl import NnAlgoMetricLearningLosses
+from src.features.code_engine.algos.nn.regularization_augmentation.mixup_cutmix.impl import NnAlgoMixupCutmix
+from src.features.code_engine.algos.nn.building_blocks.mlp_feedforward.impl import NnAlgoMlpFeedforward
+from src.features.code_engine.algos.nn.optimizers.momentum_nesterov.impl import NnAlgoMomentumNesterov
+from src.features.code_engine.algos.nn.losses.multitask_loss_balancing.impl import NnAlgoMultitaskLossBalancing
+from src.features.code_engine.algos.nn.detection.non_maximum_suppression.impl import NnAlgoNonMaximumSuppression
+from src.features.code_engine.algos.nn.normalization.normalization_placement.impl import NnAlgoNormalizationPlacement
+from src.features.code_engine.algos.nn.convolutional.one_by_one_convolution_bottleneck.impl import NnAlgoOneByOneConvolutionBottleneck
+from src.features.code_engine.algos.nn.losses.overlap_segmentation_losses.impl import NnAlgoOverlapSegmentationLosses
+from src.features.code_engine.algos.nn.building_blocks.perceptron_learning.impl import NnAlgoPerceptronLearning
+from src.features.code_engine.algos.nn.recurrent_sequence.pointer_networks_copy_mechanism.impl import NnAlgoPointerNetworksCopyMechanism
+from src.features.code_engine.algos.nn.convolutional.pooling_layers.impl import NnAlgoPoolingLayers
+from src.features.code_engine.algos.nn.normalization.qk_norm_logit_soft_capping.impl import NnAlgoQkNormLogitSoftCapping
+from src.features.code_engine.algos.nn.convolutional.receptive_field_analysis.impl import NnAlgoReceptiveFieldAnalysis, LayerSpec
+from src.features.code_engine.algos.nn.losses.regression_losses.impl import NnAlgoRegressionLosses
+from src.features.code_engine.algos.nn.building_blocks.relu_family.impl import NnAlgoReluFamily
+from src.features.code_engine.algos.nn.autodiff.reparameterization_gumbel.impl import NnAlgoReparameterizationGumbel
+from src.features.code_engine.algos.nn.building_blocks.residual_connection.impl import NnAlgoResidualConnection
+from src.features.code_engine.algos.nn.convolutional.resnet_residual_blocks.impl import NnAlgoResnetResidualBlocks
+from src.features.code_engine.algos.nn.autodiff.reverse_mode_autodiff.impl import NnAlgoReverseModeAutodiff
+from src.features.code_engine.algos.nn.normalization.rms_norm.impl import NnAlgoRmsNorm
+from src.features.code_engine.algos.nn.optimizers.rmsprop_optimizer.impl import NnAlgoRmspropOptimizer
 
 
 def test_51_lookahead_weight_averaging():

@@ -1,0 +1,1 @@
+"""Convolutional algorithms module."""

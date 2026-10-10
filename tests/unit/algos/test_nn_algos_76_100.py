@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import math
 import pytest
-from src.features.code_engine.algos.nn.rnn_bptt.impl import NnAlgoVanillaRNNBPTT
-from src.features.code_engine.algos.nn.roi_align_mask_rcnn.impl import NnAlgoRoIAlignMaskRCNN
-from src.features.code_engine.algos.nn.rpn_faster_rcnn.impl import NnAlgoRegionProposalNetwork
-from src.features.code_engine.algos.nn.second_order_preconditioning.impl import NnAlgoSecondOrderPreconditioning
-from src.features.code_engine.algos.nn.seq2seq_encoder_decoder.impl import NnAlgoSeq2SeqEncoderDecoder
-from src.features.code_engine.algos.nn.sharpness_aware_minimization.impl import NnAlgoSharpnessAwareMinimization
-from src.features.code_engine.algos.nn.sigmoid_tanh.impl import NnAlgoSigmoidTanh
-from src.features.code_engine.algos.nn.single_stage_detector_yolo.impl import NnAlgoSingleStageDetectorYolo
-from src.features.code_engine.algos.nn.smooth_activations.impl import NnAlgoSmoothActivations
-from src.features.code_engine.algos.nn.softmax_stable.impl import NnAlgoSoftmaxStable
-from src.features.code_engine.algos.nn.spec_augment.impl import NnAlgoSpecAugment
-from src.features.code_engine.algos.nn.squeeze_excitation_cbam.impl import NnAlgoSqueezeExcitationCbam
-from src.features.code_engine.algos.nn.stochastic_depth.impl import NnAlgoStochasticDepth
-from src.features.code_engine.algos.nn.stochastic_gradient_descent.impl import NnAlgoStochasticGradientDescent
-from src.features.code_engine.algos.nn.straight_through_estimator.impl import NnAlgoStraightThroughEstimator
-from src.features.code_engine.algos.nn.teacher_forcing_scheduled_sampling.impl import NnAlgoTeacherForcingScheduledSampling
-from src.features.code_engine.algos.nn.temporal_convolutional_network.impl import NnAlgoTemporalConvolutionalNetwork
-from src.features.code_engine.algos.nn.text_augmentation.impl import NnAlgoTextAugmentation
-from src.features.code_engine.algos.nn.transposed_convolution_pixel_shuffle.impl import NnAlgoTransposedConvolutionPixelShuffle
-from src.features.code_engine.algos.nn.truncated_bptt.impl import NnAlgoTruncatedBPTT
-from src.features.code_engine.algos.nn.unet_encoder_decoder.impl import NnAlgoUnetEncoderDecoder
-from src.features.code_engine.algos.nn.weight_spectral_norm.impl import NnAlgoWeightSpectralNorm
-from src.features.code_engine.algos.nn.weight_tying.impl import NnAlgoWeightTying
-from src.features.code_engine.algos.nn.wsd_one_cycle_schedules.impl import NnAlgoWsdOneCycleSchedules
-from src.features.code_engine.algos.nn.xavier_glorot_init.impl import NnAlgoXavierGlorotInit
+from src.features.code_engine.algos.nn.recurrent_sequence.rnn_bptt.impl import NnAlgoVanillaRNNBPTT
+from src.features.code_engine.algos.nn.detection.roi_align_mask_rcnn.impl import NnAlgoRoIAlignMaskRCNN
+from src.features.code_engine.algos.nn.detection.rpn_faster_rcnn.impl import NnAlgoRegionProposalNetwork
+from src.features.code_engine.algos.nn.optimizers.second_order_preconditioning.impl import NnAlgoSecondOrderPreconditioning
+from src.features.code_engine.algos.nn.recurrent_sequence.seq2seq_encoder_decoder.impl import NnAlgoSeq2SeqEncoderDecoder
+from src.features.code_engine.algos.nn.optimizers.sharpness_aware_minimization.impl import NnAlgoSharpnessAwareMinimization
+from src.features.code_engine.algos.nn.building_blocks.sigmoid_tanh.impl import NnAlgoSigmoidTanh
+from src.features.code_engine.algos.nn.detection.single_stage_detector_yolo.impl import NnAlgoSingleStageDetectorYolo
+from src.features.code_engine.algos.nn.building_blocks.smooth_activations.impl import NnAlgoSmoothActivations
+from src.features.code_engine.algos.nn.building_blocks.softmax_stable.impl import NnAlgoSoftmaxStable
+from src.features.code_engine.algos.nn.regularization_augmentation.spec_augment.impl import NnAlgoSpecAugment
+from src.features.code_engine.algos.nn.convolutional.squeeze_excitation_cbam.impl import NnAlgoSqueezeExcitationCbam
+from src.features.code_engine.algos.nn.regularization_augmentation.stochastic_depth.impl import NnAlgoStochasticDepth
+from src.features.code_engine.algos.nn.optimizers.stochastic_gradient_descent.impl import NnAlgoStochasticGradientDescent
+from src.features.code_engine.algos.nn.autodiff.straight_through_estimator.impl import NnAlgoStraightThroughEstimator
+from src.features.code_engine.algos.nn.recurrent_sequence.teacher_forcing_scheduled_sampling.impl import NnAlgoTeacherForcingScheduledSampling
+from src.features.code_engine.algos.nn.recurrent_sequence.temporal_convolutional_network.impl import NnAlgoTemporalConvolutionalNetwork
+from src.features.code_engine.algos.nn.regularization_augmentation.text_augmentation.impl import NnAlgoTextAugmentation
+from src.features.code_engine.algos.nn.convolutional.transposed_convolution_pixel_shuffle.impl import NnAlgoTransposedConvolutionPixelShuffle
+from src.features.code_engine.algos.nn.recurrent_sequence.truncated_bptt.impl import NnAlgoTruncatedBPTT
+from src.features.code_engine.algos.nn.convolutional.unet_encoder_decoder.impl import NnAlgoUnetEncoderDecoder
+from src.features.code_engine.algos.nn.normalization.weight_spectral_norm.impl import NnAlgoWeightSpectralNorm
+from src.features.code_engine.algos.nn.building_blocks.weight_tying.impl import NnAlgoWeightTying
+from src.features.code_engine.algos.nn.schedules_init.wsd_one_cycle_schedules.impl import NnAlgoWsdOneCycleSchedules
+from src.features.code_engine.algos.nn.schedules_init.xavier_glorot_init.impl import NnAlgoXavierGlorotInit
 
 
 def test_76_rnn_bptt():

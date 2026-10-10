@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import math
 import pytest
-from src.features.code_engine.algos.nn.adafactor_optimizer.impl import NnAlgoAdafactorOptimizer
-from src.features.code_engine.algos.nn.adagrad_optimizer.impl import NnAlgoAdagradOptimizer
-from src.features.code_engine.algos.nn.adam_optimizer.impl import NnAlgoAdamOptimizer
-from src.features.code_engine.algos.nn.adamw_optimizer.impl import NnAlgoAdamwOptimizer
-from src.features.code_engine.algos.nn.adversarial_training_fgsm_pgd.impl import NnAlgoAdversarialTrainingFgsmPgd
-from src.features.code_engine.algos.nn.anchor_free_detector_fcos.impl import NnAlgoAnchorFreeDetectorFCOS
-from src.features.code_engine.algos.nn.attention_bahdanau_luong.impl import NnAlgoAttentionBahdanauLuong
-from src.features.code_engine.algos.nn.batch_normalization.impl import NnAlgoBatchNormalization
-from src.features.code_engine.algos.nn.batch_size_lr_scaling.impl import NnAlgoBatchSizeLrScaling
-from src.features.code_engine.algos.nn.beam_search_length_normalization.impl import NnAlgoBeamSearchLengthNormalization
-from src.features.code_engine.algos.nn.bidirectional_rnn.impl import NnAlgoBidirectionalRNN
-from src.features.code_engine.algos.nn.binary_cross_entropy_logits.impl import NnAlgoBinaryCrossEntropyLogits
-from src.features.code_engine.algos.nn.compound_model_scaling.impl import NnAlgoCompoundModelScaling
-from src.features.code_engine.algos.nn.consistency_pseudo_labeling.impl import NnAlgoConsistencyPseudoLabeling
-from src.features.code_engine.algos.nn.convnext_block.impl import NnAlgoConvNeXtBlock
-from src.features.code_engine.algos.nn.convolution_2d_mechanics.impl import NnAlgoConvolution2dMechanics
-from src.features.code_engine.algos.nn.cosine_decay_restarts.impl import NnAlgoCosineDecayRestarts
-from src.features.code_engine.algos.nn.cross_entropy_nll.impl import NnAlgoCrossEntropyNll
-from src.features.code_engine.algos.nn.ctc_loss.impl import NnAlgoCtcLoss
-from src.features.code_engine.algos.nn.deep_residual_init.impl import NnAlgoDeepResidualInit
-from src.features.code_engine.algos.nn.deformable_convolution.impl import NnAlgoDeformableConvolution
-from src.features.code_engine.algos.nn.dense_highway_connection.impl import NnAlgoDenseHighwayConnection
-from src.features.code_engine.algos.nn.depthwise_separable_convolution.impl import NnAlgoDepthwiseSeparableConvolution
-from src.features.code_engine.algos.nn.detr_bipartite_matching.impl import NnAlgoDETRBipartiteMatching
-from src.features.code_engine.algos.nn.dilated_atrous_convolution.impl import NnAlgoDilatedAtrousConvolution
+from src.features.code_engine.algos.nn.optimizers.adafactor_optimizer.impl import NnAlgoAdafactorOptimizer
+from src.features.code_engine.algos.nn.optimizers.adagrad_optimizer.impl import NnAlgoAdagradOptimizer
+from src.features.code_engine.algos.nn.optimizers.adam_optimizer.impl import NnAlgoAdamOptimizer
+from src.features.code_engine.algos.nn.optimizers.adamw_optimizer.impl import NnAlgoAdamwOptimizer
+from src.features.code_engine.algos.nn.regularization_augmentation.adversarial_training_fgsm_pgd.impl import NnAlgoAdversarialTrainingFgsmPgd
+from src.features.code_engine.algos.nn.detection.anchor_free_detector_fcos.impl import NnAlgoAnchorFreeDetectorFCOS
+from src.features.code_engine.algos.nn.recurrent_sequence.attention_bahdanau_luong.impl import NnAlgoAttentionBahdanauLuong
+from src.features.code_engine.algos.nn.normalization.batch_normalization.impl import NnAlgoBatchNormalization
+from src.features.code_engine.algos.nn.schedules_init.batch_size_lr_scaling.impl import NnAlgoBatchSizeLrScaling
+from src.features.code_engine.algos.nn.recurrent_sequence.beam_search_length_normalization.impl import NnAlgoBeamSearchLengthNormalization
+from src.features.code_engine.algos.nn.recurrent_sequence.bidirectional_rnn.impl import NnAlgoBidirectionalRNN
+from src.features.code_engine.algos.nn.losses.binary_cross_entropy_logits.impl import NnAlgoBinaryCrossEntropyLogits
+from src.features.code_engine.algos.nn.convolutional.compound_model_scaling.impl import NnAlgoCompoundModelScaling
+from src.features.code_engine.algos.nn.regularization_augmentation.consistency_pseudo_labeling.impl import NnAlgoConsistencyPseudoLabeling
+from src.features.code_engine.algos.nn.convolutional.convnext_block.impl import NnAlgoConvNeXtBlock
+from src.features.code_engine.algos.nn.convolutional.convolution_2d_mechanics.impl import NnAlgoConvolution2dMechanics
+from src.features.code_engine.algos.nn.schedules_init.cosine_decay_restarts.impl import NnAlgoCosineDecayRestarts
+from src.features.code_engine.algos.nn.losses.cross_entropy_nll.impl import NnAlgoCrossEntropyNll
+from src.features.code_engine.algos.nn.losses.ctc_loss.impl import NnAlgoCtcLoss
+from src.features.code_engine.algos.nn.schedules_init.deep_residual_init.impl import NnAlgoDeepResidualInit
+from src.features.code_engine.algos.nn.convolutional.deformable_convolution.impl import NnAlgoDeformableConvolution
+from src.features.code_engine.algos.nn.building_blocks.dense_highway_connection.impl import NnAlgoDenseHighwayConnection
+from src.features.code_engine.algos.nn.convolutional.depthwise_separable_convolution.impl import NnAlgoDepthwiseSeparableConvolution
+from src.features.code_engine.algos.nn.detection.detr_bipartite_matching.impl import NnAlgoDETRBipartiteMatching
+from src.features.code_engine.algos.nn.convolutional.dilated_atrous_convolution.impl import NnAlgoDilatedAtrousConvolution
 
 
 def test_01_adafactor_optimizer():
