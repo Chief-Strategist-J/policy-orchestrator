@@ -138,8 +138,8 @@ class NnAlgoEmbeddingLookup:
         - ALGO-NN-03
         - ALGO-NN-10
       references:
-        - mikolov2013efficient
-        - vaswani2017attention
+        - "https://doi.org/search?q=mikolov2013efficient"
+        - "https://arxiv.org/abs/1706.03762"
     ---
     """
 

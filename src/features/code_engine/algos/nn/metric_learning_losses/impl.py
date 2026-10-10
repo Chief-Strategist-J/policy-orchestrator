@@ -153,7 +153,6 @@ class NnAlgoMetricLearningLosses:
             c = len(weights)
             d = len(weights[0])
 
-            # Normalize embeddings and weights, compute cosine similarity
             logits: List[List[float]] = []
             total_loss = 0.0
 
@@ -174,7 +173,6 @@ class NnAlgoMetricLearningLosses:
                     cos_theta = max(-1.0, min(1.0, cos_theta))
                     row_cos.append(cos_theta)
 
-                # Apply margin to the target class
                 row_logits: List[float] = []
                 for j in range(c):
                     cos_th = row_cos[j]
@@ -182,7 +180,7 @@ class NnAlgoMetricLearningLosses:
                         if mode == "arcface":
                             theta = math.acos(cos_th)
                             target_logit = scale * math.cos(theta + margin)
-                        else:  # cosface
+                        else:
                             target_logit = scale * (cos_th - margin)
                         row_logits.append(target_logit)
                     else:
@@ -190,7 +188,6 @@ class NnAlgoMetricLearningLosses:
 
                 logits.append(row_logits)
 
-                # Cross-entropy loss on logits
                 max_z = max(row_logits)
                 lse = max_z + math.log(sum(math.exp(z - max_z) for z in row_logits))
                 total_loss += (lse - row_logits[y])

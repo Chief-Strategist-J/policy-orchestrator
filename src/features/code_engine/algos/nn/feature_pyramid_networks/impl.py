@@ -1,57 +1,110 @@
-"""Feature Pyramid Networks (FPN) for Multi-Scale Dense Visual Representation.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: feature_pyramid_networks
-  category: neural_network_architecture
-  subcategory: convolutional_networks
-  id: ALGO-NN-80
-  equation: |
-    P_L = \\text{Conv}_{3 \\times 3}\\left( \\text{Conv}_{1 \\times 1}(C_L) \\right) \\quad \\text{for top level } L = \\max
-    P_l = \\text{Conv}_{3 \\times 3}\\left( \\text{Conv}_{1 \\times 1}(C_l) + \\text{Upsample}_{2\\times}(M_{l+1}) \\right) \\quad \\text{for } l < L
-    M_l = \\text{Conv}_{1 \\times 1}(C_l) + \\text{Upsample}_{2\\times}(M_{l+1})
-  domain:
-    spatial_dimensions: "H_l x W_l with H_{l+1} = ceil(H_l / 2), W_{l+1} = ceil(W_l / 2)"
-    channel_dimensions: "C_l channels mapped to unified d dimensions"
-  properties:
-    multi_scale_representation: true
-    semantic_pyramid: true
-    top_down_fusion: true
-    uniform_feature_dimension: true
-"""
-
-from typing import List, Dict, Tuple, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class FeaturePyramidNetworks:
-    """Feature Pyramid Networks (FPN) multi-scale feature extractor and fusion engine."""
+class NnAlgoFeaturePyramidNetworks:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-80
+      name: NnAlgoFeaturePyramidNetworks
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.convolution
+        - nn.pyramid
+        - nn.multi_scale
+        - nn.object_detection
+      inputs:
+        type: object
+        required:
+          - bottom_up_features
+        properties:
+          bottom_up_features:
+            type: object
+            description: Dictionary of bottom-up feature maps C_l where each map is [C_l, H_l, W_l].
+          d_pyramid:
+            type: integer
+            default: 256
+            minimum: 1
+            description: Unified channel depth d across all pyramid levels.
+          lateral_weights:
+            type: object
+            description: Optional custom 1x1 projection weights per stage.
+          smooth_weights:
+            type: object
+            description: Optional custom 3x3 anti-aliasing convolution weights per stage.
+      outputs:
+        type: object
+        required:
+          - pyramid_features
+        properties:
+          pyramid_features:
+            type: object
+            description: Dictionary of multi-scale feature pyramid representations P_l of shape [d, H_l, W_l].
+      parameters: {}
+      input_assumptions:
+        - bottom_up_features contains at least 2 hierarchical levels
+        - each stage map has valid 3D tensor dimensions [C, H, W]
+        - spatial resolutions decrease monotonically across consecutive stages
+      purity: pure
+      determinism: deterministic
+      idempotency: idempotent
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Bounded by floating point roundoff in nearest-neighbor upsampling and linear convolution"
+      uses_model: false
+      complexity:
+        variables:
+          L: number of pyramid stages
+          d: unified channel dimension
+          H_l: height of feature map at stage l
+          W_l: width of feature map at stage l
+        time_worst: "O(sum_{l=2}^L (d * C_l + 9 * d^2) * H_l * W_l)"
+        time_typical: "O(sum_{l=2}^L (d * C_l + 9 * d^2) * H_l * W_l)"
+        space: "O(d * sum_{l=2}^L H_l * W_l)"
+      preconditions:
+        - len(input.bottom_up_features) >= 2
+        - all(len(map_tensor) > 0 and len(map_tensor[0]) > 0 and len(map_tensor[0][0]) > 0 for map_tensor in input.bottom_up_features.values())
+        - input.d_pyramid >= 1
+      postconditions:
+        - len(output.pyramid_features) == len(input.bottom_up_features)
+        - all(len(p_map) == input.d_pyramid for p_map in output.pyramid_features.values())
+      certificate: "multi_scale_pyramid_representation: P_l = Conv3x3(Conv1x1(C_l) + Upsample2x(M_{l+1}))"
+      compatible_adapters:
+        - ADAPTER-FEATURE-PYRAMID
+        - ADAPTER-OBJECT-DETECTOR
+      related_algos:
+        - ALGO-NN-70
+        - ALGO-NN-84
+        - ALGO-NN-85
+      references:
+        - "https://doi.org/10.1109/CVPR.2017.106"
+        - "https://arxiv.org/abs/1612.03144"
+    ---
+    """
 
     @staticmethod
     def conv1x1(
         x: List[List[List[float]]],
         weight: List[List[float]],
-        bias: Optional[List[float]] = None
+        bias: Optional[List[float]] = None,
     ) -> List[List[List[float]]]:
-        """Apply 1x1 lateral projection to align channel dimensions.
-
-        Args:
-            x: Input feature map of shape [C_in, H, W].
-            weight: Projection matrix of shape [C_out, C_in].
-            bias: Optional bias vector of shape [C_out].
-
-        Returns:
-            Projected feature map of shape [C_out, H, W].
-        """
-        assert len(x) > 0 and len(x[0]) > 0 and len(x[0][0]) > 0, "Input map x must be non-empty [C, H, W]."
+        if not x or len(x) == 0 or len(x[0]) == 0 or len(x[0][0]) == 0:
+            raise ValueError("Precondition failed: x must be non-empty [C, H, W]")
         c_in = len(x)
         h = len(x[0])
         w = len(x[0][0])
-        assert len(weight) > 0 and len(weight[0]) == c_in, "Weight shape must be [C_out, C_in]."
+        if not weight or len(weight) == 0 or len(weight[0]) != c_in:
+            raise ValueError("Precondition failed: weight shape must be [C_out, C_in]")
         c_out = len(weight)
-        if bias is not None:
-            assert len(bias) == c_out, "Bias length must equal C_out."
+        if bias is not None and len(bias) != c_out:
+            raise ValueError("Precondition failed: bias length must equal C_out")
 
         out = [[[0.0 for _ in range(w)] for _ in range(h)] for _ in range(c_out)]
         for co in range(c_out):
@@ -67,15 +120,8 @@ class FeaturePyramidNetworks:
 
     @staticmethod
     def upsample2x_nearest(x: List[List[List[float]]]) -> List[List[List[float]]]:
-        """Nearest neighbor 2x spatial upsampling.
-
-        Args:
-            x: Input feature map of shape [C, H, W].
-
-        Returns:
-            Upsampled feature map of shape [C, 2*H, 2*W].
-        """
-        assert len(x) > 0 and len(x[0]) > 0 and len(x[0][0]) > 0, "Input map must be [C, H, W]."
+        if not x or len(x) == 0 or len(x[0]) == 0 or len(x[0][0]) == 0:
+            raise ValueError("Precondition failed: x must be non-empty [C, H, W]")
         c = len(x)
         h = len(x[0])
         w = len(x[0][0])
@@ -94,23 +140,17 @@ class FeaturePyramidNetworks:
     @staticmethod
     def add_elementwise(
         a: List[List[List[float]]],
-        b: List[List[List[float]]]
+        b: List[List[List[float]]],
     ) -> List[List[List[float]]]:
-        """Elementwise addition of two identically shaped 3D feature maps [C, H, W].
-
-        Args:
-            a: Feature map 1 of shape [C, H, W].
-            b: Feature map 2 of shape [C, H, W].
-
-        Returns:
-            Sum feature map of shape [C, H, W].
-        """
-        assert len(a) == len(b), "Channel count must match."
+        if len(a) != len(b):
+            raise ValueError("Precondition failed: channel count must match")
         c = len(a)
-        assert c > 0, "Tensors must be non-empty."
+        if c == 0:
+            raise ValueError("Precondition failed: tensors must be non-empty")
         h = len(a[0])
         w = len(a[0][0])
-        assert len(b[0]) == h and len(b[0][0]) == w, "Spatial dimensions must match."
+        if len(b[0]) != h or len(b[0][0]) != w:
+            raise ValueError("Precondition failed: spatial dimensions must match")
 
         out = [[[a[ch][i][j] + b[ch][i][j] for j in range(w)] for i in range(h)] for ch in range(c)]
         return out
@@ -119,25 +159,15 @@ class FeaturePyramidNetworks:
     def conv3x3_smooth(
         x: List[List[List[float]]],
         weight: Optional[List[List[List[List[float]]]]] = None,
-        bias: Optional[List[float]] = None
+        bias: Optional[List[float]] = None,
     ) -> List[List[List[float]]]:
-        """Apply 3x3 convolution with padding=1 to smooth aliasing effects of upsampling.
-
-        Args:
-            x: Input feature map [C_in, H, W].
-            weight: Optional filter kernel [C_out, C_in, 3, 3]. If None, identity-like depthwise smooth is used.
-            bias: Optional bias vector [C_out].
-
-        Returns:
-            Smoothed feature map [C_out, H, W].
-        """
-        assert len(x) > 0 and len(x[0]) > 0 and len(x[0][0]) > 0, "Input map must be [C, H, W]."
+        if not x or len(x) == 0 or len(x[0]) == 0 or len(x[0][0]) == 0:
+            raise ValueError("Precondition failed: x must be non-empty [C, H, W]")
         c_in = len(x)
         h = len(x[0])
         w = len(x[0][0])
 
         if weight is None:
-            # Default average smoothing kernel per channel
             c_out = c_in
             out = [[[0.0 for _ in range(w)] for _ in range(h)] for _ in range(c_out)]
             for ch in range(c_in):
@@ -157,9 +187,10 @@ class FeaturePyramidNetworks:
             return out
 
         c_out = len(weight)
-        assert len(weight[0]) == c_in and len(weight[0][0]) == 3 and len(weight[0][0][0]) == 3, "Kernel must be [C_out, C_in, 3, 3]."
-        if bias is not None:
-            assert len(bias) == c_out, "Bias length must match C_out."
+        if len(weight[0]) != c_in or len(weight[0][0]) != 3 or len(weight[0][0][0]) != 3:
+            raise ValueError("Precondition failed: weight shape must be [C_out, C_in, 3, 3]")
+        if bias is not None and len(bias) != c_out:
+            raise ValueError("Precondition failed: bias length must match C_out")
 
         out = [[[0.0 for _ in range(w)] for _ in range(h)] for _ in range(c_out)]
         for co in range(c_out):
@@ -184,26 +215,14 @@ class FeaturePyramidNetworks:
         bottom_up_features: Dict[str, List[List[List[float]]]],
         d_pyramid: int = 2,
         lateral_weights: Optional[Dict[str, List[List[float]]]] = None,
-        smooth_weights: Optional[Dict[str, List[List[List[List[float]]]]]] = None
-    ) -> Dict[str, List[List[List[float]]]]:
-        """Construct multi-scale Feature Pyramid (P_levels) from bottom-up backbone features (C_levels).
+        smooth_weights: Optional[Dict[str, List[List[List[List[float]]]]]] = None,
+    ) -> Dict[str, Any]:
+        if not bottom_up_features or len(bottom_up_features) < 2:
+            raise ValueError("Precondition failed: len(input.bottom_up_features) >= 2")
 
-        Args:
-            bottom_up_features: Dict with keys e.g. {"C2": ..., "C3": ..., "C4": ..., "C5": ...}
-                sorted by spatial resolution descending (C2 largest, C5 smallest).
-            d_pyramid: Uniform channel depth across all pyramid levels P_l.
-            lateral_weights: Optional custom 1x1 weights per level.
-            smooth_weights: Optional custom 3x3 smooth weights per level.
-
-        Returns:
-            Dict of pyramid feature maps {"P2": ..., "P3": ..., "P4": ..., "P5": ...}.
-        """
-        assert len(bottom_up_features) >= 2, "FPN requires at least 2 backbone stages."
         level_keys = sorted(list(bottom_up_features.keys()), key=lambda k: int(k[1:]) if k[1:].isdigit() else k)
         max_level_key = level_keys[-1]
-        top_idx = int(max_level_key[1:]) if max_level_key[1:].isdigit() else len(level_keys)
 
-        # 1. Initialize top lateral map M_max
         c_top = bottom_up_features[max_level_key]
         c_in_top = len(c_top)
         if lateral_weights is not None and max_level_key in lateral_weights:
@@ -212,9 +231,8 @@ class FeaturePyramidNetworks:
             lat_w = [[1.0 / c_in_top for _ in range(c_in_top)] for _ in range(d_pyramid)]
 
         m_maps: Dict[str, List[List[List[float]]]] = {}
-        m_maps[max_level_key] = FeaturePyramidNetworks.conv1x1(c_top, lat_w)
+        m_maps[max_level_key] = NnAlgoFeaturePyramidNetworks.conv1x1(c_top, lat_w)
 
-        # 2. Top-down pathway with lateral connections
         for idx in range(len(level_keys) - 2, -1, -1):
             curr_key = level_keys[idx]
             higher_key = level_keys[idx + 1]
@@ -226,24 +244,24 @@ class FeaturePyramidNetworks:
             else:
                 curr_lat_w = [[1.0 / c_in_curr for _ in range(c_in_curr)] for _ in range(d_pyramid)]
 
-            lat_curr = FeaturePyramidNetworks.conv1x1(c_curr, curr_lat_w)
-            up_higher = FeaturePyramidNetworks.upsample2x_nearest(m_maps[higher_key])
+            lat_curr = NnAlgoFeaturePyramidNetworks.conv1x1(c_curr, curr_lat_w)
+            up_higher = NnAlgoFeaturePyramidNetworks.upsample2x_nearest(m_maps[higher_key])
 
-            # Ensure spatial alignment if slight rounding occurred
             h_lat, w_lat = len(lat_curr[0]), len(lat_curr[0][0])
             h_up, w_up = len(up_higher[0]), len(up_higher[0][0])
             if h_lat != h_up or w_lat != w_up:
-                # Crop or pad up_higher to match lat_curr
-                trimmed_up = [[[up_higher[ch][i % h_up][j % w_up] for j in range(w_lat)] for i in range(h_lat)] for ch in range(len(up_higher))]
+                trimmed_up = [
+                    [[up_higher[ch][i % h_up][j % w_up] for j in range(w_lat)] for i in range(h_lat)]
+                    for ch in range(len(up_higher))
+                ]
                 up_higher = trimmed_up
 
-            m_maps[curr_key] = FeaturePyramidNetworks.add_elementwise(lat_curr, up_higher)
+            m_maps[curr_key] = NnAlgoFeaturePyramidNetworks.add_elementwise(lat_curr, up_higher)
 
-        # 3. 3x3 anti-aliasing smoothing to produce P_levels
         pyramid_outputs: Dict[str, List[List[List[float]]]] = {}
         for key in level_keys:
             p_key = "P" + key[1:]
             sm_w = smooth_weights.get(p_key) if smooth_weights else None
-            pyramid_outputs[p_key] = FeaturePyramidNetworks.conv3x3_smooth(m_maps[key], sm_w)
+            pyramid_outputs[p_key] = NnAlgoFeaturePyramidNetworks.conv3x3_smooth(m_maps[key], sm_w)
 
-        return pyramid_outputs
+        return {"pyramid_features": pyramid_outputs}

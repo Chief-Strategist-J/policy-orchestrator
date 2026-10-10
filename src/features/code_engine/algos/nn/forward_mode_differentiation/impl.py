@@ -87,13 +87,10 @@ class NnAlgoForwardModeDifferentiation:
         tangents = list(tangent_inputs)
 
         if operations is None or len(operations) == 0:
-            # Default operation: multi-layer polynomial/transcendental map
-            # f(x) = [x_i^2 + sin(x_i)]
             out_p: List[float] = []
             out_t: List[float] = []
             for x, v in zip(primals, tangents):
                 p_val = x ** 2 + math.sin(x)
-                # d/dx (x^2 + sin(x)) = 2x + cos(x)
                 t_val = (2.0 * x + math.cos(x)) * v
                 out_p.append(p_val)
                 out_t.append(t_val)

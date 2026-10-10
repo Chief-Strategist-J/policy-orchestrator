@@ -100,7 +100,7 @@ class NnAlgoTextAugmentation:
         - ALGO-NN-61
         - ALGO-NN-65
       references:
-        - wei2019eda
+        - "https://doi.org/10.18653/v1/D19-1670"
     ---
     """
 
@@ -138,7 +138,6 @@ class NnAlgoTextAugmentation:
         modified_count = 0
 
         if operation == "synonym_replacement":
-            # Replace candidate words with synonyms
             candidate_indices = [i for i in range(N) if tokens[i] in syn_dict and syn_dict[tokens[i]]]
             rng.shuffle(candidate_indices)
             for idx in candidate_indices[:num_edits]:
@@ -149,7 +148,6 @@ class NnAlgoTextAugmentation:
                 modified_count += 1
 
         elif operation == "random_insertion":
-            # Find a word with synonyms, pick a synonym, insert at random location
             candidate_words = [w for w in tokens if w in syn_dict and syn_dict[w]]
             if candidate_words:
                 for _ in range(num_edits):
@@ -160,7 +158,6 @@ class NnAlgoTextAugmentation:
                     modified_count += 1
 
         elif operation == "random_swap":
-            # Swap pairs of words
             if len(out_tokens) >= 2:
                 for _ in range(num_edits):
                     idx1 = rng.randint(0, len(out_tokens) - 1)
@@ -170,7 +167,6 @@ class NnAlgoTextAugmentation:
                         modified_count += 1
 
         elif operation == "random_deletion":
-            # Delete tokens with probability p, keeping at least 1 token
             if len(tokens) == 1:
                 return {
                     "augmented_tokens": list(tokens),

@@ -123,13 +123,12 @@ class NnAlgoCompoundModelScaling:
         - ALGO-NN-76
         - ALGO-NN-77
       references:
-        - tan2019efficientnet
+        - "https://arxiv.org/abs/1905.11946"
     ---
     """
 
     @staticmethod
     def _round_channels(ch: float, divisor: int) -> int:
-        # Round channel to nearest multiple of divisor, preserving at least 90% of value
         new_ch = max(divisor, int(ch + divisor / 2) // divisor * divisor)
         if new_ch < 0.9 * ch:
             new_ch += divisor
@@ -168,7 +167,6 @@ class NnAlgoCompoundModelScaling:
         ]
         scaled_res = int(round(base_resolution * res_mult))
 
-        # Flop scaling: Flops ~ depth * width^2 * resolution^2 = alpha^phi * (beta^phi)^2 * (gamma^phi)^2
         flop_ratio = (depth_mult) * (width_mult ** 2) * (res_mult ** 2)
 
         return {

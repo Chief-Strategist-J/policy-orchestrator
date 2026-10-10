@@ -1,35 +1,154 @@
-"""Bidirectional Recurrent Neural Networks (BiRNN) Forward-Backward Contextual Fusion.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: bidirectional_rnn
-  category: neural_network_architecture
-  subcategory: recurrent_networks
-  id: ALGO-NN-94
-  equation: |
-    \\overrightarrow{h}_t = \\tanh(\\overrightarrow{W}_h \\overrightarrow{h}_{t-1} + \\overrightarrow{W}_x x_t + \\overrightarrow{b}_h)
-    \\overleftarrow{h}_t = \\tanh(\\overleftarrow{W}_h \\overleftarrow{h}_{t+1} + \\overleftarrow{W}_x x_t + \\overleftarrow{b}_h)
-    h_t = [\\overrightarrow{h}_t \\, \\| \\, \\overleftarrow{h}_t]
-    y_t = W_y h_t + b_y
-  domain:
-    sequence_length: T
-    forward_hidden_dim: d_f
-    backward_hidden_dim: d_b
-    output_representation_dim: "d_f + d_b"
-  properties:
-    non_causal_full_context: true
-    dual_temporal_pass: true
-    concatenated_bidirectional_representation: true
-    offline_sequence_labeling: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class BidirectionalRNN:
-    """Bidirectional Recurrent Neural Network (BiRNN) Dual-Direction Unroller."""
+class NnAlgoBidirectionalRNN:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-94
+      name: NnAlgoBidirectionalRNN
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.recurrent
+        - nn.birnn
+        - nn.sequence
+        - nn.context_fusion
+      inputs:
+        type: object
+        required:
+          - x_seq
+          - w_xfwd
+          - w_hfwd
+          - b_hfwd
+          - w_xbwd
+          - w_hbwd
+          - b_hbwd
+        properties:
+          x_seq:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Input sequence X of shape (T, d_x).
+          w_xfwd:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Forward pass input projection weights of shape (d_f, d_x).
+          w_hfwd:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Forward pass recurrent weights of shape (d_f, d_f).
+          b_hfwd:
+            type: array
+            items:
+              type: number
+            description: Forward pass hidden bias of length d_f.
+          w_xbwd:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Backward pass input projection weights of shape (d_b, d_x).
+          w_hbwd:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Backward pass recurrent weights of shape (d_b, d_b).
+          b_hbwd:
+            type: array
+            items:
+              type: number
+            description: Backward pass hidden bias of length d_b.
+          w_y:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Optional emission projection weights of shape (d_y, d_f + d_b).
+          b_y:
+            type: array
+            items:
+              type: number
+            description: Optional emission bias vector of length d_y.
+      outputs:
+        type: object
+        required:
+          - h_combined
+        properties:
+          h_combined:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Concatenated bidirectional representations of shape (T, d_f + d_b).
+          y_preds:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Optional sequence emissions of shape (T, d_y).
+      parameters: {}
+      input_assumptions:
+        - len(x_seq) >= 1 and len(x_seq[0]) == d_x
+        - forward matrices dimensions conform to (d_f, d_x) and (d_f, d_f)
+        - backward matrices dimensions conform to (d_b, d_x) and (d_b, d_b)
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Standard IEEE-754 floating point precision"
+      uses_model: false
+      complexity:
+        variables:
+          T: sequence length
+          d_x: input dimension
+          d_f: forward hidden dimension
+          d_b: backward hidden dimension
+          d_y: output dimension
+        time_worst: "O(T * (d_f^2 + d_b^2 + (d_f + d_b) * (d_x + d_y)))"
+        time_typical: "O(T * (d_f^2 + d_b^2 + (d_f + d_b) * (d_x + d_y)))"
+        space: "O(T * (d_f + d_b))"
+      preconditions:
+        - len(input.x_seq) > 0
+        - len(input.w_xfwd) == len(input.w_hfwd) == len(input.b_hfwd)
+        - len(input.w_xbwd) == len(input.w_hbwd) == len(input.b_hbwd)
+      postconditions:
+        - len(output.h_combined) == len(input.x_seq)
+      certificate: "h_t = [\\overrightarrow{h}_t \\parallel \\overleftarrow{h}_t]"
+      compatible_adapters:
+        - ADAPTER-BIRNN
+        - ADAPTER-SEQUENCE-TAGGER
+      related_algos:
+        - ALGO-NN-90
+        - ALGO-NN-92
+        - ALGO-NN-93
+        - ALGO-NN-95
+      references:
+        - "https://doi.org/10.1109/78.650093"
+        - "https://arxiv.org/abs/1303.5778"
+    ---
+    """
 
     @staticmethod
     def forward_unroll(
@@ -41,33 +160,23 @@ class BidirectionalRNN:
         w_hbwd: List[List[float]],
         b_hbwd: List[float],
         w_y: Optional[List[List[float]]] = None,
-        b_y: Optional[List[float]] = None
+        b_y: Optional[List[float]] = None,
     ) -> Tuple[List[List[float]], Optional[List[List[float]]]]:
-        """Execute bidirectional recurrent forward-backward unrolling.
+        if not x_seq or len(x_seq) == 0:
+            raise ValueError("Precondition failed: sequence x_seq must be non-empty")
 
-        Args:
-            x_seq: Sequence of shape [T, d_x].
-            w_xfwd: Forward input weights [d_f, d_x].
-            w_hfwd: Forward hidden weights [d_f, d_f].
-            b_hfwd: Forward bias vector [d_f].
-            w_xbwd: Backward input weights [d_b, d_x].
-            w_hbwd: Backward hidden weights [d_b, d_b].
-            b_hbwd: Backward bias vector [d_b].
-            w_y: Optional emission matrix [d_y, d_f + d_b].
-            b_y: Optional emission bias [d_y].
-
-        Returns:
-            Tuple of:
-              - h_combined: List of concatenated representations [T, d_f + d_b].
-              - y_preds: List of output predictions [T, d_y] if w_y provided, else None.
-        """
         t_steps = len(x_seq)
-        assert t_steps > 0, "Sequence must be non-empty."
         d_x = len(x_seq[0])
         d_f = len(w_hfwd)
         d_b = len(w_hbwd)
 
-        # 1. Forward Pass (t = 0 to T-1)
+        if len(w_xfwd) != d_f or len(b_hfwd) != d_f or len(w_hfwd[0]) != d_f:
+            raise ValueError("Precondition failed: forward parameters dimension mismatch")
+        if len(w_xbwd) != d_b or len(b_hbwd) != d_b or len(w_hbwd[0]) != d_b:
+            raise ValueError("Precondition failed: backward parameters dimension mismatch")
+        if len(w_xfwd[0]) != d_x or len(w_xbwd[0]) != d_x:
+            raise ValueError("Precondition failed: input projection weights must match d_x")
+
         h_fwd_seq: List[List[float]] = []
         curr_hfwd = [0.0 for _ in range(d_f)]
         for t in range(t_steps):
@@ -83,7 +192,6 @@ class BidirectionalRNN:
             curr_hfwd = next_hfwd
             h_fwd_seq.append(curr_hfwd)
 
-        # 2. Backward Pass (t = T-1 down to 0)
         h_bwd_seq: List[List[float]] = [[0.0 for _ in range(d_b)] for _ in range(t_steps)]
         curr_hbwd = [0.0 for _ in range(d_b)]
         for t in range(t_steps - 1, -1, -1):
@@ -99,13 +207,13 @@ class BidirectionalRNN:
             curr_hbwd = next_hbwd
             h_bwd_seq[t] = curr_hbwd
 
-        # 3. Concatenate representations [h_fwd || h_bwd]
         h_combined = [h_fwd_seq[t] + h_bwd_seq[t] for t in range(t_steps)]
 
-        # 4. Optional emission prediction
         y_preds = None
         if w_y is not None:
             d_y = len(w_y)
+            if len(w_y[0]) != d_f + d_b:
+                raise ValueError("Precondition failed: emission matrix w_y must have d_f + d_b columns")
             y_preds = []
             for t in range(t_steps):
                 y_t = [0.0 for _ in range(d_y)]

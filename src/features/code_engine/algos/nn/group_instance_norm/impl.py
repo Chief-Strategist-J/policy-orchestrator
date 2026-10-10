@@ -129,8 +129,8 @@ class NnAlgoGroupInstanceNorm:
         - ALGO-NN-51
         - ALGO-NN-52
       references:
-        - wu2018group
-        - ulyanov2016instance
+        - "https://doi.org/10.1007/978-3-030-01261-8_1"
+        - "https://arxiv.org/abs/1607.08022"
     ---
     """
 
@@ -176,14 +176,12 @@ class NnAlgoGroupInstanceNorm:
                 c_start = g * channels_per_group
                 c_end = c_start + channels_per_group
 
-                # Compute group mean
                 total_sum = 0.0
                 for c in range(c_start, c_end):
                     total_sum += sum(input_tensor[n][c])
                 m_ng = total_sum / float(group_elements)
                 group_means[n][g] = m_ng
 
-                # Compute group variance
                 sq_diff_sum = 0.0
                 for c in range(c_start, c_end):
                     sq_diff_sum += sum((x - m_ng) ** 2 for x in input_tensor[n][c])
@@ -192,7 +190,6 @@ class NnAlgoGroupInstanceNorm:
 
                 std_ng = math.sqrt(v_ng + eps)
 
-                # Normalize and apply affine scale and shift
                 for c in range(c_start, c_end):
                     for s in range(S):
                         x_val = input_tensor[n][c][s]

@@ -1,39 +1,113 @@
-"""Temporal Convolutional Networks (TCN) with Dilated Causal Residual Blocks.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: temporal_convolutional_network
-  category: neural_network_architecture
-  subcategory: sequence_models
-  id: ALGO-NN-100
-  equation: |
-    y_t = \\sum_{k=0}^{K-1} W[k] \\cdot x_{t - d \\cdot k} \\quad \\text{where } d = 2^l
-    z_t = \\tanh(W_f *_{d} x)_t \\odot \\sigma(W_g *_{d} x)_t
-    \\text{ReceptiveField} = 1 + \\sum_{l=0}^{L-1} (K - 1) \\cdot 2^l = 1 + (K - 1)(2^L - 1)
-  domain:
-    sequence_length: T
-    dilation_factor: "d = 2^l \\ge 1"
-    kernel_size: K >= 2
-    hidden_channels: C
-  properties:
-    strictly_causal_no_future_leakage: true
-    exponential_receptive_field_growth: true
-    parallel_temporal_training: true
-    gated_residual_connections: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class TemporalConvolutionalNetwork:
-    """Temporal Convolutional Network (TCN) Causal Dilated Residual Block Engine."""
+class NnAlgoTemporalConvolutionalNetwork:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-100
+      name: NnAlgoTemporalConvolutionalNetwork
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.tcn
+        - nn.temporal_conv
+        - nn.causal_dilated
+        - nn.sequence
+      inputs:
+        type: object
+        required:
+          - x_seq
+          - weight
+        properties:
+          x_seq:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Input temporal sequence of shape (T, C_in).
+          weight:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: 1D convolution kernel tensor of shape (C_out, C_in, K).
+          bias:
+            type: array
+            items:
+              type: number
+            description: Optional bias vector of length C_out.
+          dilation:
+            type: integer
+            description: Dilation factor d >= 1.
+      outputs:
+        type: object
+        required:
+          - out_seq
+        properties:
+          out_seq:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Output temporal sequence of shape (T, C_out).
+      parameters:
+        dilation: 1
+      input_assumptions:
+        - len(x_seq) >= 1
+        - dilation >= 1
+        - kernel dimensions match (C_out, C_in, K) with C_in == len(x_seq[0])
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Standard IEEE-754 floating point precision"
+      uses_model: false
+      complexity:
+        variables:
+          T: sequence length
+          C_in: input channels
+          C_out: output channels
+          K: kernel size
+        time_worst: "O(T * C_out * C_in * K)"
+        time_typical: "O(T * C_out * C_in * K)"
+        space: "O(T * C_out)"
+      preconditions:
+        - len(input.x_seq) > 0
+        - input.dilation >= 1
+        - len(input.weight[0]) == len(input.x_seq[0])
+      postconditions:
+        - len(output.out_seq) == len(input.x_seq)
+        - len(output.out_seq[0]) == len(input.weight)
+      certificate: "y_t = \\sum_{k=0}^{K-1} W[k] \\cdot x_{t - d \\cdot k}"
+      compatible_adapters:
+        - ADAPTER-TCN-BLOCK
+        - ADAPTER-CAUSAL-CONV
+      related_algos:
+        - ALGO-NN-90
+        - ALGO-NN-92
+        - ALGO-NN-93
+      references:
+        - "https://arxiv.org/abs/1803.01271"
+        - "https://arxiv.org/abs/1609.03499"
+    ---
+    """
 
     @staticmethod
     def sigmoid(x: float) -> float:
-        """Stable scalar sigmoid function."""
-        if x >= 0:
+        if x >= 0.0:
             z = math.exp(-x)
             return 1.0 / (1.0 + z)
         else:
@@ -45,27 +119,22 @@ class TemporalConvolutionalNetwork:
         x_seq: List[List[float]],
         weight: List[List[List[float]]],
         bias: Optional[List[float]] = None,
-        dilation: int = 1
+        dilation: int = 1,
     ) -> List[List[float]]:
-        """Compute 1D Causal Dilated Convolution across temporal sequence.
+        if not x_seq or len(x_seq) == 0:
+            raise ValueError("Precondition failed: x_seq must be non-empty")
+        if dilation < 1:
+            raise ValueError(f"Precondition failed: dilation {dilation} must be >= 1")
 
-        Output at time t depends only on inputs at t, t - d, t - 2d, ..., t - (K-1)*d.
-        Causal left-padding ensures output length equals input length T.
-
-        Args:
-            x_seq: Input sequence of shape [T, C_in].
-            weight: Filter kernel of shape [C_out, C_in, K].
-            bias: Optional bias vector of length C_out.
-            dilation: Dilation factor d >= 1.
-
-        Returns:
-            Output sequence of shape [T, C_out].
-        """
         t_steps = len(x_seq)
         c_in = len(x_seq[0])
         c_out = len(weight)
         k_size = len(weight[0][0])
-        assert len(weight[0]) == c_in, "Kernel C_in mismatch."
+
+        if len(weight[0]) != c_in:
+            raise ValueError(f"Precondition failed: kernel C_in {len(weight[0])} != input C_in {c_in}")
+        if bias is not None and len(bias) != c_out:
+            raise ValueError(f"Precondition failed: bias length {len(bias)} != C_out {c_out}")
 
         out_seq = [[0.0 for _ in range(c_out)] for _ in range(t_steps)]
 
@@ -73,7 +142,6 @@ class TemporalConvolutionalNetwork:
             for co in range(c_out):
                 val = bias[co] if bias is not None else 0.0
                 for k in range(k_size):
-                    # Causal historical index
                     src_t = t - (k_size - 1 - k) * dilation
                     if src_t >= 0:
                         x_vec = x_seq[src_t]
@@ -92,42 +160,24 @@ class TemporalConvolutionalNetwork:
         dilation: int = 1,
         b_filter: Optional[List[float]] = None,
         b_gate: Optional[List[float]] = None,
-        b_res: Optional[List[float]] = None
+        b_res: Optional[List[float]] = None,
     ) -> List[List[float]]:
-        """Execute a WaveNet/TCN style Gated Dilated Residual Block.
+        if not x_seq or len(x_seq) == 0:
+            raise ValueError("Precondition failed: x_seq must be non-empty")
 
-        Formula:
-          f_t = tanh(Conv_dilated(x; W_filter))
-          g_t = sigmoid(Conv_dilated(x; W_gate))
-          z_t = f_t * g_t
-          y_t = x_t + 1x1_Conv(z_t)
-
-        Args:
-            x_seq: Input sequence [T, C].
-            w_filter, w_gate: Dilated conv weights [C, C, K].
-            w_res: 1x1 residual projection matrix [C, C].
-            dilation: Dilation rate d.
-            b_filter, b_gate, b_res: Optional biases.
-
-        Returns:
-            Residual output sequence [T, C].
-        """
         t_steps = len(x_seq)
         c = len(x_seq[0])
 
-        # 1. Dilated convolutions for filter and gate branches
-        conv_f = TemporalConvolutionalNetwork.causal_dilated_conv1d(x_seq, w_filter, b_filter, dilation)
-        conv_g = TemporalConvolutionalNetwork.causal_dilated_conv1d(x_seq, w_gate, b_gate, dilation)
+        conv_f = NnAlgoTemporalConvolutionalNetwork.causal_dilated_conv1d(x_seq, w_filter, b_filter, dilation)
+        conv_g = NnAlgoTemporalConvolutionalNetwork.causal_dilated_conv1d(x_seq, w_gate, b_gate, dilation)
 
-        # 2. Gated non-linearity: z = tanh(f) * sigmoid(g)
         z_seq = [[0.0 for _ in range(c)] for _ in range(t_steps)]
         for t in range(t_steps):
             for ch in range(c):
                 f_val = math.tanh(conv_f[t][ch])
-                g_val = TemporalConvolutionalNetwork.sigmoid(conv_g[t][ch])
+                g_val = NnAlgoTemporalConvolutionalNetwork.sigmoid(conv_g[t][ch])
                 z_seq[t][ch] = f_val * g_val
 
-        # 3. 1x1 Linear projection + Residual addition
         out_seq = [[0.0 for _ in range(c)] for _ in range(t_steps)]
         for t in range(t_steps):
             for co in range(c):
@@ -140,6 +190,8 @@ class TemporalConvolutionalNetwork:
 
     @staticmethod
     def compute_receptive_field(num_layers: int, kernel_size: int) -> int:
-        """Compute theoretical receptive field for a stack of L layers with dilation doubling d = 2^l."""
-        assert num_layers >= 1 and kernel_size >= 2
-        return 1 + (kernel_size - 1) * ( (1 << num_layers) - 1 )
+        if num_layers < 1:
+            raise ValueError(f"Precondition failed: num_layers {num_layers} must be >= 1")
+        if kernel_size < 2:
+            raise ValueError(f"Precondition failed: kernel_size {kernel_size} must be >= 2")
+        return 1 + (kernel_size - 1) * ((1 << num_layers) - 1)

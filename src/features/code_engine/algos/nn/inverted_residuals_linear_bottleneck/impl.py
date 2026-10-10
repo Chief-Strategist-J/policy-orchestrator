@@ -147,7 +147,7 @@ class NnAlgoInvertedResidualsLinearBottleneck:
         - ALGO-NN-73
         - ALGO-NN-74
       references:
-        - sandler2018mobilenetv2
+        - "https://doi.org/10.1109/CVPR.2018.00474"
     ---
     """
 
@@ -187,7 +187,6 @@ class NnAlgoInvertedResidualsLinearBottleneck:
         if stride < 1 or padding < 0:
             raise ValueError("Precondition failed: stride must be >= 1 and padding >= 0.")
 
-        # Stage 1: 1x1 Expansion + ReLU6
         expanded_tensor: List[List[List[float]]] = [
             [[0.0] * W_in for _ in range(H_in)]
             for _ in range(C_exp)
@@ -201,7 +200,6 @@ class NnAlgoInvertedResidualsLinearBottleneck:
                         acc += row_exp[cin] * input_tensor[cin][h][w]
                     expanded_tensor[ce][h][w] = NnAlgoInvertedResidualsLinearBottleneck._relu6(acc)
 
-        # Stage 2: Depthwise 3x3 Conv + ReLU6
         padded_H = H_in + 2 * padding
         padded_W = W_in + 2 * padding
         H_out = (padded_H - K_h) // stride + 1
@@ -232,7 +230,6 @@ class NnAlgoInvertedResidualsLinearBottleneck:
                             acc += k_ce[kh][kw] * padded_exp[ce][h_start + kh][w_start + kw]
                     depthwise_tensor[ce][hout][wout] = NnAlgoInvertedResidualsLinearBottleneck._relu6(acc)
 
-        # Stage 3: Linear 1x1 Pointwise Projection (NO activation function)
         linear_projected: List[List[List[float]]] = [
             [[0.0] * W_out for _ in range(H_out)]
             for _ in range(C_out)
@@ -246,7 +243,6 @@ class NnAlgoInvertedResidualsLinearBottleneck:
                         acc += row_proj[ce] * depthwise_tensor[ce][hout][wout]
                     linear_projected[cout][hout][wout] = acc
 
-        # Stage 4: Residual Shortcut (only if stride == 1 and C_in == C_out)
         has_residual = (stride == 1 and C_in == C_out)
         out_tensor: List[List[List[float]]] = [
             [[0.0] * W_out for _ in range(H_out)]

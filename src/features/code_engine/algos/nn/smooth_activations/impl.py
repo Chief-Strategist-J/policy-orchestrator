@@ -109,9 +109,9 @@ class NnAlgoSmoothActivations:
         - ALGO-NN-06
         - ALGO-NN-08
       references:
-        - hendrycks2016gaussian
-        - elfwing2018sigmoid
-        - misra2019mish
+        - "https://doi.org/search?q=hendrycks2016gaussian"
+        - "https://doi.org/search?q=elfwing2018sigmoid"
+        - "https://doi.org/search?q=misra2019mish"
     ---
     """
 

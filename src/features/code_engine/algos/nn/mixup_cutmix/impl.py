@@ -135,8 +135,8 @@ class NnAlgoMixupCutmix:
         - ALGO-NN-61
         - ALGO-NN-64
       references:
-        - zhang2017mixup
-        - yun2019cutmix
+        - "https://arxiv.org/abs/1710.09412"
+        - "https://doi.org/10.1109/ICCV.2019.00612"
     ---
     """
 
@@ -182,7 +182,6 @@ class NnAlgoMixupCutmix:
             effective_lam = lam
 
         elif method == "cutmix":
-            # Initialize with image_1
             for c in range(C):
                 for h in range(H):
                     for w in range(W):
@@ -191,14 +190,12 @@ class NnAlgoMixupCutmix:
             if cutmix_box is not None and len(cutmix_box) == 4:
                 y0, x0, h_box, w_box = cutmix_box
             else:
-                # Derive box from lambda: cut_ratio = sqrt(1 - lam)
                 cut_ratio = math.sqrt(1.0 - lam)
                 h_box = int(round(H * cut_ratio))
                 w_box = int(round(W * cut_ratio))
                 y0 = max(0, (H - h_box) // 2)
                 x0 = max(0, (W - w_box) // 2)
 
-            # Paste patch from image_2
             y_start = max(0, min(H, y0))
             y_end = max(0, min(H, y0 + h_box))
             x_start = max(0, min(W, x0))
@@ -213,7 +210,6 @@ class NnAlgoMixupCutmix:
             total_area = H * W
             effective_lam = 1.0 - (float(cut_area) / float(total_area))
 
-        # Mix labels
         mixed_lbl: List[float] = [
             effective_lam * label_1[k] + (1.0 - effective_lam) * label_2[k]
             for k in range(K)

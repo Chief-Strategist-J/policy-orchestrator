@@ -140,8 +140,8 @@ class NnAlgoDilatedAtrousConvolution:
         - ALGO-NN-80
         - ALGO-NN-83
       references:
-        - yu2015multi
-        - chen2017deeplab
+        - "https://arxiv.org/abs/1511.07122"
+        - "https://doi.org/search?q=chen2017deeplab"
     ---
     """
 
@@ -191,7 +191,6 @@ class NnAlgoDilatedAtrousConvolution:
         if len(bias_vec) != C_out:
             raise ValueError("Precondition failed: bias vector length must equal C_out.")
 
-        # Padded representation
         padded: List[List[List[float]]] = [
             [[0.0] * padded_W for _ in range(padded_H)]
             for _ in range(C_in)

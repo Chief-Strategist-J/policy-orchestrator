@@ -127,8 +127,8 @@ class NnAlgoAdversarialTrainingFgsmPgd:
         - ALGO-NN-61
         - ALGO-NN-64
       references:
-        - goodfellow2014explaining
-        - madry2018towards
+        - "https://arxiv.org/abs/1412.6572"
+        - "https://doi.org/search?q=madry2018towards"
     ---
     """
 
@@ -166,7 +166,6 @@ class NnAlgoAdversarialTrainingFgsmPgd:
         if clip_min >= clip_max:
             raise ValueError("Precondition failed: clip_min must be strictly less than clip_max.")
 
-        # Initialize perturbed candidate
         x_adv = [[float(clean_input[i][j]) for j in range(D)] for i in range(B)]
         effective_alpha = epsilon if num_steps == 1 else step_size
 
@@ -176,18 +175,14 @@ class NnAlgoAdversarialTrainingFgsmPgd:
                     g = gradient_matrix[i][j]
                     sign_g = 1.0 if g > 0 else (-1.0 if g < 0 else 0.0)
 
-                    # Gradient ascent step
                     val = x_adv[i][j] + effective_alpha * sign_g
 
-                    # Project back onto L_inf epsilon-ball around clean_input
                     orig = clean_input[i][j]
                     val = max(orig - epsilon, min(orig + epsilon, val))
 
-                    # Clamping to valid pixel domain
                     val = max(clip_min, min(clip_max, val))
                     x_adv[i][j] = val
 
-        # Calculate final perturbation delta and L_inf norm
         perturbation: List[List[float]] = [[0.0] * D for _ in range(B)]
         max_inf = 0.0
         for i in range(B):

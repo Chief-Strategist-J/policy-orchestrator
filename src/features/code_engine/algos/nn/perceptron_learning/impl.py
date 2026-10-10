@@ -146,9 +146,9 @@ class NnAlgoPerceptronLearning:
         - ALGO-NN-02
         - ALGO-CLASSICAL-ML-01
       references:
-        - rosenblatt1958perceptron
-        - novikoff1962convergence
-        - minsky1969perceptrons
+        - "https://doi.org/10.1037/h0042519"
+        - "https://doi.org/10.1007/978-1-4684-2001-2_9"
+        - "https://mitpress.mit.edu/9780262631111/perceptrons/"
     ---
     """
 

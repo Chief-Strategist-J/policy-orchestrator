@@ -126,8 +126,8 @@ class NnAlgoImageDataAugmentation:
         - ALGO-NN-62
         - ALGO-NN-65
       references:
-        - cubuk2020randaugment
-        - devries2017cutout
+        - "https://arxiv.org/abs/1909.13719"
+        - "https://doi.org/search?q=devries2017cutout"
     ---
     """
 
@@ -172,7 +172,6 @@ class NnAlgoImageDataAugmentation:
             for c in range(C)
         ]
 
-        # 1. Padding and Cropping
         if crop_pad > 0:
             padded_H = H + 2 * crop_pad
             padded_W = W + 2 * crop_pad
@@ -192,7 +191,6 @@ class NnAlgoImageDataAugmentation:
             curr = cropped
             applied_transforms.append("random_crop")
 
-        # 2. Horizontal Flip
         if horizontal_flip:
             curr = [
                 [[curr[c][h][W - 1 - w] for w in range(W)] for h in range(H)]
@@ -200,7 +198,6 @@ class NnAlgoImageDataAugmentation:
             ]
             applied_transforms.append("horizontal_flip")
 
-        # 3. Vertical Flip
         if vertical_flip:
             curr = [
                 [[curr[c][H - 1 - h][w] for w in range(W)] for h in range(H)]
@@ -208,10 +205,8 @@ class NnAlgoImageDataAugmentation:
             ]
             applied_transforms.append("vertical_flip")
 
-        # 4. Brightness and Contrast
         if brightness_delta != 0.0 or contrast_factor != 1.0:
             for c in range(C):
-                # Channel mean for contrast adjustment
                 mean_val = sum(sum(curr[c][h][w] for w in range(W)) for h in range(H)) / float(H * W)
                 for h in range(H):
                     for w in range(W):
@@ -220,7 +215,6 @@ class NnAlgoImageDataAugmentation:
                             val = mean_val + contrast_factor * (val - mean_val)
                         if brightness_delta != 0.0:
                             val = val + brightness_delta
-                        # Clamp to [0, 1]
                         val = max(0.0, min(1.0, val))
                         curr[c][h][w] = val
             if brightness_delta != 0.0:
@@ -228,7 +222,6 @@ class NnAlgoImageDataAugmentation:
             if contrast_factor != 1.0:
                 applied_transforms.append("contrast")
 
-        # 5. Cutout / Random Erasing
         if cutout_box is not None and len(cutout_box) == 4:
             y0, x0, h_box, w_box = cutout_box
             for c in range(C):

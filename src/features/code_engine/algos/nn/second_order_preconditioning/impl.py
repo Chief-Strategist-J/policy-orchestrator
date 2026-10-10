@@ -100,13 +100,10 @@ class NnAlgoSecondOrderPreconditioning:
             raise ValueError("Precondition failed: grad_matrix cannot be empty.")
         n = len(grad_matrix[0])
 
-        # Update left: L += G @ G^T (M, M)
         new_l = [[left_preconditioner[i][j] + sum(grad_matrix[i][k] * grad_matrix[j][k] for k in range(n)) for j in range(m)] for i in range(m)]
 
-        # Update right: R += G^T @ G (N, N)
         new_r = [[right_preconditioner[i][j] + sum(grad_matrix[k][i] * grad_matrix[k][j] for k in range(m)) for j in range(n)] for i in range(n)]
 
-        # Diagonal approximate inverse 4th root preconditioning: P_ij = (L_ii + eps)^(-1/4) * G_ij * (R_jj + eps)^(-1/4)
         p_grad: List[List[float]] = []
         for i in range(m):
             l_scale = (new_l[i][i] + eps) ** (-0.25)

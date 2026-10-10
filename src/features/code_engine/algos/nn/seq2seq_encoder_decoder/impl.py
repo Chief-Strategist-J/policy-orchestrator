@@ -1,39 +1,129 @@
-"""Sequence-to-Sequence (Seq2Seq) Encoder-Decoder Architecture and Autoregressive Decoding.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: seq2seq_encoder_decoder
-  category: neural_network_architecture
-  subcategory: sequence_models
-  id: ALGO-NN-95
-  equation: |
-    h_t^{(\\text{enc})} = \\tanh(W_h^{(\\text{enc})} h_{t-1}^{(\\text{enc})} + W_x^{(\\text{enc})} x_t + b_h^{(\\text{enc})})
-    v = h_{T_x}^{(\\text{enc})}
-    s_u = \\tanh(W_s^{(\\text{dec})} s_{u-1} + W_y^{(\\text{dec})} y_{u-1} + b_s^{(\\text{dec})}) \\quad \\text{with } s_0 = v
-    P(y_u = k \\mid y_{<u}, \\mathbf{x}) = \\frac{\\exp(W_v[k] s_u + b_v[k])}{\\sum_j \\exp(W_v[j] s_u + b_v[j])}
-  domain:
-    input_length: T_x
-    output_length: T_y
-    vocabulary_size: V
-    hidden_dimension: d_h
-  properties:
-    variable_length_mapping: true
-    autoregressive_causal_decoding: true
-    bottleneck_context_transfer: true
-    bos_eos_token_control: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class Seq2SeqEncoderDecoder:
-    """Seq2Seq Recurrent Encoder-Decoder with greedy and teacher-forcing rollout routines."""
+class NnAlgoSeq2SeqEncoderDecoder:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-95
+      name: NnAlgoSeq2SeqEncoderDecoder
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.seq2seq
+        - nn.encoder_decoder
+        - nn.sequence
+        - nn.autoregressive
+      inputs:
+        type: object
+        required:
+          - x_indices
+          - embedding_matrix
+          - w_x
+          - w_h
+          - b_h
+        properties:
+          x_indices:
+            type: array
+            items:
+              type: integer
+            description: Input sequence token indices of length T_x.
+          embedding_matrix:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Token embedding lookup table of shape (V, d_emb).
+          w_x:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Encoder input projection matrix of shape (d_h, d_emb).
+          w_h:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Encoder hidden recurrent matrix of shape (d_h, d_h).
+          b_h:
+            type: array
+            items:
+              type: number
+            description: Encoder hidden bias vector of length d_h.
+      outputs:
+        type: object
+        required:
+          - context_vector
+          - h_states
+        properties:
+          context_vector:
+            type: array
+            items:
+              type: number
+            description: Summary bottleneck representation vector of length d_h.
+          h_states:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Full encoder hidden sequence trajectory of shape (T_x, d_h).
+      parameters: {}
+      input_assumptions:
+        - len(x_indices) >= 1
+        - embedding_matrix dimension matches (V, d_emb)
+        - encoder matrices conform to (d_h, d_emb) and (d_h, d_h)
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Standard IEEE-754 floating point precision"
+      uses_model: false
+      complexity:
+        variables:
+          T_x: source sequence length
+          T_y: target sequence length
+          d_emb: embedding dimension
+          d_h: hidden state dimension
+          V: vocabulary size
+        time_worst: "O(T_x * (d_h * d_emb + d_h^2) + T_y * (d_h * d_emb + d_h^2 + V * d_h))"
+        time_typical: "O(T_x * (d_h * d_emb + d_h^2) + T_y * (d_h * d_emb + d_h^2 + V * d_h))"
+        space: "O(T_x * d_h + T_y)"
+      preconditions:
+        - len(input.x_indices) > 0
+        - len(input.embedding_matrix) > 0 and len(input.embedding_matrix[0]) == len(input.w_x[0])
+        - len(input.w_x) == len(input.w_h) == len(input.b_h)
+      postconditions:
+        - len(output.context_vector) == len(input.b_h)
+        - len(output.h_states) == len(input.x_indices)
+      certificate: "v = h_{T_x}^{(enc)} and s_u = \\tanh(W_s s_{u-1} + W_y y_{u-1} + b_s)"
+      compatible_adapters:
+        - ADAPTER-SEQ2SEQ
+        - ADAPTER-NEURAL-TRANSLATION
+      related_algos:
+        - ALGO-NN-90
+        - ALGO-NN-92
+        - ALGO-NN-96
+        - ALGO-NN-98
+      references:
+        - "https://arxiv.org/abs/1409.3215"
+        - "https://arxiv.org/abs/1406.1078"
+    ---
+    """
 
     @staticmethod
     def softmax(logits: List[float]) -> List[float]:
-        """Numerically stable softmax."""
         max_l = max(logits)
         exps = [math.exp(l - max_l) for l in logits]
         sum_e = sum(exps)
@@ -45,29 +135,27 @@ class Seq2SeqEncoderDecoder:
         embedding_matrix: List[List[float]],
         w_x: List[List[float]],
         w_h: List[List[float]],
-        b_h: List[float]
+        b_h: List[float],
     ) -> Tuple[List[float], List[List[float]]]:
-        """Encode input sequence into final context vector and step representations.
+        if not x_indices or len(x_indices) == 0:
+            raise ValueError("Precondition failed: input token sequence x_indices must be non-empty")
 
-        Args:
-            x_indices: List of integer token IDs of length T_x.
-            embedding_matrix: Table [V, d_emb].
-            w_x: Input projection [d_h, d_emb].
-            w_h: Recurrent weights [d_h, d_h].
-            b_h: Bias vector [d_h].
-
-        Returns:
-            Tuple of (context_vector [d_h], encoder_states [T_x, d_h]).
-        """
         t_x = len(x_indices)
-        assert t_x > 0, "Input sequence cannot be empty."
         d_h = len(w_h)
+        v_size = len(embedding_matrix)
         d_emb = len(embedding_matrix[0])
 
-        h_states = []
+        if len(w_x) != d_h or len(b_h) != d_h or len(w_h[0]) != d_h:
+            raise ValueError("Precondition failed: encoder weights dimension mismatch")
+        if len(w_x[0]) != d_emb:
+            raise ValueError("Precondition failed: w_x input dimension must match d_emb")
+
+        h_states: List[List[float]] = []
         curr_h = [0.0 for _ in range(d_h)]
 
         for token_id in x_indices:
+            if token_id < 0 or token_id >= v_size:
+                raise ValueError(f"Precondition failed: token id {token_id} out of bounds [0, {v_size})")
             x_emb = embedding_matrix[token_id]
             next_h = [0.0 for _ in range(d_h)]
             for i in range(d_h):
@@ -94,38 +182,24 @@ class Seq2SeqEncoderDecoder:
         b_vocab: List[float],
         bos_id: int = 1,
         eos_id: int = 2,
-        max_len: int = 30
+        max_len: int = 30,
     ) -> List[int]:
-        """Autoregressively decode tokens using greedy maximum-likelihood selection.
-
-        Args:
-            context_vector: Initial state s_0 of length d_h from encoder.
-            embedding_matrix: Table [V, d_emb].
-            w_s: Decoder hidden-to-hidden weights [d_h, d_h].
-            w_y: Decoder embedding-to-hidden weights [d_h, d_emb].
-            b_s: Decoder hidden bias [d_h].
-            w_vocab: Emission matrix [V, d_h].
-            b_vocab: Emission bias [V].
-            bos_id: Beginning-of-sequence token ID.
-            eos_id: End-of-sequence token ID.
-            max_len: Maximum generated sequence length.
-
-        Returns:
-            List of generated token IDs (excluding BOS, terminating at EOS).
-        """
         d_h = len(context_vector)
         d_emb = len(embedding_matrix[0])
         v_size = len(w_vocab)
 
+        if len(w_s) != d_h or len(b_s) != d_h or len(w_y) != d_h:
+            raise ValueError("Precondition failed: decoder parameter dimension mismatch")
+        if len(w_vocab[0]) != d_h or len(b_vocab) != v_size:
+            raise ValueError("Precondition failed: emission matrix dimension mismatch")
+
         curr_s = list(context_vector)
         curr_token = bos_id
-        generated_tokens = []
+        generated_tokens: List[int] = []
 
         for _ in range(max_len):
-            # 1. Embed current token
             y_emb = embedding_matrix[curr_token]
 
-            # 2. Advance decoder recurrent state: s_u = tanh(W_s s_{u-1} + W_y y_{u-1} + b_s)
             next_s = [0.0 for _ in range(d_h)]
             for i in range(d_h):
                 val = b_s[i]
@@ -136,7 +210,6 @@ class Seq2SeqEncoderDecoder:
                 next_s[i] = math.tanh(val)
             curr_s = next_s
 
-            # 3. Vocabulary emission logits: z = W_vocab * s_u + b_vocab
             logits = [0.0 for _ in range(v_size)]
             for v in range(v_size):
                 val = b_vocab[v]
@@ -144,7 +217,6 @@ class Seq2SeqEncoderDecoder:
                     val += w_vocab[v][i] * curr_s[i]
                 logits[v] = val
 
-            # 4. Argmax greedy token selection
             best_token = 0
             best_logit = logits[0]
             for v in range(1, v_size):

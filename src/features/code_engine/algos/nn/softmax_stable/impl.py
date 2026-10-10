@@ -123,9 +123,9 @@ class NnAlgoSoftmaxStable:
         - ALGO-NN-06
         - ALGO-NN-08
       references:
-        - bridle1990probabilistic
-        - milakov2018online
-        - dao2022flashattention
+        - "https://doi.org/search?q=bridle1990probabilistic"
+        - "https://doi.org/search?q=milakov2018online"
+        - "https://doi.org/search?q=dao2022flashattention"
     ---
     """
 

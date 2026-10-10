@@ -110,7 +110,6 @@ class NnAlgoFocalLoss:
             if y not in (0, 1):
                 raise ValueError(f"Precondition failed: binary target y must be 0 or 1, got {y}.")
 
-            # Stable sigmoid computation
             if z >= 0.0:
                 ez_neg = math.exp(-z)
                 p = 1.0 / (1.0 + ez_neg)
@@ -124,12 +123,10 @@ class NnAlgoFocalLoss:
 
             probs.append(p)
 
-            # p_t and alpha_t definition
             if y == 1:
                 p_t = p
                 log_p_t = log_p
                 alpha_t = alpha
-                # grad sign term
                 sign = 1.0
             else:
                 p_t = 1.0 - p
@@ -141,10 +138,6 @@ class NnAlgoFocalLoss:
             loss_i = -alpha_t * modulating_factor * log_p_t
             element_losses.append(loss_i)
 
-            # Gradient wrt z:
-            # dL/dz = alpha_t * (1 - p_t)^gamma * (gamma * p_t * log(p_t) + p_t - 1) * sign
-            # For y=1: alpha * (1 - p)^gamma * (gamma * p * log(p) + p - 1)
-            # For y=0: (1 - alpha) * p^gamma * (1 - p - gamma * (1 - p) * log(1 - p))
             if gamma == 0.0:
                 grad_i = alpha_t * (p_t - 1.0) * sign
             else:

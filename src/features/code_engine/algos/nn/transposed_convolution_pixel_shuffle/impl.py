@@ -126,8 +126,8 @@ class NnAlgoTransposedConvolutionPixelShuffle:
         - ALGO-NN-67
         - ALGO-NN-79
       references:
-        - shi2016real
-        - dumoulin2016guide
+        - "https://doi.org/10.1109/CVPR.2016.207"
+        - "https://doi.org/search?q=dumoulin2016guide"
     ---
     """
 
@@ -191,7 +191,6 @@ class NnAlgoTransposedConvolutionPixelShuffle:
             }
 
         else:
-            # transposed_conv mode
             if not weight_kernels or not weight_kernels[0] or not weight_kernels[0][0] or not weight_kernels[0][0][0]:
                 raise ValueError("Precondition failed: weight_kernels required for transposed_conv mode.")
 

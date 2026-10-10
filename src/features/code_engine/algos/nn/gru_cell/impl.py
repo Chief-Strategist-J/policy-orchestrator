@@ -1,39 +1,163 @@
-"""Gated Recurrent Unit (GRU) Cell and Sequence Unrolling.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: gru_cell
-  category: neural_network_architecture
-  subcategory: recurrent_networks
-  id: ALGO-NN-93
-  equation: |
-    z_t = \\sigma(W_z x_t + U_z h_{t-1} + b_z)
-    r_t = \\sigma(W_r x_t + U_r h_{t-1} + b_r)
-    \\tilde{h}_t = \\tanh(W_h x_t + U_h (r_t \\odot h_{t-1}) + b_h)
-    h_t = (1 - z_t) \\odot h_{t-1} + z_t \\odot \\tilde{h}_t
-  domain:
-    hidden_dimension: d_h
-    input_dimension: d_x
-    gates: "z_t, r_t \\in (0, 1)^{d_h}"
-  properties:
-    two_gate_parameter_efficiency: true
-    linear_state_interpolation: true
-    elimination_of_separate_cell_state: true
-    adaptive_temporal_reset: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class GRUCell:
-    """Gated Recurrent Unit (GRU) transition step and sequence recurrence engine."""
+class NnAlgoGRUCell:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-93
+      name: NnAlgoGRUCell
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.recurrent
+        - nn.gru
+        - nn.sequence
+        - nn.gated_memory
+      inputs:
+        type: object
+        required:
+          - x_t
+          - h_prev
+          - w_z
+          - u_z
+          - b_z
+          - w_r
+          - u_r
+          - b_r
+          - w_h
+          - u_h
+          - b_h
+        properties:
+          x_t:
+            type: array
+            items:
+              type: number
+            description: Input vector x_t of length d_x.
+          h_prev:
+            type: array
+            items:
+              type: number
+            description: Previous hidden state h_{t-1} of length d_h.
+          w_z:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Update gate input matrix of shape (d_h, d_x).
+          u_z:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Update gate recurrent matrix of shape (d_h, d_h).
+          b_z:
+            type: array
+            items:
+              type: number
+            description: Update gate bias vector of length d_h.
+          w_r:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Reset gate input matrix of shape (d_h, d_x).
+          u_r:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Reset gate recurrent matrix of shape (d_h, d_h).
+          b_r:
+            type: array
+            items:
+              type: number
+            description: Reset gate bias vector of length d_h.
+          w_h:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Candidate state input matrix of shape (d_h, d_x).
+          u_h:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Candidate state recurrent matrix of shape (d_h, d_h).
+          b_h:
+            type: array
+            items:
+              type: number
+            description: Candidate state bias vector of length d_h.
+      outputs:
+        type: object
+        required:
+          - h_next
+          - gates
+        properties:
+          h_next:
+            type: array
+            items:
+              type: number
+            description: Updated hidden state vector h_t of length d_h.
+          gates:
+            type: object
+            description: Intermediate gate activations dictionary (z, r, h_tilde).
+      parameters: {}
+      input_assumptions:
+        - len(h_prev) == d_h and len(x_t) == d_x
+        - weight matrices dimensions match (d_h, d_x) and (d_h, d_h)
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Standard IEEE-754 floating point precision"
+      uses_model: false
+      complexity:
+        variables:
+          d_h: hidden state dimension
+          d_x: input dimension
+        time_worst: "O(d_h * (d_x + d_h))"
+        time_typical: "O(d_h * (d_x + d_h))"
+        space: "O(d_h)"
+      preconditions:
+        - len(input.h_prev) == len(input.u_z)
+        - len(input.x_t) == len(input.w_z[0])
+        - len(input.w_z) == len(input.w_r) == len(input.w_h) == len(input.h_prev)
+      postconditions:
+        - len(output.h_next) == len(input.h_prev)
+      certificate: "h_t = (1 - z_t) \\odot h_{t-1} + z_t \\odot \\tilde{h}_t"
+      compatible_adapters:
+        - ADAPTER-GRU-CELL
+        - ADAPTER-RECURRENT-LAYER
+      related_algos:
+        - ALGO-NN-90
+        - ALGO-NN-91
+        - ALGO-NN-92
+        - ALGO-NN-94
+      references:
+        - "https://arxiv.org/abs/1406.1078"
+        - "https://arxiv.org/abs/1412.3555"
+    ---
+    """
 
     @staticmethod
     def sigmoid(x: float) -> float:
-        """Numerically stable scalar sigmoid function."""
-        if x >= 0:
+        if x >= 0.0:
             z = math.exp(-x)
             return 1.0 / (1.0 + z)
         else:
@@ -52,24 +176,18 @@ class GRUCell:
         b_r: List[float],
         w_h: List[List[float]],
         u_h: List[List[float]],
-        b_h: List[float]
+        b_h: List[float],
     ) -> Tuple[List[float], Dict[str, List[float]]]:
-        """Execute a single GRU time step.
-
-        Args:
-            x_t: Input vector of length d_x.
-            h_prev: Previous hidden state of length d_h.
-            w_z, u_z, b_z: Update gate parameters.
-            w_r, u_r, b_r: Reset gate parameters.
-            w_h, u_h, b_h: Candidate hidden state parameters.
-
-        Returns:
-            Tuple of (h_next [d_h], gate_activations).
-        """
         d_h = len(h_prev)
         d_x = len(x_t)
 
-        # 1. Update gate z_t = sigmoid(W_z x_t + U_z h_{t-1} + b_z)
+        if len(w_z) != d_h or len(w_r) != d_h or len(w_h) != d_h:
+            raise ValueError(f"Precondition failed: input weight matrices rows must match d_h ({d_h})")
+        if len(u_z) != d_h or len(u_r) != d_h or len(u_h) != d_h:
+            raise ValueError(f"Precondition failed: recurrent weight matrices rows must match d_h ({d_h})")
+        if len(b_z) != d_h or len(b_r) != d_h or len(b_h) != d_h:
+            raise ValueError(f"Precondition failed: bias vectors must match d_h ({d_h})")
+
         z_t = [0.0 for _ in range(d_h)]
         for i in range(d_h):
             val = b_z[i]
@@ -77,9 +195,8 @@ class GRUCell:
                 val += w_z[i][k] * x_t[k]
             for j in range(d_h):
                 val += u_z[i][j] * h_prev[j]
-            z_t[i] = GRUCell.sigmoid(val)
+            z_t[i] = NnAlgoGRUCell.sigmoid(val)
 
-        # 2. Reset gate r_t = sigmoid(W_r x_t + U_r h_{t-1} + b_r)
         r_t = [0.0 for _ in range(d_h)]
         for i in range(d_h):
             val = b_r[i]
@@ -87,9 +204,8 @@ class GRUCell:
                 val += w_r[i][k] * x_t[k]
             for j in range(d_h):
                 val += u_r[i][j] * h_prev[j]
-            r_t[i] = GRUCell.sigmoid(val)
+            r_t[i] = NnAlgoGRUCell.sigmoid(val)
 
-        # 3. Candidate hidden state h_tilde = tanh(W_h x_t + U_h (r_t * h_{t-1}) + b_h)
         h_tilde = [0.0 for _ in range(d_h)]
         for i in range(d_h):
             val = b_h[i]
@@ -99,13 +215,12 @@ class GRUCell:
                 val += u_h[i][j] * (r_t[j] * h_prev[j])
             h_tilde[i] = math.tanh(val)
 
-        # 4. State update: h_t = (1 - z_t) * h_{t-1} + z_t * h_tilde
         h_next = [(1.0 - z_t[i]) * h_prev[i] + z_t[i] * h_tilde[i] for i in range(d_h)]
 
         gates = {
             "z": z_t,
             "r": r_t,
-            "h_tilde": h_tilde
+            "h_tilde": h_tilde,
         }
         return h_next, gates
 
@@ -121,30 +236,30 @@ class GRUCell:
         w_h: List[List[float]],
         u_h: List[List[float]],
         b_h: List[float],
-        h_0: Optional[List[float]] = None
+        h_0: Optional[List[float]] = None,
     ) -> List[List[float]]:
-        """Unroll GRU across full sequence.
+        if not x_seq or len(x_seq) == 0:
+            raise ValueError("Precondition failed: sequence x_seq must be non-empty")
 
-        Args:
-            x_seq: Input sequence [T, d_x].
-            h_0: Optional initial hidden state of length d_h.
-
-        Returns:
-            List of hidden states [T, d_h].
-        """
         t_steps = len(x_seq)
-        assert t_steps > 0
         d_h = len(w_z)
 
         curr_h = list(h_0) if h_0 is not None else [0.0 for _ in range(d_h)]
-        h_history = []
+        h_history: List[List[float]] = []
 
         for t in range(t_steps):
-            curr_h, _ = GRUCell.step(
-                x_seq[t], curr_h,
-                w_z, u_z, b_z,
-                w_r, u_r, b_r,
-                w_h, u_h, b_h
+            curr_h, _ = NnAlgoGRUCell.step(
+                x_seq[t],
+                curr_h,
+                w_z,
+                u_z,
+                b_z,
+                w_r,
+                u_r,
+                b_r,
+                w_h,
+                u_h,
+                b_h,
             )
             h_history.append(curr_h)
 

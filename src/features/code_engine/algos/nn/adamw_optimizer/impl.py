@@ -127,10 +127,8 @@ class NnAlgoAdamwOptimizer:
         new_v: List[float] = []
 
         for theta, g, m, v in zip(parameters, gradients, exp_avg, exp_avg_sq):
-            # Decoupled weight decay step first: theta = theta * (1 - lr * lambda)
             theta_decayed = theta * (1.0 - lr * weight_decay)
 
-            # Update moments on pure objective gradient g (not g + lambda*theta)
             m_next = beta1 * m + (1.0 - beta1) * g
             v_next = beta2 * v + (1.0 - beta2) * (g ** 2)
 

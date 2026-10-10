@@ -131,8 +131,8 @@ class NnAlgoEarlyStoppingCheckpointing:
         - ALGO-NN-58
         - ALGO-NN-60
       references:
-        - prechelt1998early
-        - izmailov2018averaging
+        - "https://doi.org/10.1007/3-540-49430-8_3"
+        - "https://doi.org/search?q=izmailov2018averaging"
     ---
     """
 
@@ -199,7 +199,6 @@ class NnAlgoEarlyStoppingCheckpointing:
 
         selected_ckpt = [float(x) for x in checkpoint_weights[best_step]]
 
-        # Sort evaluated checkpoints up to stopped_step
         evaluated = recorded_checkpoints[: stopped_step + 1]
         if mode == "min":
             evaluated.sort(key=lambda item: item[1])

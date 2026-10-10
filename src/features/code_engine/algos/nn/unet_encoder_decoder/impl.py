@@ -144,7 +144,7 @@ class NnAlgoUnetEncoderDecoder:
         - ALGO-NN-72
         - ALGO-NN-80
       references:
-        - ronneberger2015u
+        - "https://doi.org/10.1007/978-3-319-24574-4_28"
     ---
     """
 
@@ -183,7 +183,7 @@ class NnAlgoUnetEncoderDecoder:
                         for kh in range(K_h):
                             for kw in range(K_w):
                                 acc += w_cin[kh][kw] * pad_cin[h + kh][w_idx + kw]
-                    out[cout][h][w_idx] = max(0.0, acc)  # ReLU
+                    out[cout][h][w_idx] = max(0.0, acc)
         return out
 
     @staticmethod
@@ -237,26 +237,20 @@ class NnAlgoUnetEncoderDecoder:
         if H % 2 != 0 or W % 2 != 0:
             raise ValueError("Precondition failed: input spatial dimensions must be even numbers.")
 
-        # 1. Encoder Level 1: Conv + ReLU
         skip_tensor = NnAlgoUnetEncoderDecoder._conv2d_same(input_tensor, enc1_weights)
 
-        # 2. Downsample: MaxPool 2x2
         pooled_1 = NnAlgoUnetEncoderDecoder._maxpool2x2(skip_tensor)
 
-        # 3. Encoder Level 2 (Bottleneck): Conv + ReLU
         bottleneck_tensor = NnAlgoUnetEncoderDecoder._conv2d_same(pooled_1, enc2_weights)
 
-        # 4. Decoder Upsample: Nearest 2x
         upsampled = NnAlgoUnetEncoderDecoder._nearest_upsample2x(bottleneck_tensor)
 
-        # 5. Skip Connection Concatenation: Concat(upsampled, skip_tensor)
         fused_channels: List[List[List[float]]] = []
         for ch in upsampled:
             fused_channels.append(ch)
         for ch in skip_tensor:
             fused_channels.append(ch)
 
-        # 6. Decoder Conv + ReLU
         output_tensor = NnAlgoUnetEncoderDecoder._conv2d_same(fused_channels, dec1_weights)
 
         return {

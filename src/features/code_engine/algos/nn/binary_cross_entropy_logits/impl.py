@@ -122,20 +122,14 @@ class NnAlgoBinaryCrossEntropyLogits:
 
             w_elem = weight[i] if weight is not None else 1.0
 
-            # Numerically stable sigmoid: sigma(z)
             if z >= 0.0:
                 ez_neg = math.exp(-z)
                 sig = 1.0 / (1.0 + ez_neg)
-                # Stable loss: (1 - y) * z + max(-z, 0) + log(1 + exp(-|z|)) + (pos_weight - 1) * y * ...
-                # Standard formulation: max(z, 0) - z*y + log(1 + exp(-|z|)) with pos_weight:
-                # l_i = (1 - y) * z + (1 + (pos_weight - 1)*y) * (log(1 + exp(-z)))
-                # Stable log(1 + exp(-z))
                 log_term = math.log1p(ez_neg)
                 loss_val = (1.0 - y) * z + (1.0 + (pos_weight - 1.0) * y) * log_term
             else:
                 ez = math.exp(z)
                 sig = ez / (1.0 + ez)
-                # For z < 0: log(1 + exp(z)) - z * (pos_weight * y)
                 log_term = math.log1p(ez)
                 loss_val = (1.0 + (pos_weight - 1.0) * y) * log_term - pos_weight * y * z
 
@@ -143,8 +137,6 @@ class NnAlgoBinaryCrossEntropyLogits:
             element_losses.append(loss_val)
             probabilities.append(sig)
 
-            # Gradient: dL/dz = w * [ sig * (1 + (pos_weight - 1)*y) - pos_weight * y ]
-            # When pos_weight == 1: sig - y
             grad_val = w_elem * (sig * (1.0 + (pos_weight - 1.0) * y) - pos_weight * y)
             element_grads.append(grad_val)
 

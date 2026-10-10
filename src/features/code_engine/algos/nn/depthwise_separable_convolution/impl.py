@@ -139,8 +139,8 @@ class NnAlgoDepthwiseSeparableConvolution:
         - ALGO-NN-73
         - ALGO-NN-76
       references:
-        - howard2017mobilenets
-        - chollet2017xception
+        - "https://doi.org/search?q=howard2017mobilenets"
+        - "https://doi.org/10.1109/CVPR.2017.195"
     ---
     """
 
@@ -189,7 +189,6 @@ class NnAlgoDepthwiseSeparableConvolution:
         if len(bias_vec) != C_out:
             raise ValueError("Precondition failed: bias vector length must equal C_out.")
 
-        # Padded representation
         padded: List[List[List[float]]] = [
             [[0.0] * padded_W for _ in range(padded_H)]
             for _ in range(C_in)
@@ -199,7 +198,6 @@ class NnAlgoDepthwiseSeparableConvolution:
                 for w in range(W_in):
                     padded[c][h + padding][w + padding] = float(input_tensor[c][h][w])
 
-        # Step 1: Depthwise Convolution
         depthwise_intermediate: List[List[List[float]]] = [
             [[0.0] * W_out for _ in range(H_out)]
             for _ in range(C_in)
@@ -217,7 +215,6 @@ class NnAlgoDepthwiseSeparableConvolution:
                             acc += kernel_cin[kh][kw] * pad_cin[h_start + kh][w_start + kw]
                     depthwise_intermediate[cin][hout][wout] = acc
 
-        # Step 2: Pointwise 1x1 Convolution
         out_tensor: List[List[List[float]]] = [
             [[bias_vec[cout]] * W_out for _ in range(H_out)]
             for cout in range(C_out)

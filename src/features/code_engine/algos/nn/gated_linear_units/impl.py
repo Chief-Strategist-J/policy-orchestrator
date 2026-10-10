@@ -146,9 +146,9 @@ class NnAlgoGatedLinearUnits:
         - ALGO-NN-05
         - ALGO-NN-06
       references:
-        - dauphin2017language
-        - shazeer2020glu
-        - touvron2023llama
+        - "https://doi.org/search?q=dauphin2017language"
+        - "https://doi.org/search?q=shazeer2020glu"
+        - "https://doi.org/search?q=touvron2023llama"
     ---
     """
 

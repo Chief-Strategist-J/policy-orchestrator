@@ -81,7 +81,6 @@ class NnAlgoGradientCheckpointing:
             if layer_idx % k == 0:
                 checkpoints.append(curr)
                 checkpoint_indices.append(layer_idx)
-            # Simulated layer operation: tanh(0.9 * x + 0.1)
             curr = math.tanh(0.9 * curr + 0.1)
 
         mem_saved = 1.0 - (len(checkpoints) / float(num_layers))

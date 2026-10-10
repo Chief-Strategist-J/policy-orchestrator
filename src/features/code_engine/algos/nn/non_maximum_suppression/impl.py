@@ -1,40 +1,114 @@
-"""Non-Maximum Suppression (Hard NMS, Linear Soft-NMS, and Gaussian Soft-NMS).
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: non_maximum_suppression
-  category: neural_network_architecture
-  subcategory: object_detection
-  id: ALGO-NN-86
-  equation: |
-    s_i^{\\text{hard}} = \\begin{cases} s_i & \\text{if } \\text{IoU}(M, b_i) < N_t \\\\ 0 & \\text{if } \\text{IoU}(M, b_i) \\ge N_t \\end{cases}
-    s_i^{\\text{gaussian}} = s_i \\cdot \\exp\\left( -\\frac{\\text{IoU}(M, b_i)^2}{\\sigma} \\right)
-    s_i^{\\text{linear}} = s_i \\cdot (1 - \\text{IoU}(M, b_i)) \\quad \\text{for } \\text{IoU}(M, b_i) \\ge N_t
-  domain:
-    iou_threshold: "N_t \\in (0, 1)"
-    gaussian_variance: "\\sigma > 0"
-    score_threshold: "\\tau \\ge 0"
-  properties:
-    duplicate_suppression: true
-    crowded_scene_soft_weighting: true
-    asymptotic_quadratic_complexity: true
-    class_independent_or_batched: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class NonMaximumSuppression:
-    """Non-Maximum Suppression (Hard, Linear, and Gaussian Soft-NMS) Algorithms."""
+class NnAlgoNonMaximumSuppression:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-86
+      name: NnAlgoNonMaximumSuppression
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.object_detection
+        - nn.post_processing
+        - nn.nms
+        - nn.soft_nms
+      inputs:
+        type: object
+        required:
+          - boxes
+          - scores
+        properties:
+          boxes:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Candidate bounding boxes in (x1, y1, x2, y2) format.
+          scores:
+            type: array
+            items:
+              type: number
+            description: Confidence scores corresponding to candidate boxes.
+          iou_threshold:
+            type: number
+            default: 0.5
+            description: IoU suppression overlap threshold N_t.
+          score_threshold:
+            type: number
+            default: 0.05
+            description: Pre-filtering minimum confidence threshold.
+          method:
+            type: string
+            enum: [hard, linear, gaussian]
+            default: hard
+            description: Suppression strategy (hard binary suppression or soft decay).
+          sigma:
+            type: number
+            default: 0.5
+            description: Gaussian decay parameter for Soft-NMS.
+      outputs:
+        type: object
+        required:
+          - kept_indices
+        properties:
+          kept_indices:
+            type: array
+            items:
+              type: integer
+            description: List of retained bounding box indices.
+          decayed_scores:
+            type: array
+            items:
+              type: number
+            description: Optional decayed scores when method is soft.
+      parameters: {}
+      input_assumptions:
+        - len(boxes) == len(scores) >= 1
+      purity: pure
+      determinism: deterministic
+      idempotency: idempotent
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Exact pairwise bounding box geometry"
+      uses_model: false
+      complexity:
+        variables:
+          N: number of candidate boxes
+        time_worst: "O(N^2)"
+        time_typical: "O(N^2)"
+        space: O(N)
+      preconditions:
+        - len(input.boxes) == len(input.scores)
+      postconditions:
+        - len(output.kept_indices) <= len(input.boxes)
+      certificate: "Pruning candidates with IoU(M, b_i) >= N_t or attenuating scores via Gaussian exp(-IoU^2 / sigma)"
+      compatible_adapters:
+        - ADAPTER-NMS-POSTPROCESSOR
+        - ADAPTER-OBJECT-DETECTOR
+      related_algos:
+        - ALGO-NN-84
+        - ALGO-NN-85
+        - ALGO-NN-88
+      references:
+        - "https://doi.org/10.1109/ICCV.2017.593"
+        - "https://arxiv.org/abs/1704.04503"
+    ---
+    """
 
     @staticmethod
     def box_iou(
         box_a: Tuple[float, float, float, float],
-        box_b: Tuple[float, float, float, float]
+        box_b: Tuple[float, float, float, float],
     ) -> float:
-        """Compute Intersection-over-Union (IoU) of two boxes [x1, y1, x2, y2]."""
         x1 = max(box_a[0], box_b[0])
         y1 = max(box_a[1], box_b[1])
         x2 = min(box_a[2], box_b[2])
@@ -55,22 +129,12 @@ class NonMaximumSuppression:
         boxes: List[Tuple[float, float, float, float]],
         scores: List[float],
         iou_threshold: float = 0.5,
-        score_threshold: float = 0.05
-    ) -> List[int]:
-        """Classic Hard Non-Maximum Suppression.
+        score_threshold: float = 0.05,
+    ) -> Dict[str, Any]:
+        if len(boxes) != len(scores):
+            raise ValueError("Precondition failed: len(input.boxes) == len(input.scores)")
 
-        Args:
-            boxes: List of candidate bounding boxes (x1, y1, x2, y2).
-            scores: Confidence score per box.
-            iou_threshold: Overlap threshold above which suppressed boxes are purged.
-            score_threshold: Pre-filtering minimum score.
-
-        Returns:
-            List of kept box integer indices.
-        """
-        assert len(boxes) == len(scores), "Boxes and scores length must match."
         indices = [i for i in range(len(scores)) if scores[i] >= score_threshold]
-        # Sort descending by score
         indices.sort(key=lambda i: scores[i], reverse=True)
 
         kept: List[int] = []
@@ -80,12 +144,12 @@ class NonMaximumSuppression:
 
             remaining = []
             for idx in indices[1:]:
-                iou = NonMaximumSuppression.box_iou(boxes[current], boxes[idx])
+                iou = NnAlgoNonMaximumSuppression.box_iou(boxes[current], boxes[idx])
                 if iou < iou_threshold:
                     remaining.append(idx)
             indices = remaining
 
-        return kept
+        return {"kept_indices": kept}
 
     @staticmethod
     def soft_nms(
@@ -94,32 +158,19 @@ class NonMaximumSuppression:
         method: str = "gaussian",
         iou_threshold: float = 0.5,
         sigma: float = 0.5,
-        score_threshold: float = 0.001
-    ) -> List[Tuple[int, float]]:
-        """Soft-NMS with Linear or Gaussian continuous score decay.
+        score_threshold: float = 0.001,
+    ) -> Dict[str, Any]:
+        if method not in ("linear", "gaussian"):
+            raise ValueError("Precondition failed: method must be 'linear' or 'gaussian'")
+        if len(boxes) != len(scores):
+            raise ValueError("Precondition failed: len(input.boxes) == len(input.scores)")
 
-        Args:
-            boxes: List of bounding boxes.
-            scores: Initial confidence scores.
-            method: 'linear' or 'gaussian'.
-            iou_threshold: Linear threshold (used if method == 'linear').
-            sigma: Gaussian dispersion parameter.
-            score_threshold: Final score cutoff.
-
-        Returns:
-            List of tuples (box_index, decayed_score) for retained detections.
-        """
-        assert method in ("linear", "gaussian"), "Method must be 'linear' or 'gaussian'."
-        assert len(boxes) == len(scores)
-
-        # Mutable working copies
         b_list = list(boxes)
         s_list = list(scores)
         orig_indices = list(range(len(boxes)))
-
         n = len(boxes)
+
         for i in range(n):
-            # Find max score from i to n-1
             max_idx = i
             max_score = s_list[i]
             for pos in range(i + 1, n):
@@ -127,30 +178,27 @@ class NonMaximumSuppression:
                     max_score = s_list[pos]
                     max_idx = pos
 
-            # Swap max to current position i
             b_list[i], b_list[max_idx] = b_list[max_idx], b_list[i]
             s_list[i], s_list[max_idx] = s_list[max_idx], s_list[i]
             orig_indices[i], orig_indices[max_idx] = orig_indices[max_idx], orig_indices[i]
 
             current_box = b_list[i]
-
-            # Decay scores of subsequent elements
             for pos in range(i + 1, n):
-                iou = NonMaximumSuppression.box_iou(current_box, b_list[pos])
+                iou = NnAlgoNonMaximumSuppression.box_iou(current_box, b_list[pos])
                 if method == "linear":
-                    if iou >= iou_threshold:
-                        weight = 1.0 - iou
-                    else:
-                        weight = 1.0
-                else:  # gaussian
+                    weight = 1.0 - iou if iou >= iou_threshold else 1.0
+                else:
                     weight = math.exp(-(iou * iou) / max(1e-7, sigma))
-
                 s_list[pos] = s_list[pos] * weight
 
-        # Gather results above score threshold
-        results = []
+        kept_indices = []
+        decayed_scores = []
         for i in range(n):
             if s_list[i] >= score_threshold:
-                results.append((orig_indices[i], s_list[i]))
+                kept_indices.append(orig_indices[i])
+                decayed_scores.append(s_list[i])
 
-        return results
+        return {
+            "kept_indices": kept_indices,
+            "decayed_scores": decayed_scores,
+        }

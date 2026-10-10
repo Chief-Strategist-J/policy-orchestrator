@@ -79,7 +79,6 @@ class NnAlgoReverseModeAutodiff:
         if not (0 <= target_node_id < num_nodes):
             raise ValueError(f"Precondition failed: target_node_id {target_node_id} out of bounds.")
 
-        # Forward pass evaluation
         values: List[float] = [0.0] * num_nodes
         for i, node in enumerate(nodes):
             op = node.get("op", "input")
@@ -102,9 +101,8 @@ class NnAlgoReverseModeAutodiff:
             else:
                 raise ValueError(f"Precondition failed: unsupported op {op}")
 
-        # Reverse pass adjoint accumulation
         adjoints: List[float] = [0.0] * num_nodes
-        adjoints[target_node_id] = 1.0  # seed gradient dL/dL = 1
+        adjoints[target_node_id] = 1.0
 
         for i in range(num_nodes - 1, -1, -1):
             adj = adjoints[i]

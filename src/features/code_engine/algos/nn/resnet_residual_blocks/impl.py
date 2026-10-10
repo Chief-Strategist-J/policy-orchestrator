@@ -164,8 +164,8 @@ class NnAlgoResnetResidualBlocks:
         - ALGO-NN-73
         - ALGO-NN-76
       references:
-        - he2016deep
-        - he2016identity
+        - "https://doi.org/10.1109/CVPR.2016.90"
+        - "https://doi.org/search?q=he2016identity"
     ---
     """
 
@@ -245,12 +245,10 @@ class NnAlgoResnetResidualBlocks:
         W_in = len(input_tensor[0][0])
 
         if block_type == "basic":
-            # Basic Block: Conv1 (3x3, stride s, pad 1) -> ReLU -> Conv2 (3x3, stride 1, pad 1)
             f1 = NnAlgoResnetResidualBlocks._conv2d(input_tensor, conv1_weights, stride=stride, padding=1)
             a1 = NnAlgoResnetResidualBlocks._relu(f1)
             residual_branch = NnAlgoResnetResidualBlocks._conv2d(a1, conv2_weights, stride=1, padding=1)
         else:
-            # Bottleneck Block: Conv1 (1x1, stride 1) -> ReLU -> Conv2 (3x3, stride s, pad 1) -> ReLU -> Conv3 (1x1, stride 1)
             if not conv3_weights:
                 raise ValueError("Precondition failed: conv3_weights required for bottleneck block.")
             f1 = NnAlgoResnetResidualBlocks._conv2d(input_tensor, conv1_weights, stride=1, padding=0)
@@ -263,7 +261,6 @@ class NnAlgoResnetResidualBlocks:
         H_out = len(residual_branch[0])
         W_out = len(residual_branch[0][0])
 
-        # Shortcut branch
         if shortcut_weights is not None:
             shortcut_branch = NnAlgoResnetResidualBlocks._conv2d(input_tensor, shortcut_weights, stride=stride, padding=0)
         else:
@@ -273,13 +270,11 @@ class NnAlgoResnetResidualBlocks:
                     for c in range(C_in)
                 ]
             else:
-                # Subsample shortcut
                 shortcut_branch = [
                     [[float(input_tensor[c][h * stride][w * stride]) for w in range(W_out)] for h in range(H_out)]
                     for c in range(min(C_in, C_out))
                 ]
 
-        # Add residual + shortcut and apply final ReLU
         out_tensor: List[List[List[float]]] = [
             [[0.0] * W_out for _ in range(H_out)]
             for _ in range(C_out)

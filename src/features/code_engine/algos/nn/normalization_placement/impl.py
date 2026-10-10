@@ -139,9 +139,9 @@ class NnAlgoNormalizationPlacement:
         - ALGO-NN-53
         - ALGO-NN-57
       references:
-        - xiong2020layer
-        - wang2022deepnet
-        - vaswani2017attention
+        - "https://arxiv.org/abs/2002.04745"
+        - "https://doi.org/search?q=wang2022deepnet"
+        - "https://arxiv.org/abs/1706.03762"
     ---
     """
 
@@ -206,7 +206,6 @@ class NnAlgoNormalizationPlacement:
         sub_out: List[List[float]] = [[0.0] * D for _ in range(B)]
 
         if placement == "pre_norm":
-            # x_{l+1} = x_l + F(LN(x_l))
             normed_x = [NnAlgoNormalizationPlacement._layer_norm_row(x_tensor[i], gamma, beta, eps) for i in range(B)]
             sub_out = NnAlgoNormalizationPlacement._apply_sublayer(normed_x, sublayer_weights)
             for i in range(B):
@@ -214,7 +213,6 @@ class NnAlgoNormalizationPlacement:
                     out_tensor[i][j] = x_tensor[i][j] + sub_out[i][j]
 
         elif placement == "post_norm":
-            # x_{l+1} = LN(x_l + F(x_l))
             sub_out = NnAlgoNormalizationPlacement._apply_sublayer(x_tensor, sublayer_weights)
             sum_tensor = [
                 [x_tensor[i][j] + sub_out[i][j] for j in range(D)]
@@ -226,7 +224,6 @@ class NnAlgoNormalizationPlacement:
             ]
 
         elif placement == "sandwich_norm":
-            # x_{l+1} = x_l + LN_2(F(LN_1(x_l)))
             normed_x = [NnAlgoNormalizationPlacement._layer_norm_row(x_tensor[i], gamma, beta, eps) for i in range(B)]
             raw_sub = NnAlgoNormalizationPlacement._apply_sublayer(normed_x, sublayer_weights)
             sub_out = [NnAlgoNormalizationPlacement._layer_norm_row(raw_sub[i], gamma, beta, eps) for i in range(B)]
@@ -235,7 +232,6 @@ class NnAlgoNormalizationPlacement:
                     out_tensor[i][j] = x_tensor[i][j] + sub_out[i][j]
 
         elif placement == "deep_norm":
-            # x_{l+1} = LN(alpha * x_l + beta_s * F(x_l))
             raw_sub = NnAlgoNormalizationPlacement._apply_sublayer(x_tensor, sublayer_weights)
             sub_out = [[beta_sublayer * raw_sub[i][j] for j in range(D)] for i in range(B)]
             sum_tensor = [

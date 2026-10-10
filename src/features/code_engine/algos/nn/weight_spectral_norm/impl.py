@@ -136,8 +136,8 @@ class NnAlgoWeightSpectralNorm:
         - ALGO-NN-51
         - ALGO-NN-52
       references:
-        - miyato2018spectral
-        - salimans2016weight
+        - "https://arxiv.org/abs/1802.05957"
+        - "https://arxiv.org/abs/1602.07868"
     ---
     """
 
@@ -179,28 +179,23 @@ class NnAlgoWeightSpectralNorm:
             u_curr = list(u_vector)
             v_curr = list(v_vector)
 
-            # Ensure u_curr has non-zero norm
             u_norm = math.sqrt(sum(x * x for x in u_curr))
             if u_norm < eps:
                 u_curr = [1.0 / math.sqrt(float(M))] * M
 
             for _ in range(num_power_iterations):
-                # v = W^T u / ||W^T u||
                 v_unnorm = [0.0] * N
                 for j in range(N):
                     v_unnorm[j] = sum(weight_matrix[i][j] * u_curr[i] for i in range(M))
                 v_norm = math.sqrt(sum(x * x for x in v_unnorm)) + eps
                 v_curr = [x / v_norm for x in v_unnorm]
 
-                # u = W v / ||W v||
                 u_unnorm = [0.0] * M
                 for i in range(M):
                     u_unnorm[i] = sum(weight_matrix[i][j] * v_curr[j] for j in range(N))
                 u_norm = math.sqrt(sum(x * x for x in u_unnorm)) + eps
                 u_curr = [x / u_norm for x in u_unnorm]
 
-            # sigma = u^T W v
-            # W v
             wv = [sum(weight_matrix[i][j] * v_curr[j] for j in range(N)) for i in range(M)]
             sigma_val = sum(u_curr[i] * wv[i] for i in range(M))
             sigma_val = max(sigma_val, eps)
@@ -216,9 +211,6 @@ class NnAlgoWeightSpectralNorm:
                 "updated_v": v_curr,
             }
         else:
-            # weight_norm mode: per-row direction vector normalization scaled by g_scale
-            # Treats each row of W as direction vector v_i: w_i = g * (v_i / ||v_i||)
-            # Or Frobenius norm of matrix
             frob_norm = math.sqrt(sum(sum(x * x for x in row) for row in weight_matrix)) + eps
             for i in range(M):
                 for j in range(N):

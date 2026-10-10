@@ -80,7 +80,6 @@ class NnAlgoCosineDecayRestarts:
             lr = lr_min + 0.5 * (lr_max - lr_min) * (1.0 + math.cos(math.pi * progress))
             return {"learning_rate": lr, "current_cycle": 0}
 
-        # SGDR restarts
         t_cur = current_step
         t_i = total_steps
         cycle = 0

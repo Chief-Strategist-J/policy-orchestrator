@@ -135,8 +135,8 @@ class NnAlgoQkNormLogitSoftCapping:
         - ALGO-NN-53
         - ALGO-NN-56
       references:
-        - deghani2023scaling
-        - gemma2024technical
+        - "https://arxiv.org/abs/2302.05442"
+        - "https://doi.org/search?q=gemma2024technical"
     ---
     """
 
@@ -198,7 +198,6 @@ class NnAlgoQkNormLogitSoftCapping:
 
         eff_scale = scale if scale > 0.0 else (1.0 / math.sqrt(float(D)))
 
-        # Normalize Queries and Keys
         norm_q = [
             NnAlgoQkNormLogitSoftCapping._norm_vector(queries[i], qk_norm, gamma_vec, eps)
             for i in range(N_q)
@@ -208,7 +207,6 @@ class NnAlgoQkNormLogitSoftCapping:
             for j in range(N_k)
         ]
 
-        # Compute dot-product logits
         logits: List[List[float]] = [[0.0] * N_k for _ in range(N_q)]
         for i in range(N_q):
             for j in range(N_k):
@@ -216,7 +214,6 @@ class NnAlgoQkNormLogitSoftCapping:
                 scaled_score = raw_dot * eff_scale
 
                 if soft_cap_threshold > 0.0:
-                    # Soft-capping: c * tanh(score / c)
                     capped_score = soft_cap_threshold * math.tanh(scaled_score / soft_cap_threshold)
                     logits[i][j] = capped_score
                 else:

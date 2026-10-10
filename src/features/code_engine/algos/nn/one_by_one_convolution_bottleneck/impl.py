@@ -150,8 +150,8 @@ class NnAlgoOneByOneConvolutionBottleneck:
         - ALGO-NN-71
         - ALGO-NN-74
       references:
-        - lin2013network
-        - he2016deep
+        - "https://arxiv.org/abs/1312.4400"
+        - "https://doi.org/10.1109/CVPR.2016.90"
     ---
     """
 
@@ -186,7 +186,6 @@ class NnAlgoOneByOneConvolutionBottleneck:
         if padding < 0:
             raise ValueError("Precondition failed: padding must be >= 0.")
 
-        # 1. 1x1 Reduction: X (C_in, H, W) -> Z_red (C_mid, H, W)
         reduced_tensor: List[List[List[float]]] = [
             [[0.0] * W for _ in range(H)]
             for _ in range(C_mid)
@@ -200,7 +199,6 @@ class NnAlgoOneByOneConvolutionBottleneck:
                         acc += row_w[cin] * input_tensor[cin][h][w]
                     reduced_tensor[cm][h][w] = acc
 
-        # 2. 3x3 Spatial Convolution: Z_red (C_mid, H, W) -> Z_spat (C_mid, H_out, W_out)
         padded_H = H + 2 * padding
         padded_W = W + 2 * padding
         H_out = padded_H - K_h + 1
@@ -232,7 +230,6 @@ class NnAlgoOneByOneConvolutionBottleneck:
                                 acc += k_in[kh][kw] * pad_in[hout + kh][wout + kw]
                     spatial_tensor[cm_out][hout][wout] = acc
 
-        # 3. 1x1 Expansion: Z_spat (C_mid, H_out, W_out) -> Y (C_out, H_out, W_out)
         out_tensor: List[List[List[float]]] = [
             [[0.0] * W_out for _ in range(H_out)]
             for _ in range(C_out)

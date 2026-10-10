@@ -136,9 +136,9 @@ class NnAlgoResidualConnection:
         - ALGO-NN-03
         - ALGO-NN-08
       references:
-        - he2016deep
-        - he2016identity
-        - wang2022deepnorm
+        - "https://doi.org/10.1109/CVPR.2016.90"
+        - "https://doi.org/search?q=he2016identity"
+        - "https://doi.org/search?q=wang2022deepnorm"
     ---
     """
 
@@ -239,7 +239,7 @@ class NnAlgoResidualConnection:
             if has_projection:
                 proj_x: List[float] = [0.0] * d_out
                 for j in range(d_out):
-                    w_row = projection_weights[j]  # type: ignore[index]
+                    w_row = projection_weights[j]
                     dot = 0.0
                     for k in range(d_in):
                         dot += float(x_row[k]) * float(w_row[k])
@@ -251,7 +251,7 @@ class NnAlgoResidualConnection:
             for j in range(d_out):
                 fx_val = float(fx_row[j])
                 if topology == "gated_residual":
-                    gw = float(gate_weights[j])  # type: ignore[index]
+                    gw = float(gate_weights[j])
                     out_row[j] = id_vec[j] + gw * fx_val
                 else:
                     out_row[j] = id_vec[j] + alpha * fx_val
@@ -259,7 +259,7 @@ class NnAlgoResidualConnection:
             output_tensor.append(out_row)
 
         if has_projection:
-            jacobian: List[List[float]] = [[float(v) for v in row] for row in projection_weights]  # type: ignore[union-attr]
+            jacobian: List[List[float]] = [[float(v) for v in row] for row in projection_weights]
         else:
             jacobian = [[1.0 if i == j else 0.0 for j in range(d_in)] for i in range(d_in)]
 

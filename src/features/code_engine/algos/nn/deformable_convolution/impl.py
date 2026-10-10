@@ -1,49 +1,141 @@
-"""Deformable Convolution (DCN v1 / DCN v2) with Bilinear Interpolation Sampling.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: deformable_convolution
-  category: neural_network_architecture
-  subcategory: convolutional_networks
-  id: ALGO-NN-82
-  equation: |
-    y(p_0) = \\sum_{k=1}^K w_k \\cdot m_k(p_0) \\cdot x(p_0 + p_k + \\Delta p_k(p_0))
-    x(p) = \\sum_{q} \\max(0, 1 - |q_x - p_x|) \\cdot \\max(0, 1 - |q_y - p_y|) \\cdot x(q)
-  domain:
-    sampling_grid: "Fractional 2D coordinates (y, x) \\in \\mathbb{R}^2"
-    modulation_range: "m_k \\in [0, 1]"
-    kernel_size: K (typically 3x3 = 9 sampling points)
-  properties:
-    adaptive_receptive_field: true
-    bilinear_spatial_interpolation: true
-    differentiable_offset_sampling: true
-    content_dependent_deformation: true
-"""
-
-from typing import List, Tuple, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class DeformableConvolution:
-    """Deformable Convolutional Operator with Learned Spatial Offsets and Modulations."""
+class NnAlgoDeformableConvolution:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-82
+      name: NnAlgoDeformableConvolution
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.convolution
+        - nn.deformable
+        - nn.adaptive_sampling
+        - nn.dense_prediction
+      inputs:
+        type: object
+        required:
+          - x
+          - offsets
+          - weight
+        properties:
+          x:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: Input feature map tensor of shape (C_in, H, W).
+          offsets:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+            description: Learned continuous spatial offsets of shape (K, 2, H, W) where K=9 for 3x3 kernel.
+          weight:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+            description: Filter kernel weights of shape (C_out, C_in, 3, 3).
+          modulations:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: Optional DCNv2 modulation masks of shape (K, H, W) with values in [0, 1].
+          bias:
+            type: array
+            items:
+              type: number
+            description: Optional output bias vector of length C_out.
+      outputs:
+        type: object
+        required:
+          - output
+        properties:
+          output:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: Output convolved feature map tensor of shape (C_out, H, W).
+      parameters: {}
+      input_assumptions:
+        - x is a valid non-empty 3D tensor of shape [C_in, H, W]
+        - offsets provides K=9 pairs of (dy, dx) per spatial coordinate
+        - weight has shape [C_out, C_in, 3, 3]
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Bounded by bilinear interpolation precision at fractional coordinates"
+      uses_model: false
+      complexity:
+        variables:
+          K: number of sampling points (9)
+          C_in: input channels
+          C_out: output channels
+          H: height
+          W: width
+        time_worst: "O(K * C_in * C_out * H * W)"
+        time_typical: "O(K * C_in * C_out * H * W)"
+        space: "O(C_out * H * W)"
+      preconditions:
+        - len(input.x) > 0 and len(input.x[0]) > 0 and len(input.x[0][0]) > 0
+        - len(input.offsets) == 9
+        - len(input.weight[0]) == len(input.x) and len(input.weight[0][0]) == 3 and len(input.weight[0][0][0]) == 3
+      postconditions:
+        - len(output.output) == len(input.weight)
+        - len(output.output[0]) == len(input.x[0])
+        - len(output.output[0][0]) == len(input.x[0][0])
+      certificate: "y(p_0) = sum_{k=1}^K w_k * m_k(p_0) * x(p_0 + p_k + delta_p_k(p_0)) via bilinear interpolation"
+      compatible_adapters:
+        - ADAPTER-DEFORMABLE-CONV
+        - ADAPTER-OBJECT-DETECTOR
+      related_algos:
+        - ALGO-NN-67
+        - ALGO-NN-70
+        - ALGO-NN-88
+      references:
+        - "https://doi.org/10.1109/ICCV.2017.89"
+        - "https://doi.org/10.1109/CVPR.2019.00953"
+    ---
+    """
 
     @staticmethod
     def bilinear_interpolate_2d(
         x: List[List[float]],
         py: float,
-        px: float
+        px: float,
     ) -> float:
-        """Sample a 2D single-channel grid at continuous fractional coordinates (py, px) via bilinear interpolation.
-
-        Args:
-            x: 2D input matrix of shape [H, W].
-            py: Continuous y-coordinate (row).
-            px: Continuous x-coordinate (col).
-
-        Returns:
-            Bilinearly interpolated scalar value (0.0 if completely out of bounds).
-        """
         h = len(x)
         w = len(x[0])
 
@@ -78,26 +170,10 @@ class DeformableConvolution:
         offsets: List[List[List[List[float]]]],
         weight: List[List[List[List[float]]]],
         modulations: Optional[List[List[List[List[float]]]]] = None,
-        bias: Optional[List[float]] = None
-    ) -> List[List[List[float]]]:
-        """Execute Deformable Convolution 2D.
-
-        Standard 3x3 sampling grid relative offsets:
-          k=0: (-1,-1), k=1: (-1,0), k=2: (-1,1)
-          k=3: ( 0,-1), k=4: ( 0,0), k=5: ( 0,1)
-          k=6: ( 1,-1), k=7: ( 1,0), k=8: ( 1,1)
-
-        Args:
-            x: Input feature map [C_in, H, W].
-            offsets: Learned continuous offsets [2*K, H, W] or [K, 2, H, W] where K=9 for 3x3.
-                     Formatted here as [K, 2, H, W] where dim 1 is (dy, dx).
-            weight: Convolution filter weights [C_out, C_in, 3, 3].
-            modulations: Optional DCNv2 modulation masks [K, H, W] in range [0, 1].
-            bias: Optional output bias vector of length C_out.
-
-        Returns:
-            Output feature map [C_out, H, W].
-        """
+        bias: Optional[List[float]] = None,
+    ) -> Dict[str, Any]:
+        if not x or len(x) == 0 or len(x[0]) == 0 or len(x[0][0]) == 0:
+            raise ValueError("Precondition failed: x must be non-empty [C, H, W]")
         c_in = len(x)
         h = len(x[0])
         w = len(x[0][0])
@@ -110,8 +186,12 @@ class DeformableConvolution:
         ]
         k_pts = len(grid)
 
-        assert len(offsets) == k_pts, f"Offsets must provide {k_pts} sampling offsets."
-        assert len(weight[0]) == c_in and len(weight[0][0]) == 3 and len(weight[0][0][0]) == 3
+        if len(offsets) != k_pts:
+            raise ValueError(f"Precondition failed: offsets must have {k_pts} sampling points")
+        if len(weight[0]) != c_in or len(weight[0][0]) != 3 or len(weight[0][0][0]) != 3:
+            raise ValueError("Precondition failed: weight shape must be [C_out, C_in, 3, 3]")
+        if bias is not None and len(bias) != c_out:
+            raise ValueError("Precondition failed: bias length must match C_out")
 
         out = [[[0.0 for _ in range(w)] for _ in range(h)] for _ in range(c_out)]
 
@@ -129,12 +209,11 @@ class DeformableConvolution:
                         m_val = modulations[k][i][j] if modulations is not None else 1.0
 
                         for ci in range(c_in):
-                            val = DeformableConvolution.bilinear_interpolate_2d(x[ci], py, px)
-                            # weight coordinates for (gy, gx)
+                            val = NnAlgoDeformableConvolution.bilinear_interpolate_2d(x[ci], py, px)
                             w_ky = gy + 1
                             w_kx = gx + 1
                             w_val = weight[co][ci][w_ky][w_kx]
                             s += w_val * m_val * val
                     out[co][i][j] = s
 
-        return out
+        return {"output": out}

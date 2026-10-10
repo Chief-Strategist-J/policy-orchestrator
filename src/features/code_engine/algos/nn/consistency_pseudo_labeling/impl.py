@@ -112,8 +112,8 @@ class NnAlgoConsistencyPseudoLabeling:
         - ALGO-NN-61
         - ALGO-NN-62
       references:
-        - sohn2020fixmatch
-        - tarvainen2017mean
+        - "https://arxiv.org/abs/2001.07685"
+        - "https://doi.org/search?q=tarvainen2017mean"
     ---
     """
 
@@ -146,7 +146,6 @@ class NnAlgoConsistencyPseudoLabeling:
         loss_per_sample: List[float] = [0.0] * B
 
         for i in range(B):
-            # 1. Find max probability class from weak prediction
             max_prob = -1.0
             best_k = -1
             for k in range(K):
@@ -159,7 +158,6 @@ class NnAlgoConsistencyPseudoLabeling:
                 mask[i] = 1.0
                 pseudo_labels[i] = best_k
 
-                # 2. Compute cross-entropy on strong logits: -log(softmax(strong_logits)[best_k])
                 row_logits = strong_logits[i]
                 max_logit = max(row_logits)
                 exp_sum = sum(math.exp(z - max_logit) for z in row_logits)

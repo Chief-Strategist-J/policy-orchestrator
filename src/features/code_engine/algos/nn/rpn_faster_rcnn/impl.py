@@ -1,56 +1,106 @@
-"""Region Proposal Networks (RPN) and Two-Stage Object Detection.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: rpn_faster_rcnn
-  category: neural_network_architecture
-  subcategory: object_detection
-  id: ALGO-NN-84
-  equation: |
-    t_x = (x - x_a)/w_a, \\quad t_y = (y - y_a)/h_a
-    t_w = \\log(w / w_a), \\quad t_h = \\log(h / h_a)
-    p_{\\text{obj}} = \\sigma(\\text{logit}_{\\text{fg}} - \\text{logit}_{\\text{bg}})
-    \\mathcal{L}_{\\text{RPN}} = \\frac{1}{N_{\\text{cls}}} \\sum_i \\mathcal{L}_{\\text{cls}}(p_i, p_i^*) + \\lambda \\frac{1}{N_{\\text{reg}}} \\sum_i p_i^* \\text{SmoothL}_1(t_i - t_i^*)
-  domain:
-    spatial_grid: "H x W feature map cells"
-    anchors_per_cell: "K = |scales| x |aspect_ratios|"
-    iou_thresholds: "\\text{IoU}_{\\text{pos}} \\ge 0.7, \\text{IoU}_{\\text{neg}} < 0.3"
-  properties:
-    translation_invariant_anchors: true
-    multi_scale_proposals: true
-    smooth_l1_regression: true
-    two_stage_decoupling: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class RegionProposalNetwork:
-    """Region Proposal Network (RPN) generator, anchor decoder, and IoU matcher."""
+class NnAlgoRegionProposalNetwork:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-84
+      name: NnAlgoRegionProposalNetwork
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.object_detection
+        - nn.two_stage
+        - nn.region_proposals
+        - nn.anchors
+      inputs:
+        type: object
+        required:
+          - anchors
+          - deltas
+        properties:
+          anchors:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: List of anchor boxes in (x1, y1, x2, y2) format.
+          deltas:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Parameterized regression displacements (dx, dy, dw, dh).
+          clip_bounds:
+            type: array
+            items:
+              type: number
+            description: Optional (height, width) canvas dimensions to clip decoded boxes.
+      outputs:
+        type: object
+        required:
+          - proposals
+        properties:
+          proposals:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+            description: Decoded candidate bounding boxes in (x1, y1, x2, y2) format.
+      parameters: {}
+      input_assumptions:
+        - anchors and deltas have identical lengths N >= 1
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Exact parameter inversion"
+      uses_model: false
+      complexity:
+        variables:
+          N: number of candidate anchors
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+        - len(input.anchors) > 0 and len(input.anchors) == len(input.deltas)
+      postconditions:
+        - len(output.proposals) == len(input.anchors)
+      certificate: "x = x_a + dx * w_a, y = y_a + dy * h_a, w = w_a * exp(dw), h = h_a * exp(dh)"
+      compatible_adapters:
+        - ADAPTER-RPN-HEAD
+        - ADAPTER-OBJECT-DETECTOR
+      related_algos:
+        - ALGO-NN-80
+        - ALGO-NN-86
+        - ALGO-NN-88
+      references:
+        - "https://doi.org/10.1109/TPAMI.2016.2577031"
+        - "https://arxiv.org/abs/1506.01497"
+    ---
+    """
 
     @staticmethod
     def generate_base_anchors(
         base_size: float = 16.0,
         ratios: Tuple[float, ...] = (0.5, 1.0, 2.0),
-        scales: Tuple[float, ...] = (8.0, 16.0, 32.0)
+        scales: Tuple[float, ...] = (8.0, 16.0, 32.0),
     ) -> List[Tuple[float, float, float, float]]:
-        """Generate canonical base anchor boxes centered at (0, 0) in [xmin, ymin, xmax, ymax] format.
-
-        Args:
-            base_size: Reference anchor side length.
-            ratios: Aspect ratios (h/w or w/h).
-            scales: Multiplicative scale factors relative to base_size.
-
-        Returns:
-            List of K anchor boxes (xmin, ymin, xmax, ymax).
-        """
         anchors = []
         for scale in scales:
             area = (base_size * scale) ** 2
             for ratio in ratios:
-                # w * h = area, h / w = ratio => w = sqrt(area / ratio), h = w * ratio
                 w = math.sqrt(area / ratio)
                 h = w * ratio
                 x_ctr = 0.0
@@ -67,19 +117,8 @@ class RegionProposalNetwork:
         base_anchors: List[Tuple[float, float, float, float]],
         grid_h: int,
         grid_w: int,
-        stride: float = 16.0
+        stride: float = 16.0,
     ) -> List[List[List[Tuple[float, float, float, float]]]]:
-        """Project base anchors across all spatial grid locations [grid_h, grid_w].
-
-        Args:
-            base_anchors: List of K canonical anchors.
-            grid_h: Feature map height.
-            grid_w: Feature map width.
-            stride: Spatial stride of the feature map relative to input.
-
-        Returns:
-            3D list [grid_h][grid_w][k] of shifted anchor boxes [xmin, ymin, xmax, ymax].
-        """
         all_anchors = []
         for i in range(grid_h):
             row_anchors = []
@@ -96,17 +135,8 @@ class RegionProposalNetwork:
     @staticmethod
     def box_iou(
         box_a: Tuple[float, float, float, float],
-        box_b: Tuple[float, float, float, float]
+        box_b: Tuple[float, float, float, float],
     ) -> float:
-        """Compute Intersection-over-Union (IoU) between two bounding boxes in [x1, y1, x2, y2] format.
-
-        Args:
-            box_a: (x1, y1, x2, y2)
-            box_b: (x1, y1, x2, y2)
-
-        Returns:
-            IoU overlap ratio in [0.0, 1.0].
-        """
         x1 = max(box_a[0], box_b[0])
         y1 = max(box_a[1], box_b[1])
         x2 = min(box_a[2], box_b[2])
@@ -126,31 +156,21 @@ class RegionProposalNetwork:
     def decode_proposals(
         anchors: List[Tuple[float, float, float, float]],
         deltas: List[Tuple[float, float, float, float]],
-        clip_bounds: Optional[Tuple[float, float]] = None
-    ) -> List[Tuple[float, float, float, float]]:
-        """Decode predicted parameterized offsets (dx, dy, dw, dh) into bounding boxes [x1, y1, x2, y2].
+        clip_bounds: Optional[Tuple[float, float]] = None,
+    ) -> Dict[str, Any]:
+        if not anchors or len(anchors) != len(deltas):
+            raise ValueError("Precondition failed: len(input.anchors) == len(input.deltas) > 0")
 
-        Args:
-            anchors: List of anchor boxes [x1, y1, x2, y2].
-            deltas: Predicted deltas (dx, dy, dw, dh).
-            clip_bounds: Optional (img_height, img_width) for boundary clipping.
-
-        Returns:
-            List of decoded candidate boxes [x1, y1, x2, y2].
-        """
-        assert len(anchors) == len(deltas), "Anchors and deltas counts must match."
         decoded = []
-
         for (ax1, ay1, ax2, ay2), (dx, dy, dw, dh) in zip(anchors, deltas):
             wa = ax2 - ax1 + 1.0
             ha = ay2 - ay1 + 1.0
             ctr_xa = ax1 + 0.5 * wa
             ctr_ya = ay1 + 0.5 * ha
 
-            # Bounding box delta inversion
             pred_ctr_x = dx * wa + ctr_xa
             pred_ctr_y = dy * ha + ctr_ya
-            pred_w = wa * math.exp(min(dh, 10.0))  # clamp to avoid exp explosion
+            pred_w = wa * math.exp(min(dh, 10.0))
             pred_h = ha * math.exp(min(dw, 10.0))
 
             pred_x1 = pred_ctr_x - 0.5 * pred_w
@@ -167,11 +187,10 @@ class RegionProposalNetwork:
 
             decoded.append((pred_x1, pred_y1, pred_x2, pred_y2))
 
-        return decoded
+        return {"proposals": decoded}
 
     @staticmethod
     def smooth_l1_loss(pred: float, target: float, beta: float = 1.0) -> float:
-        """Smooth L1 Loss (Huber loss) with transition threshold beta."""
         diff = abs(pred - target)
         if diff < beta:
             return 0.5 * (diff ** 2) / beta

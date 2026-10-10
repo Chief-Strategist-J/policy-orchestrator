@@ -127,11 +127,11 @@ class NnAlgoReluFamily:
         - ALGO-NN-05
         - ALGO-NN-06
       references:
-        - nair2010rectified
-        - maas2013rectifier
-        - he2015delving
-        - clevert2015fast
-        - klambauer2017self
+        - "https://doi.org/search?q=nair2010rectified"
+        - "https://doi.org/search?q=maas2013rectifier"
+        - "https://doi.org/10.1109/ICCV.2015.123"
+        - "https://doi.org/search?q=clevert2015fast"
+        - "https://doi.org/search?q=klambauer2017self"
     ---
     """
 
@@ -207,7 +207,7 @@ class NnAlgoReluFamily:
                         out_val = alpha * x
                         grad_val = alpha
                 elif variant == "prelu":
-                    a_c = float(prelu_weights[c_idx])  # type: ignore[index]
+                    a_c = float(prelu_weights[c_idx])
                     if x > 0.0:
                         out_val = x
                         grad_val = 1.0

@@ -147,7 +147,7 @@ class NnAlgoBatchNormalization:
         - ALGO-NN-53
         - ALGO-NN-54
       references:
-        - ioffe2015batch
+        - "https://proceedings.mlr.press/v37/ioffe15.html"
     ---
     """
 
@@ -187,7 +187,6 @@ class NnAlgoBatchNormalization:
         out_tensor: List[List[float]] = [[0.0] * D for _ in range(B)]
 
         if training:
-            # Compute batch mean and batch variance per feature column
             mean_vec = [0.0] * D
             var_vec = [0.0] * D
             for j in range(D):
@@ -199,9 +198,7 @@ class NnAlgoBatchNormalization:
                 v_j = sq_diff / float(B)
                 var_vec[j] = v_j
 
-                # Update running statistics
                 updated_mean[j] = (1.0 - momentum) * running_mean[j] + momentum * m_j
-                # Sample variance adjustment for running variance if B > 1
                 unbiased_v_j = (sq_diff / float(B - 1)) if B > 1 else v_j
                 updated_var[j] = (1.0 - momentum) * running_var[j] + momentum * unbiased_v_j
 
@@ -213,7 +210,6 @@ class NnAlgoBatchNormalization:
             curr_mean = mean_vec
             curr_var = var_vec
         else:
-            # Inference mode uses running statistics
             curr_mean = list(running_mean)
             curr_var = list(running_var)
             for i in range(B):

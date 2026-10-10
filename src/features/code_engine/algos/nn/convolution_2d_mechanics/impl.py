@@ -135,7 +135,7 @@ class NnAlgoConvolution2dMechanics:
         - ALGO-NN-70
         - ALGO-NN-71
       references:
-        - lecun1998gradient
+        - "https://doi.org/10.1109/5.726791"
     ---
     """
 
@@ -182,7 +182,6 @@ class NnAlgoConvolution2dMechanics:
         if len(bias_vec) != C_out:
             raise ValueError("Precondition failed: bias vector length must equal C_out.")
 
-        # Construct padded input representation
         padded_input: List[List[List[float]]] = [
             [[0.0] * padded_W for _ in range(padded_H)]
             for _ in range(C_in)

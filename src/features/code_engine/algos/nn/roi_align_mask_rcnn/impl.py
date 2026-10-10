@@ -1,49 +1,123 @@
-"""RoIAlign and Mask R-CNN Instance Segmentation Extraction.
+from __future__ import annotations
 
-Formal Mathematical YAML Contract:
-----------------------------------
-contract:
-  name: roi_align_mask_rcnn
-  category: neural_network_architecture
-  subcategory: object_detection
-  id: ALGO-NN-88
-  equation: |
-    y(i, j) = \\frac{1}{N_{\\text{samples}}} \\sum_{s=1}^{N_{\\text{samples}}} \\text{BilinearSample}(F, p_y^{(s)}, p_x^{(s)})
-    \\mathcal{L}_{\\text{mask}} = - \\frac{1}{m^2} \\sum_{1 \\le u, v \\le m} \\left[ y_{u,v} \\log \\hat{y}_{u,v} + (1 - y_{u,v}) \\log (1 - \\hat{y}_{u,v}) \\right]
-  domain:
-    spatial_sampling: "Continuous floating-point coordinates (py, px) \\in \\mathbb{R}^2"
-    pooled_size: "k x k bins (e.g. 7x7 or 14x14)"
-    samples_per_bin: "Typically 2x2 = 4 bilinear points"
-  properties:
-    exact_spatial_alignment: true
-    no_coordinate_quantization: true
-    bilinear_continuous_interpolation: true
-    decoupled_binary_mask_branch: true
-"""
-
-from typing import List, Tuple, Dict, Any, Optional
 import math
+from typing import Any, Dict, List, Optional, Tuple
 
 
-class RoIAlignMaskRCNN:
-    """RoIAlign (Region of Interest Align) and Mask R-CNN head feature pooling engine."""
+class NnAlgoRoIAlignMaskRCNN:
+    """
+    ---
+    contract:
+      algo_id: ALGO-NN-88
+      name: NnAlgoRoIAlignMaskRCNN
+      version: 1.0.0
+      category: nn
+      capability_tags:
+        - nn.object_detection
+        - nn.instance_segmentation
+        - nn.roi_align
+        - nn.bilinear_sampling
+      inputs:
+        type: object
+        required:
+          - features
+          - roi
+        properties:
+          features:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: Input 3D feature map tensor of shape (C, H, W).
+          roi:
+            type: array
+            items:
+              type: number
+            description: Region of interest coordinates (x1, y1, x2, y2) in input image scale.
+          spatial_scale:
+            type: number
+            default: 0.0625
+            description: Feature stride scaling factor (e.g. 1/16).
+          pooled_height:
+            type: integer
+            default: 7
+            description: Output pooled bin height.
+          pooled_width:
+            type: integer
+            default: 7
+            description: Output pooled bin width.
+          sampling_ratio:
+            type: integer
+            default: 2
+            description: Number of regular sub-pixel sampling points per bin axis.
+      outputs:
+        type: object
+        required:
+          - pooled_features
+        properties:
+          pooled_features:
+            type: array
+            items:
+              type: array
+              items:
+                type: array
+                items:
+                  type: number
+            description: Exact non-quantized aligned feature tensor of shape (C, pooled_height, pooled_width).
+      parameters: {}
+      input_assumptions:
+        - features has shape [C, H, W]
+        - roi has 4 continuous coordinates [x1, y1, x2, y2]
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: "Exact bilinear continuous interpolation without spatial rounding"
+      uses_model: false
+      complexity:
+        variables:
+          C: channels
+          k_h: pooled height
+          k_w: pooled width
+          N_s: sampling points per bin (typically 4)
+        time_worst: "O(C * k_h * k_w * N_s)"
+        time_typical: "O(C * k_h * k_w * N_s)"
+        space: "O(C * k_h * k_w)"
+      preconditions:
+        - len(input.features) > 0 and len(input.features[0]) > 0
+        - len(input.roi) == 4
+        - input.pooled_height >= 1 and input.pooled_width >= 1
+      postconditions:
+        - len(output.pooled_features) == len(input.features)
+        - len(output.pooled_features[0]) == input.pooled_height
+        - len(output.pooled_features[0][0]) == input.pooled_width
+      certificate: "Exact continuous bilinear pooling: y(i, j) = 1/N_s * sum_s BilinearSample(F, p_y^{(s)}, p_x^{(s)})"
+      compatible_adapters:
+        - ADAPTER-ROIALIGN
+        - ADAPTER-MASK-RCNN
+      related_algos:
+        - ALGO-NN-82
+        - ALGO-NN-84
+        - ALGO-NN-86
+      references:
+        - "https://doi.org/10.1109/ICCV.2017.322"
+        - "https://arxiv.org/abs/1703.06870"
+    ---
+    """
 
     @staticmethod
     def bilinear_sample_2d(
         feat_map: List[List[float]],
         py: float,
-        px: float
+        px: float,
     ) -> float:
-        """Sample 2D feature map at fractional coordinates (py, px) without coordinate quantization.
-
-        Args:
-            feat_map: 2D matrix [H, W].
-            py: Floating-point y-coordinate.
-            px: Floating-point x-coordinate.
-
-        Returns:
-            Bilinearly interpolated value.
-        """
         h = len(feat_map)
         w = len(feat_map[0])
 
@@ -74,25 +148,16 @@ class RoIAlignMaskRCNN:
         spatial_scale: float = 1.0 / 16.0,
         pooled_height: int = 7,
         pooled_width: int = 7,
-        sampling_ratio: int = 2
-    ) -> List[List[List[float]]]:
-        """Perform exact RoIAlign without spatial quantization.
+        sampling_ratio: int = 2,
+    ) -> Dict[str, Any]:
+        if not features or len(features) == 0:
+            raise ValueError("Precondition failed: features must be non-empty 3D tensor")
+        if len(roi) != 4:
+            raise ValueError("Precondition failed: roi must be 4 coordinates (x1, y1, x2, y2)")
 
-        Args:
-            features: 3D tensor [C, H, W].
-            roi: Region of interest (x1, y1, x2, y2) in image coordinates.
-            spatial_scale: Feature map scale relative to image (e.g. 1/16).
-            pooled_height: Output grid height k_h.
-            pooled_width: Output grid width k_w.
-            sampling_ratio: Number of sampling points along each bin axis (default 2 -> 4 points).
-
-        Returns:
-            Pooled feature tensor of shape [C, pooled_height, pooled_width].
-        """
         c = len(features)
         x1_img, y1_img, x2_img, y2_img = roi
 
-        # Map RoI to feature map continuous coordinates
         roi_start_w = x1_img * spatial_scale
         roi_start_h = y1_img * spatial_scale
         roi_end_w = x2_img * spatial_scale
@@ -122,35 +187,24 @@ class RoIAlignMaskRCNN:
                         py = bin_y + (sh + 0.5) * (bin_size_h / sample_h_count)
                         for sw in range(sample_w_count):
                             px = bin_x + (sw + 0.5) * (bin_size_w / sample_w_count)
-                            accum += RoIAlignMaskRCNN.bilinear_sample_2d(f_channel, py, px)
+                            accum += NnAlgoRoIAlignMaskRCNN.bilinear_sample_2d(f_channel, py, px)
 
                     pooled[ch][ph][pw] = accum / num_samples
 
-        return pooled
+        return {"pooled_features": pooled}
 
     @staticmethod
     def mask_bce_loss(
         pred_mask_logits: List[List[float]],
         gt_binary_mask: List[List[float]],
-        eps: float = 1e-7
+        eps: float = 1e-7,
     ) -> float:
-        """Compute per-pixel Binary Cross-Entropy loss for predicted mask logits.
-
-        Args:
-            pred_mask_logits: Matrix of shape [M, M] raw logits.
-            gt_binary_mask: Matrix of shape [M, M] with entries in {0, 1}.
-            eps: Numerical stability constant.
-
-        Returns:
-            Average binary cross entropy across all M x M pixels.
-        """
         m = len(pred_mask_logits)
         total_loss = 0.0
 
         for i in range(m):
             for j in range(m):
                 logit = pred_mask_logits[i][j]
-                # Stable sigmoid
                 if logit >= 0:
                     prob = 1.0 / (1.0 + math.exp(-logit))
                 else:

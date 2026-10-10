@@ -120,9 +120,9 @@ class NnAlgoSigmoidTanh:
         - ALGO-NN-04
         - ALGO-NN-07
       references:
-        - hochreiter1997long
-        - lecun1998efficient
-        - glorot2010understanding
+        - "https://doi.org/10.1162/neco.1997.9.8.1735"
+        - "https://doi.org/search?q=lecun1998efficient"
+        - "https://proceedings.mlr.press/v9/glorot10a.html"
     ---
     """
 

@@ -129,8 +129,8 @@ class NnAlgoDenseHighwayConnection:
       related_algos:
         - ALGO-NN-10
       references:
-        - huang2017densenet
-        - srivastava2015highway
+        - "https://doi.org/search?q=huang2017densenet"
+        - "https://doi.org/search?q=srivastava2015highway"
     ---
     """
 
@@ -143,7 +143,6 @@ class NnAlgoDenseHighwayConnection:
         gate_bias: Optional[Sequence[float]] = None,
         carry_bias_init: float = -2.0,
     ) -> Dict[str, Any]:
-        # --- Precondition Validation ---
         if not layer_inputs or len(layer_inputs) == 0:
             raise ValueError("Precondition failed: len(input.layer_inputs) > 0")
 
@@ -166,7 +165,6 @@ class NnAlgoDenseHighwayConnection:
                         raise ValueError(f"Precondition failed: non-finite value {val} in layer_inputs")
 
         if mode == "densenet_concat":
-            # Concatenate along channel dimension D for each sample b
             all_tensors = list(layer_inputs)
             if current_layer_output is not None:
                 if len(current_layer_output) != batch_size:
@@ -196,11 +194,10 @@ class NnAlgoDenseHighwayConnection:
             if len(current_layer_output) != batch_size:
                 raise ValueError("Precondition failed: current_layer_output batch size mismatch")
 
-            input_x = layer_inputs[-1]  # Primary skip source
+            input_x = layer_inputs[-1]
             d_in = len(input_x[0])
             d_out = len(current_layer_output[0])
 
-            # Transform gate: T(x) = sigmoid(x W_T^T + b_T)
             gate_activations: List[List[float]] = []
             output_tensor = []
 
@@ -212,7 +209,6 @@ class NnAlgoDenseHighwayConnection:
 
                 for j in range(d_out):
                     if gate_weights is not None:
-                        # Compute dot product
                         dot = sum(float(gate_weights[j][k]) * float(x_b[k]) for k in range(d_in))
                     else:
                         if d_in != d_out:
@@ -222,14 +218,12 @@ class NnAlgoDenseHighwayConnection:
                     bias_term = float(gate_bias[j]) if gate_bias is not None else float(carry_bias_init)
                     z = dot + bias_term
 
-                    # Numerically stable sigmoid: T(z)
                     if z >= 0:
                         t_val = 1.0 / (1.0 + math.exp(-z))
                     else:
                         t_val = math.exp(z) / (1.0 + math.exp(z))
 
                     t_row.append(t_val)
-                    # Highway output: y = T(x) * H(x) + (1 - T(x)) * x
                     x_val = float(x_b[j]) if d_in == d_out else 0.0
                     y_val = t_val * float(h_b[j]) + (1.0 - t_val) * x_val
                     y_row.append(y_val)

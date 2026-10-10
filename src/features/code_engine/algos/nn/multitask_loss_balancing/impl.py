@@ -90,7 +90,6 @@ class NnAlgoMultitaskLossBalancing:
             for l_k, s_k in zip(losses, log_vars):
                 if l_k < 0.0:
                     raise ValueError(f"Precondition failed: task loss must be non-negative, got {l_k}.")
-                # Loss = exp(-s_k) * L_k + 0.5 * s_k
                 w_k = math.exp(-s_k)
                 weights.append(w_k)
                 total_loss += (w_k * l_k + 0.5 * s_k)
@@ -106,22 +105,18 @@ class NnAlgoMultitaskLossBalancing:
             k = len(gradients)
             p = len(gradients[0])
 
-            # Copy gradients
             g_proj = [[float(v) for v in row] for row in gradients]
 
             for i in range(k):
                 for j in range(k):
                     if i != j:
-                        # Compute dot product <g_i, g_j>
                         dot = sum(g_proj[i][idx] * gradients[j][idx] for idx in range(p))
                         if dot < 0.0:
-                            # Project g_i onto normal plane of g_j: g_i = g_i - (dot / ||g_j||^2) * g_j
                             norm_sq = sum(gradients[j][idx] ** 2 for idx in range(p)) + 1e-12
                             scale = dot / norm_sq
                             for idx in range(p):
                                 g_proj[i][idx] -= scale * gradients[j][idx]
 
-            # Aggregate final gradient: sum across all tasks
             final_grad = [sum(g_proj[i][idx] for i in range(k)) for idx in range(p)]
 
             return {

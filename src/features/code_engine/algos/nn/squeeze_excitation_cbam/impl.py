@@ -130,8 +130,8 @@ class NnAlgoSqueezeExcitationCbam:
         - ALGO-NN-73
         - ALGO-NN-74
       references:
-        - hu2018squeeze
-        - woo2018cbam
+        - "https://doi.org/10.1109/CVPR.2018.00745"
+        - "https://doi.org/search?q=woo2018cbam"
     ---
     """
 
@@ -151,12 +151,10 @@ class NnAlgoSqueezeExcitationCbam:
     ) -> List[float]:
         C = len(vec)
         C_mid = len(w1)
-        # Layer 1 + ReLU
         h1 = [0.0] * C_mid
         for cm in range(C_mid):
             acc = sum(w1[cm][c] * vec[c] for c in range(C))
             h1[cm] = max(0.0, acc)
-        # Layer 2 (linear)
         h2 = [0.0] * C
         for c in range(C):
             h2[c] = sum(w2[c][cm] * h1[cm] for cm in range(C_mid))
@@ -186,16 +184,13 @@ class NnAlgoSqueezeExcitationCbam:
             raise ValueError("Precondition failed: w2_expand shape must match (C, C_mid).")
 
         if mode == "se":
-            # 1. Squeeze: Global Average Pooling
             z_gap = [0.0] * C
             for c in range(C):
                 z_gap[c] = sum(sum(input_tensor[c][h][w] for w in range(W)) for h in range(H)) / total_pixels
 
-            # 2. Excitation: MLP -> Sigmoid
             logits = NnAlgoSqueezeExcitationCbam._mlp_forward(z_gap, w1_reduce, w2_expand)
             channel_weights = [NnAlgoSqueezeExcitationCbam._sigmoid(val) for val in logits]
 
-            # 3. Recalibration
             out_tensor: List[List[List[float]]] = [
                 [[channel_weights[c] * input_tensor[c][h][w] for w in range(W)] for h in range(H)]
                 for c in range(C)
@@ -207,8 +202,6 @@ class NnAlgoSqueezeExcitationCbam:
             }
 
         else:
-            # CBAM mode: Channel Attention + Spatial Attention
-            # Channel Attention: AvgPool + MaxPool -> Shared MLP -> Add -> Sigmoid
             z_avg = [0.0] * C
             z_max = [-float("inf")] * C
             for c in range(C):
@@ -231,19 +224,16 @@ class NnAlgoSqueezeExcitationCbam:
                 for c in range(C)
             ]
 
-            # Scale channels
             scaled_channels: List[List[List[float]]] = [
                 [[channel_weights[c] * input_tensor[c][h][w] for w in range(W)] for h in range(H)]
                 for c in range(C)
             ]
 
-            # Spatial Attention: compute Avg and Max across channels for each (h, w)
             spatial_weights: List[List[float]] = [[1.0] * W for _ in range(H)]
             if spatial_conv_weights is not None and len(spatial_conv_weights) == 2:
                 K_s = len(spatial_conv_weights[0])
                 pad_s = K_s // 2
 
-                # Channel pool: 2 maps of shape (H, W)
                 avg_map = [[0.0] * W for _ in range(H)]
                 max_map = [[0.0] * W for _ in range(H)]
                 for h in range(H):
@@ -253,7 +243,6 @@ class NnAlgoSqueezeExcitationCbam:
                         avg_map[h][w] = pix_sum / float(C)
                         max_map[h][w] = pix_max
 
-                # Padded convolution of the 2-channel descriptor
                 padded_avg = [[0.0] * (W + 2 * pad_s) for _ in range(H + 2 * pad_s)]
                 padded_max = [[0.0] * (W + 2 * pad_s) for _ in range(H + 2 * pad_s)]
                 for h in range(H):
@@ -273,7 +262,6 @@ class NnAlgoSqueezeExcitationCbam:
                                 acc += w_max_k[kh][kw] * padded_max[h + kh][w + kw]
                         spatial_weights[h][w] = NnAlgoSqueezeExcitationCbam._sigmoid(acc)
 
-            # Multiply spatial attention
             out_tensor = [
                 [[scaled_channels[c][h][w] * spatial_weights[h][w] for w in range(W)] for h in range(H)]
                 for c in range(C)

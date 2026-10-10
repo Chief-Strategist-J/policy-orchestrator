@@ -109,7 +109,7 @@ class NnAlgoLayerNormalization:
         - ALGO-NN-53
         - ALGO-NN-54
       references:
-        - ba2016layer
+        - "https://arxiv.org/abs/1607.06450"
     ---
     """
 

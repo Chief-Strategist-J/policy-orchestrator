@@ -148,8 +148,8 @@ class NnAlgoInceptionMultibranchBlocks:
         - ALGO-NN-73
         - ALGO-NN-74
       references:
-        - szegedy2015going
-        - szegedy2016rethinking
+        - "https://doi.org/10.1109/CVPR.2015.7298594"
+        - "https://doi.org/search?q=szegedy2016rethinking"
     ---
     """
 
@@ -248,23 +248,18 @@ class NnAlgoInceptionMultibranchBlocks:
         H = len(input_tensor[0])
         W = len(input_tensor[0][0])
 
-        # Branch 1: 1x1 conv
         b1 = NnAlgoInceptionMultibranchBlocks._conv1x1(input_tensor, branch1_w1x1)
 
-        # Branch 2: 1x1 reduce -> 3x3 conv (pad 1)
         b2_red = NnAlgoInceptionMultibranchBlocks._conv1x1(input_tensor, branch2_w_red)
         b2 = NnAlgoInceptionMultibranchBlocks._conv2d_padded(b2_red, branch2_w3x3, pad=1)
 
-        # Branch 3: 1x1 reduce -> 5x5 conv (pad 2) (or 3x3 pad 1)
         pad3 = len(branch3_w5x5[0][0]) // 2
         b3_red = NnAlgoInceptionMultibranchBlocks._conv1x1(input_tensor, branch3_w_red)
         b3 = NnAlgoInceptionMultibranchBlocks._conv2d_padded(b3_red, branch3_w5x5, pad=pad3)
 
-        # Branch 4: 3x3 MaxPool -> 1x1 conv
         b4_pool = NnAlgoInceptionMultibranchBlocks._maxpool3x3_same(input_tensor)
         b4 = NnAlgoInceptionMultibranchBlocks._conv1x1(b4_pool, branch4_w1x1)
 
-        # Concatenate along channel dimension
         out_tensor: List[List[List[float]]] = []
         for ch in b1:
             out_tensor.append(ch)

@@ -100,13 +100,11 @@ class NnAlgoOverlapSegmentationLosses:
             sum_p += p
             sum_g += g
 
-        # Dice score and loss
         dice_num = 2.0 * intersection + smooth
         dice_den = sum_p + sum_g + smooth
         dice_coeff = dice_num / dice_den
         dice_loss = 1.0 - dice_coeff
 
-        # IoU / Jaccard score and loss
         iou_num = intersection + smooth
         iou_den = sum_p + sum_g - intersection + smooth
         iou_score = iou_num / iou_den
@@ -115,13 +113,11 @@ class NnAlgoOverlapSegmentationLosses:
         grads: List[float] = []
         if loss_type == "dice":
             loss_val = dice_loss
-            # dL/dp_i = - [ 2*g_i * (sum_p + sum_g + smooth) - (2*intersection + smooth) ] / (sum_p + sum_g + smooth)^2
             for p, g in zip(probabilities, targets):
                 g_grad = -(2.0 * g * dice_den - dice_num) / (dice_den ** 2)
                 grads.append(g_grad)
         elif loss_type == "iou":
             loss_val = iou_loss
-            # dL/dp_i = - [ g_i * iou_den - (1 - g_i) * iou_num ] / (iou_den^2)
             for p, g in zip(probabilities, targets):
                 g_grad = -(g * iou_den - (1.0 - g) * iou_num) / (iou_den ** 2)
                 grads.append(g_grad)

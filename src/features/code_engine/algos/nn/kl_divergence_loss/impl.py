@@ -114,18 +114,16 @@ class NnAlgoKlDivergenceLoss:
                     p_j = target_row[j]
                     if p_j < 0.0:
                         raise ValueError(f"Precondition failed: probabilities must be non-negative, got {p_j}.")
-                    log_p_j = math.log(p_j) if p_j > 1e-15 else -34.538776  # log(1e-15)
+                    log_p_j = math.log(p_j) if p_j > 1e-15 else -34.538776
 
                 log_q_j = log_q[j]
 
-                # D_KL(P || Q) element: p_j * (log p_j - log q_j)
                 if p_j > 0.0:
                     kl_elem = p_j * (log_p_j - log_q_j)
                 else:
                     kl_elem = 0.0
 
                 sample_kl += kl_elem
-                # d(D_KL)/d(log q_j) = -p_j
                 grad_row.append(-p_j)
 
             sample_losses.append(sample_kl)

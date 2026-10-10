@@ -128,8 +128,8 @@ class NnAlgoPoolingLayers:
         - ALGO-NN-67
         - ALGO-NN-68
       references:
-        - boureau2010theoretical
-        - lin2013network
+        - "https://doi.org/search?q=boureau2010theoretical"
+        - "https://arxiv.org/abs/1312.4400"
     ---
     """
 

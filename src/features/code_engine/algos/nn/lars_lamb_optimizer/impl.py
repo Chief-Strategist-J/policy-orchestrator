@@ -136,7 +136,7 @@ class NnAlgoLarsLambOptimizer:
                 raw_updates.append(r_update)
                 new_m.append(m_next)
                 new_v.append(v_next)
-        else:  # lars
+        else:
             for theta, g in zip(parameters, gradients):
                 r_update = g + weight_decay * theta
                 raw_updates.append(r_update)

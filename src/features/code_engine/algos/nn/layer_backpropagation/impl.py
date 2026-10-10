@@ -106,7 +106,6 @@ class NnAlgoLayerBackpropagation:
         if len(output_grad) != b or len(output_grad[0]) != d_out:
             raise ValueError(f"Precondition failed: output_grad shape incompatible with batch B={b}, D_out={d_out}.")
 
-        # Compute dL/dZ after activation derivative
         delta_z: List[List[float]] = []
         for i in range(b):
             row_delta: List[float] = []
@@ -130,13 +129,10 @@ class NnAlgoLayerBackpropagation:
                 row_delta.append(dz)
             delta_z.append(row_delta)
 
-        # dL/dX = delta_Z * W (B, D_out) @ (D_out, D_in) -> (B, D_in)
         grad_inputs = [[sum(delta_z[i][j] * weights[j][k] for j in range(d_out)) for k in range(d_in)] for i in range(b)]
 
-        # dL/dW = delta_Z^T * X (D_out, B) @ (B, D_in) -> (D_out, D_in)
         grad_weights = [[sum(delta_z[i][j] * inputs[i][k] for i in range(b)) for k in range(d_in)] for j in range(d_out)]
 
-        # dL/db = sum across batch of delta_Z -> (D_out,)
         grad_bias = [sum(delta_z[i][j] for i in range(b)) for j in range(d_out)]
 
         return {

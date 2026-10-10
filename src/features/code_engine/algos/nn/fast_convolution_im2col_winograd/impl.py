@@ -128,8 +128,8 @@ class NnAlgoFastConvolutionIm2colWinograd:
         - ALGO-NN-71
         - ALGO-NN-73
       references:
-        - chetlur2014cudnn
-        - lavin2016fast
+        - "https://doi.org/search?q=chetlur2014cudnn"
+        - "https://doi.org/search?q=lavin2016fast"
     ---
     """
 
@@ -223,13 +223,11 @@ class NnAlgoFastConvolutionIm2colWinograd:
         mul_count = 0
 
         if method == "im2col_gemm" or method == "winograd_f23":
-            # Materialize im2col
             im2col_mat = NnAlgoFastConvolutionIm2colWinograd._im2col(
                 input_tensor, C_in, H_in, W_in, K_h, K_w, stride, padding, H_out, W_out
             )
             patch_dim = C_in * K_h * K_w
 
-            # Flatten weight kernels into (C_out, patch_dim)
             weights_mat: List[List[float]] = [[0.0] * patch_dim for _ in range(C_out)]
             for cout in range(C_out):
                 col_idx = 0
@@ -239,7 +237,6 @@ class NnAlgoFastConvolutionIm2colWinograd:
                             weights_mat[cout][col_idx] = float(weight_kernels[cout][cin][kh][kw])
                             col_idx += 1
 
-            # GEMM: Y_mat = im2col_mat * weights_mat^T of shape (H_out * W_out, C_out)
             num_spatial = H_out * W_out
             for s_idx in range(num_spatial):
                 hout = s_idx // W_out

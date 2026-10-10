@@ -89,7 +89,6 @@ class NnAlgoStraightThroughEstimator:
             else:
                 raise ValueError(f"Precondition failed: unknown mode {mode}")
 
-            # STE backward: pass gradient if within [-clip_threshold, clip_threshold]
             if abs(x) <= clip_threshold:
                 dx = dy
             else:

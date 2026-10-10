@@ -74,15 +74,12 @@ class NnAlgoMaximalUpdateParam:
         ratio = float(target_width) / float(base_width)
 
         if layer_type == "hidden_weight":
-            # In muP: hidden weights learning rate scales as 1 / ratio
             scaled_lr = base_lr / ratio
             init_std = 1.0 / math.sqrt(ratio)
         elif layer_type == "input_embedding":
-            # Input embeddings learning rate remains constant O(1)
             scaled_lr = base_lr
             init_std = 1.0
         elif layer_type == "output_head":
-            # Output head learning rate scales as 1 / ratio
             scaled_lr = base_lr / ratio
             init_std = 1.0 / ratio
         else:

@@ -94,7 +94,7 @@ class NnAlgoRmsNorm:
         - ALGO-NN-52
         - ALGO-NN-57
       references:
-        - zhang2019root
+        - "https://arxiv.org/abs/1910.07467"
     ---
     """
 

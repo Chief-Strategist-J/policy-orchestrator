@@ -144,8 +144,8 @@ class NnAlgoMlpFeedforward:
         - ALGO-NN-04
         - ALGO-NN-06
       references:
-        - cybenko1989approximation
-        - hornik1991approximation
+        - "https://doi.org/search?q=cybenko1989approximation"
+        - "https://doi.org/search?q=hornik1991approximation"
     ---
     """
 
@@ -177,7 +177,6 @@ class NnAlgoMlpFeedforward:
         """
         Executes a deterministic forward pass of an L-layer Multilayer Perceptron.
         """
-        # 1. Precondition validation
         if not isinstance(input_vector, Sequence) or len(input_vector) == 0:
             raise ValueError("Precondition failed: len(input.input_vector) > 0")
 
@@ -230,7 +229,6 @@ class NnAlgoMlpFeedforward:
             layer_dimensions.append(d_out)
             current_in_dim = d_out
 
-        # 2. Forward Propagation
         current_activation: List[float] = [float(x) for x in input_vector]
         layer_pre_activations: List[List[float]] = []
         layer_activations: List[List[float]] = []

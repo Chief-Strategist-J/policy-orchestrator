@@ -96,14 +96,11 @@ class NnAlgoLionOptimizer:
         new_m: List[float] = []
 
         for theta, g, m in zip(parameters, gradients, exp_avg):
-            # Compute update direction using sign of interpolated momentum
             interp = beta1 * m + (1.0 - beta1) * g
             sign_update = 1.0 if interp > 0.0 else (-1.0 if interp < 0.0 else 0.0)
 
-            # Update weights: theta = theta * (1 - lr * lambda) - lr * sign_update
             theta_next = theta * (1.0 - lr * weight_decay) - lr * sign_update
 
-            # Update momentum buffer: m = beta2 * m + (1 - beta2) * g
             m_next = beta2 * m + (1.0 - beta2) * g
 
             new_params.append(theta_next)

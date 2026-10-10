@@ -106,7 +106,7 @@ class NnAlgoSpecAugment:
         - ALGO-NN-61
         - ALGO-NN-66
       references:
-        - park2019specaugment
+        - "https://arxiv.org/abs/1904.08779"
     ---
     """
 
@@ -135,7 +135,6 @@ class NnAlgoSpecAugment:
         freq_masked_cells = 0
         time_masked_cells = 0
 
-        # Apply Frequency Masking
         if freq_masks:
             for mask_pair in freq_masks:
                 if len(mask_pair) != 2:
@@ -150,7 +149,6 @@ class NnAlgoSpecAugment:
                         out_spec[f][t] = mask_value
                         freq_masked_cells += 1
 
-        # Apply Time Masking
         if time_masks:
             for mask_pair in time_masks:
                 if len(mask_pair) != 2:

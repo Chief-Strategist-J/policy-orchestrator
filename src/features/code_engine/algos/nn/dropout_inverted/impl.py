@@ -111,7 +111,7 @@ class NnAlgoDropoutInverted:
         - ALGO-NN-59
         - ALGO-NN-60
       references:
-        - srivastava2014dropout
+        - "https://jmlr.org/papers/v15/srivastava14a.html"
     ---
     """
 
@@ -159,7 +159,6 @@ class NnAlgoDropoutInverted:
             rng = random.Random(seed)
             for i in range(B):
                 for j in range(D):
-                    # Deterministic Bernoulli draw
                     applied_mask[i][j] = 1.0 if rng.random() < keep_prob else 0.0
 
         for i in range(B):

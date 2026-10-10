@@ -107,17 +107,14 @@ class NnAlgoAdafactorOptimizer:
         if len(grad_matrix) != r or len(grad_matrix[0]) != c or len(row_factor) != r or len(col_factor) != c:
             raise ValueError("Precondition failed: matrix dimension mismatch.")
 
-        # Compute empirical mean squared gradient across rows and cols
         row_means = [sum(grad_matrix[i][j] ** 2 for j in range(c)) / float(c) for i in range(r)]
         col_means = [sum(grad_matrix[i][j] ** 2 for i in range(r)) / float(r) for j in range(c)]
 
-        # Update row and col factors with EMA
         new_row = [beta2 * rf + (1.0 - beta2) * rm for rf, rm in zip(row_factor, row_means)]
         new_col = [beta2 * cf + (1.0 - beta2) * cm for cf, cm in zip(col_factor, col_means)]
 
         total_row_sum = sum(new_row) + eps
 
-        # Rank-1 reconstruction of second moment: V_{ij} = (new_row_i * new_col_j) / sum(new_row)
         new_weights: List[List[float]] = []
         for i in range(r):
             row_w: List[float] = []

@@ -138,8 +138,8 @@ class NnAlgoWeightTying:
         - ALGO-NN-03
         - ALGO-NN-09
       references:
-        - press2017tying
-        - inan2016tying
+        - "https://doi.org/search?q=press2017tying"
+        - "https://doi.org/search?q=inan2016tying"
     ---
     """
 
@@ -153,7 +153,6 @@ class NnAlgoWeightTying:
         input_gradients: Optional[Sequence[Sequence[float]]] = None,
         output_gradients: Optional[Sequence[Sequence[float]]] = None,
     ) -> Dict[str, Any]:
-        # --- Precondition Validation ---
         if not hidden_states or len(hidden_states) == 0:
             raise ValueError("Precondition failed: len(input.hidden_states) > 0")
         if not embedding_matrix or len(embedding_matrix) == 0:
@@ -174,7 +173,6 @@ class NnAlgoWeightTying:
                 f"Precondition failed: output_bias length {len(output_bias)} != vocabulary size {v_size}"
             )
 
-        # 1. Forward Logit Computation: Logits = H * E^T + b
         scale_factor = (1.0 / math.sqrt(d_model)) if scale_by_sqrt_d else 1.0
         logits: List[List[float]] = []
 
@@ -190,7 +188,6 @@ class NnAlgoWeightTying:
                 row_logits.append(dot)
             logits.append(row_logits)
 
-        # 2. Tied Gradient Accumulation
         tied_gradients: Optional[List[List[float]]] = None
         if mode == "tied_gradient_accumulation":
             if input_gradients is None or output_gradients is None:

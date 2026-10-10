@@ -132,16 +132,13 @@ class NnAlgoLabelSmoothing:
             probs.append(p_row)
             log_probs.append(lp_row)
 
-            # Construct smoothed target vector q_i
             q_row = [uniform_prob] * c
             q_row[y] += one_minus_eps
             smooth_targets.append(q_row)
 
-            # Smoothed Cross Entropy: H(q, p) = - sum_j q_j * log(p_j)
             loss_i = -sum(q_row[j] * lp_row[j] for j in range(c))
             sample_losses.append(loss_i)
 
-            # Gradient wrt logits: dL/dz_j = p_j - q_j
             grad_row = [p_row[j] - q_row[j] for j in range(c)]
             grads.append(grad_row)
 

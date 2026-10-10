@@ -118,8 +118,8 @@ class NnAlgoStochasticDepth:
         - ALGO-NN-74
         - ALGO-NN-81
       references:
-        - huang2016deep
-        - touvron2021training
+        - "https://doi.org/10.1007/978-3-319-46493-0_39"
+        - "https://doi.org/search?q=touvron2021training"
     ---
     """
 

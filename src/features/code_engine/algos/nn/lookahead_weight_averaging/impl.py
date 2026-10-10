@@ -84,9 +84,7 @@ class NnAlgoLookaheadWeightAveraging:
                 "updated_slow_weights": new_slow,
             }
         elif mode == "lookahead":
-            # Slow weights take step: slow = slow + alpha * (fast - slow)
             new_slow = [s + alpha * (f - s) for s, f in zip(slow_weights, fast_weights)]
-            # Fast weights reset to new slow weights
             return {
                 "updated_slow_weights": new_slow,
                 "synced_fast_weights": list(new_slow),

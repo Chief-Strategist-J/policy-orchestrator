@@ -129,9 +129,9 @@ class NnAlgoLinearAffineLayer:
         - ALGO-NN-08
         - ALGO-NN-10
       references:
-        - glorot2010understanding
-        - he2015delving
-        - lecun1998efficient
+        - "https://proceedings.mlr.press/v9/glorot10a.html"
+        - "https://doi.org/10.1109/ICCV.2015.123"
+        - "https://doi.org/search?q=lecun1998efficient"
     ---
     """
 
@@ -182,7 +182,6 @@ class NnAlgoLinearAffineLayer:
         """
         Executes deterministic affine transformation Y = X W^T + b.
         """
-        # 1. Validation
         if not isinstance(input_batch, Sequence) or len(input_batch) == 0:
             raise ValueError("Precondition failed: len(input.input_batch) > 0")
 
@@ -232,7 +231,6 @@ class NnAlgoLinearAffineLayer:
         else:
             b_vec = [0.0] * d_out
 
-        # 2. Compute affine matrix multiplication: Y = X W^T + b
         output_batch: List[List[float]] = []
         for b_i in range(batch_size):
             x_row = input_batch[b_i]

@@ -116,7 +116,7 @@ class NnAlgoRegressionLosses:
         element_grads: List[float] = []
 
         for y_hat, y in zip(predictions, targets):
-            diff = y_hat - y  # residual r_i
+            diff = y_hat - y
             abs_diff = abs(diff)
 
             if loss_type == "mse":
