@@ -1,222 +1,172 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{booktabs}
 \usepackage{hyperref}
 
-\newtheorem{theorem}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{property}{Property}
+\newtheorem{remark}{Remark}[section]
 
-\title{Mathematical Formulations, Bilinear Gating Dynamics, and Parameter Parity Analysis of Gated Linear Units (ALGO-NN-08)}
-\author{Algorithms Engineering Group}
-\date{\today}
+\title{\textbf{Rigorous Mathematical Specification, Bilinear Multiplicative Interactions, and Convergence of Gated Linear Units (SwiGLU, GeGLU, ReGLU, GLU)}}
+\author{Architecture and Core Engine Team}
+\date{October 2026}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-This document formulates the mathematical properties, bilinear multiplicative interactions, and parameter parity conditions of Gated Linear Unit (GLU) variants (Standard GLU, SwiGLU, GeGLU, and ReGLU) in contemporary Transformer feedforward networks. We develop all equations across three levels of explanation: intuitive meaning, formal formulation, and practical system role. We prove the parameter budget equivalence theorem establishing the canonical $\frac{2}{3} \times 4 d_{\text{in}}$ hidden dimension adjustment, derive computational complexity bounds from primitive tensor operations, and provide an exact verified numerical trace matching the production implementation contract.
+This document presents the complete mathematical formulation and algorithmic specification of Gated Linear Units (GLUs), focusing on SwiGLU, GeGLU, ReGLU, and classical GLU. In modern large language models (LLaMA, PaLM, Mistral), standard two-layer feedforward sub-networks are replaced by three-matrix bilinear gated projections: $\operatorname{FFN}_{\text{SwiGLU}}(x) = (\operatorname{SiLU}(x W_{\text{gate}}) \odot x W_{\text{up}}) W_{\text{down}}$. We formalize bilinear gating theory, provide the complete algorithmic pseudo-code matching the reference implementation, derive exact computational complexities, step through a numerical example, and analyze dimension scaling.
 \end{abstract}
 
 \section{Notation and Mathematical Preliminaries}
-\label{sec:notation}
 
-Let $\mathbb{R}$ denote the field of real numbers, and $\mathbb{R}^{B \times D}$ the matrix space. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{W}, \mathbf{H}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{b}$), and scalar indices by standard italics. The symbol $\odot$ denotes the element-wise Hadamard product: $(\mathbf{A} \odot \mathbf{B})_{ij} = A_{ij} B_{ij}$.
+Let $X \in \mathbb{R}^{B \times d_{\text{in}}}$ denote an input mini-batch tensor across $B$ tokens and $d_{\text{in}}$ embedding channels.
 
-\subsection{Bilinear Multiplicative Gating Operator}
-\paragraph{Intuition:} Standard feedforward layers compute $\psi(\mathbf{x} \mathbf{W}_1) \mathbf{W}_2$. Gated Linear Units introduce a second parallel projection acting as an element-wise multiplicative continuous valve: one linear branch computes content, while the second branch computes a smooth gating mask that dynamically controls how much of each channel passes through.
-
-\paragraph{Mathematical Formulation:}
-For input vector $\mathbf{x} \in \mathbb{R}^{d_{\text{in}}}$, up-projection matrix $\mathbf{W}_{\text{up}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{in}}}$, gate matrix $\mathbf{W}_{\text{gate}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{in}}}$, and activation $\sigma$:
-\begin{equation}
-\label{eq:glu_def}
-\text{GLU}(\mathbf{x}) = (\mathbf{x} \mathbf{W}_{\text{up}}^\top) \odot \sigma(\mathbf{x} \mathbf{W}_{\text{gate}}^\top) \in \mathbb{R}^{d_{\text{hidden}}}.
-\end{equation}
-With down-projection $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{hidden}}}$:
-\begin{equation}
-\label{eq:glu_ffn}
-\text{FFN}_{\text{GLU}}(\mathbf{x}) = \text{GLU}(\mathbf{x}) \mathbf{W}_{\text{down}}^\top \in \mathbb{R}^{d_{\text{out}}}.
-\end{equation}
-
-\paragraph{Worked Numerical Example:}
-Let $\mathbf{x} = [1.0, 2.0]$, $\mathbf{W}_{\text{up}} = \begin{bmatrix} 0.5 & 1.0 \end{bmatrix}$, $\mathbf{W}_{\text{gate}} = \begin{bmatrix} 2.0 & -1.0 \end{bmatrix}$, with $\sigma(z) = \text{ReLU}(z)$.
-\begin{align}
-u &= \mathbf{x} \mathbf{W}_{\text{up}}^\top = 1.0(0.5) + 2.0(1.0) = 0.5 + 2.0 = 2.5, \\
-v &= \mathbf{x} \mathbf{W}_{\text{gate}}^\top = 1.0(2.0) + 2.0(-1.0) = 2.0 - 2.0 = 0.0, \\
-\sigma(v) &= \text{ReLU}(0.0) = 0.0, \\
-\text{ReGLU}(\mathbf{x}) &= u \odot \sigma(v) = 2.5 \times 0.0 = 0.0.
-\end{align}
-
-\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $B \in \mathbb{N}$: Batch size (number of tokens/samples).
-    \item $d_{\text{in}} \in \mathbb{N}$: Input model dimension ($d_{\text{model}}$).
-    \item $d_{\text{hidden}} \in \mathbb{N}$: Intermediate feedforward expansion width.
-    \item $d_{\text{out}} \in \mathbb{N}$: Output projection dimension.
-    \item $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$: Input batch matrix.
-    \item $\mathbf{W}_{\text{up}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{in}}}$: Value/Up projection matrix ($\mathbf{W}_1$).
-    \item $\mathbf{W}_{\text{gate}} \in \mathbb{R}^{d_{\text{hidden}} \times d_{\text{in}}}$: Gate projection matrix ($\mathbf{W}_2$).
-    \item $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{hidden}}}$: Output projection matrix ($\mathbf{W}_3$).
+    \item $W_{\text{gate}} \in \mathbb{R}^{d_{\text{hid}} \times d_{\text{in}}}$: Gate projection weight matrix.
+    \item $W_{\text{up}} \in \mathbb{R}^{d_{\text{hid}} \times d_{\text{in}}}$: Value (up) projection weight matrix.
+    \item $W_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{hid}}}$: Optional output down-projection weight matrix.
+    \item $\sigma$: Non-linear gating activation (e.g., SiLU for SwiGLU, GELU for GeGLU, Sigmoid for GLU).
+    \item $\odot$: Element-wise Hadamard product operator.
 \end{itemize}
 
-\section{Problem Definition and Core Variants}
-\label{sec:problem_definition}
+\begin{table}[h]
+\centering
+\caption{Summary of Mathematical Symbols for Gated Linear Units}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Type / Domain} & \textbf{Description} \\
+\midrule
+$X$ & $\mathbb{R}^{B \times d_{\text{in}}}$ & Input embedding batch \\
+$W_{\text{gate}}, W_{\text{up}}$ & $\mathbb{R}^{d_{\text{hid}} \times d_{\text{in}}}$ & Gating and value projection matrices \\
+$W_{\text{down}}$ & $\mathbb{R}^{d_{\text{out}} \times d_{\text{hid}}}$ & Down projection matrix \\
+$\odot$ & Operator & Hadamard element-wise product \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\begin{definition}[SwiGLU Activation (Shazeer 2020)]
-Using the Sigmoid Linear Unit ($\text{SiLU}(z) = z \cdot \sigma(z)$) as the gating activation:
-\begin{equation}
-\label{eq:swiglu}
-\text{SwiGLU}(\mathbf{x}) = (\mathbf{x} \mathbf{W}_{\text{up}}^\top) \odot \text{SiLU}(\mathbf{x} \mathbf{W}_{\text{gate}}^\top).
-\end{equation}
-\end{definition}
+\section{Problem Definition and Core Concepts}
 
-\begin{definition}[GeGLU Activation]
-Using the Gaussian Error Linear Unit ($\text{GELU}(z) = z \cdot \Phi(z)$) as the gating activation:
-\begin{equation}
-\label{eq:geglu}
-\text{GeGLU}(\mathbf{x}) = (\mathbf{x} \mathbf{W}_{\text{up}}^\top) \odot \text{GELU}(\mathbf{x} \mathbf{W}_{\text{gate}}^\top).
-\end{equation}
-\end{definition}
+\subsection{Intuition and Motivation}
+Standard feedforward layers compute $y = \sigma(x W_1) W_2$. In GLU variants, the representation is split into two parallel paths: a linear value channel $x W_{\text{up}}$ and a non-linear gate channel $\sigma(x W_{\text{gate}})$. The multiplicative interaction acts as a continuous coordinate filter: when the gate output is close to 0, information along that channel is suppressed; when 1, it passes through. Shazeer (2020) demonstrated that SwiGLU consistently outperforms ReLU/GELU feedforward blocks in transformer language models.
 
-\begin{definition}[ReGLU and Classical GLU]
+\subsection{Formal Mathematical Definition}
+\begin{definition}[GLU Family Formulations]
+For input vector $x \in \mathbb{R}^{d_{\text{in}}}$:
 \begin{align}
-\text{ReGLU}(\mathbf{x}) &= (\mathbf{x} \mathbf{W}_{\text{up}}^\top) \odot \max(0, \mathbf{x} \mathbf{W}_{\text{gate}}^\top), \\
-\text{GLU}(\mathbf{x}) &= (\mathbf{x} \mathbf{W}_{\text{up}}^\top) \odot \frac{1}{1 + e^{-\mathbf{x} \mathbf{W}_{\text{gate}}^\top}}.
+\operatorname{GLU}(x) &= \sigma\left(x W_{\text{gate}}^T\right) \odot \left(x W_{\text{up}}^T\right) \label{eq:glu_classic} \\
+\operatorname{SwiGLU}(x) &= \operatorname{SiLU}\left(x W_{\text{gate}}^T\right) \odot \left(x W_{\text{up}}^T\right) \label{eq:swiglu} \\
+\operatorname{GeGLU}(x) &= \operatorname{GELU}\left(x W_{\text{gate}}^T\right) \odot \left(x W_{\text{up}}^T\right) \label{eq:geglu} \\
+\operatorname{ReGLU}(x) &= \operatorname{ReLU}\left(x W_{\text{gate}}^T\right) \odot \left(x W_{\text{up}}^T\right) \label{eq:reglu}
 \end{align}
+When combined with down-projection:
+\begin{equation}
+\operatorname{FFN}_{\text{GLU}}(x) = \left( \sigma\left(x W_{\text{gate}}^T\right) \odot \left(x W_{\text{up}}^T\right) \right) W_{\text{down}}^T \label{eq:ffn_glu}
+\end{equation}
 \end{definition}
 
 \section{Algorithmic Specification}
-\label{sec:algorithm}
 
-Algorithm~\ref{alg:glu} specifies the deterministic execution implemented in \texttt{impl.py}.
+The computational pipeline implemented in \texttt{NnAlgoGatedLinearUnits} is detailed below.
 
 \begin{algorithm}[H]
-\caption{Deterministic Gated Linear Unit and Feedforward Evaluation}
-\label{alg:glu}
+\caption{Gated Linear Units (SwiGLU/GeGLU/ReGLU) Forward Evaluation}
 \begin{algorithmic}[1]
-\Require Input batch $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, weights $(\mathbf{W}_{\text{gate}}, \mathbf{W}_{\text{up}}, \mathbf{W}_{\text{down}})$, variant $\in \{\text{swiglu}, \text{geglu}, \text{reglu}, \text{glu}\}$.
-\Ensure Output batch $\mathbf{Y}$, gated hidden state $\mathbf{H}_{\text{gated}}$, dimensions $(B, d_{\text{in}}, d_{\text{hidden}}, d_{\text{out}})$.
-\State $\mathbf{U} \gets \mathbf{X} \mathbf{W}_{\text{up}}^\top \in \mathbb{R}^{B \times d_{\text{hidden}}}$
-\State $\mathbf{V} \gets \mathbf{X} \mathbf{W}_{\text{gate}}^\top \in \mathbb{R}^{B \times d_{\text{hidden}}}$
-\State $\mathbf{H}_{\text{gated}} \gets \mathbf{0} \in \mathbb{R}^{B \times d_{\text{hidden}}}$
-\For{$i = 1 \textbf{ to } B$}
-    \For{$j = 1 \textbf{ to } d_{\text{hidden}}$}
-        \State $u \gets U_{ij}, \quad v \gets V_{ij}$
+\Require Input batch $X \in \mathbb{R}^{B \times d_{\text{in}}}$, weights $W_{\text{gate}}, W_{\text{up}} \in \mathbb{R}^{d_{\text{hid}} \times d_{\text{in}}}$, optional $W_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{hid}}}$
+\Require Variant $\in \{\text{swiglu}, \text{geglu}, \text{reglu}, \text{glu}\}$
+\Ensure Output batch $Y$, hidden activations $H \in \mathbb{R}^{B \times d_{\text{hid}}}$
+\State $B \gets \text{rows}(X), \quad d_{\text{in}} \gets \text{cols}(X), \quad d_{\text{hid}} \gets \text{rows}(W_{\text{gate}})$
+\State $G \gets X \cdot W_{\text{gate}}^T \in \mathbb{R}^{B \times d_{\text{hid}}}$
+\State $U \gets X \cdot W_{\text{up}}^T \in \mathbb{R}^{B \times d_{\text{hid}}}$
+\State $H \gets \text{new Matrix of shape } (B, d_{\text{hid}})$
+\For{$b \gets 1 \textbf{ to } B$}
+    \For{$j \gets 1 \textbf{ to } d_{\text{hid}}$}
+        \State $g \gets G[b][j], \quad u \gets U[b][j]$
         \If{$\text{variant} = \text{swiglu}$}
-            \State $s \gets 1.0 / (1.0 + \exp(-v))$
-            \State $H_{ij} \gets u \cdot (v \cdot s)$
+            \State $\text{act} \gets g \cdot (1.0 / (1.0 + \exp(-g)))$
         \ElsIf{$\text{variant} = \text{geglu}$}
-            \State $\Phi \gets 0.5 \cdot (1.0 + \text{erf}(v / \sqrt{2}))$
-            \State $H_{ij} \gets u \cdot (v \cdot \Phi)$
+            \State $\text{act} \gets 0.5 \cdot g \cdot (1.0 + \operatorname{erf}(g / \sqrt{2.0}))$
         \ElsIf{$\text{variant} = \text{reglu}$}
-            \State $H_{ij} \gets u \cdot \max(0.0, v)$
+            \State $\text{act} \gets \max(0.0, g)$
         \ElsIf{$\text{variant} = \text{glu}$}
-            \State $s \gets 1.0 / (1.0 + \exp(-v))$
-            \State $H_{ij} \gets u \cdot s$
+            \State $\text{act} \gets 1.0 / (1.0 + \exp(-g))$
         \EndIf
+        \State $H[b][j] \gets \text{act} \cdot u$
     \EndFor
 \EndFor
-\State $\mathbf{Y} \gets \mathbf{H}_{\text{gated}} \mathbf{W}_{\text{down}}^\top \in \mathbb{R}^{B \times d_{\text{out}}}$
-\State \Return $(\mathbf{Y}, \mathbf{H}_{\text{gated}})$
+\If{$W_{\text{down}} \text{ is not null}$}
+    \State $Y \gets H \cdot W_{\text{down}}^T \in \mathbb{R}^{B \times d_{\text{out}}}$
+\Else
+    \State $Y \gets H$
+\EndIf
+\State \Return $\{\text{output\_batch}: Y, \text{hidden\_gated}: H\}$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Theoretical Guarantees: Parameter Parity Budgeting}
-\label{sec:correctness}
+\section{Theoretical Guarantees and Parameter Parity}
 
-\begin{theorem}[Parameter Parity under 3-Matrix Gated Architecture]
-\label{thm:param_parity}
-\textbf{Assumptions:}
-\begin{enumerate}
-    \item Standard Transformer FFN uses 2 matrices: $\mathbf{W}_1 \in \mathbb{R}^{4d \times d}$ and $\mathbf{W}_2 \in \mathbb{R}^{d \times 4d}$, with total parameters $P_{\text{std}} = 2 \times (4d \times d) = 8 d^2$.
-    \item Gated FFN uses 3 matrices: $\mathbf{W}_{\text{up}}, \mathbf{W}_{\text{gate}} \in \mathbb{R}^{d_{\text{hidden}} \times d}$ and $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d \times d_{\text{hidden}}}$, with total parameters $P_{\text{gated}} = 3 \times (d_{\text{hidden}} \times d) = 3 d \cdot d_{\text{hidden}}$.
-\end{enumerate}
-
-\textbf{Guarantee:}
-Setting the hidden dimension to:
+\begin{theorem}[Parameter and Compute Parity Scaling Rule (Shazeer 2020)]
+A standard 2-layer FFN with hidden dimension $d_{\text{ffn}} = 4 d_{\text{in}}$ contains $8 d_{\text{in}}^2$ parameters. To maintain exact parameter and FLOP parity in a 3-matrix SwiGLU FFN ($3 d_{\text{in}} d_{\text{hid}} = 8 d_{\text{in}}^2$), the hidden dimension must be scaled to:
 \begin{equation}
-\label{eq:hidden_scale}
-d_{\text{hidden}} = \left\lfloor \frac{2}{3} \times 4 d \right\rfloor = \left\lfloor \frac{8}{3} d \right\rfloor \approx 2.67 \, d
+d_{\text{hid}} = \left\lfloor \frac{8}{3} d_{\text{in}} \right\rfloor \approx \frac{2}{3} \cdot 4 d_{\text{in}}
 \end{equation}
-enforces strict parameter count parity:
-\begin{equation}
-P_{\text{gated}} = 3 d \cdot \left( \frac{8}{3} d \right) = 8 d^2 = P_{\text{std}}.
-\end{equation}
-
-\textbf{Limitations:}
-In production distributed LLMs (such as LLaMA and PaLM), $d_{\text{hidden}}$ is further rounded to the nearest multiple of 64, 128, or 256 for tensor-core alignment, resulting in a minor ($\pm 1\%$) deviation from strict equality.
 \end{theorem}
 
-\section{Complexity Derivation}
-\label{sec:complexity}
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Three Matrix Multiplications}: Requires 3 separate projection operations per token, which can be memory bandwidth bound on GPUs without tensor fusion kernels.
+\end{itemize}
+
+\section{Complexity Analysis}
 
 \subsection{Time Complexity}
-\begin{enumerate}
-    \item Up-projection $\mathbf{X} \mathbf{W}_{\text{up}}^\top$: $B \cdot d_{\text{in}} \cdot d_{\text{hidden}}$ multiply-adds ($\mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{hidden}})$).
-    \item Gate-projection $\mathbf{X} \mathbf{W}_{\text{gate}}^\top$: $B \cdot d_{\text{in}} \cdot d_{\text{hidden}}$ multiply-adds ($\mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{hidden}})$).
-    \item Element-wise activation and Hadamard product: $B \cdot d_{\text{hidden}}$ scalar operations ($\mathcal{O}(B \cdot d_{\text{hidden}})$).
-    \item Down-projection $\mathbf{H}_{\text{gated}} \mathbf{W}_{\text{down}}^\top$: $B \cdot d_{\text{hidden}} \cdot d_{\text{out}}$ multiply-adds ($\mathcal{O}(B \cdot d_{\text{hidden}} \cdot d_{\text{out}})$).
-    \item Total time complexity:
-    \begin{equation}
-    T(B, d_{\text{in}}, d_{\text{hidden}}, d_{\text{out}}) = \mathcal{O}\left( B \cdot d_{\text{hidden}} \cdot (2 d_{\text{in}} + d_{\text{out}}) \right).
-    \end{equation}
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Gate and Up Projections}: $2 \times (B \cdot d_{\text{in}} \cdot d_{\text{hid}})$ FLOPs.
+    \item \textbf{Hadamard Product}: $\mathcal{O}(B \cdot d_{\text{hid}})$ FLOPs.
+    \item \textbf{Down Projection}: $B \cdot d_{\text{hid}} \cdot d_{\text{out}}$ FLOPs.
+    \item \textbf{Total Time}: $\Theta\left(B \cdot d_{\text{hid}} (2 d_{\text{in}} + d_{\text{out}})\right)$ FLOPs.
+\end{itemize}
 
 \subsection{Space Complexity}
+\begin{itemize}
+    \item \textbf{Auxiliary Memory}: Stores gate buffer $G$, up buffer $U$, and gated product $H$ of shape $B \times d_{\text{hid}}$ ($\Theta(B \cdot d_{\text{hid}})$ space).
+\end{itemize}
+
+\section{Worked Numerical Example}
+
+Consider $B=1, d_{\text{in}}=2, d_{\text{hid}}=2$, $\text{variant} = \text{swiglu}$:
+$x = [1.0, 0.0]$, $W_{\text{gate}} = \begin{bmatrix} 1.0 & 0.0 \\ -1.0 & 0.0 \end{bmatrix}$, $W_{\text{up}} = \begin{bmatrix} 2.0 & 0.0 \\ 3.0 & 0.0 \end{bmatrix}$.
+
 \begin{enumerate}
-    \item Intermediates $\mathbf{U}, \mathbf{V}, \mathbf{H}_{\text{gated}}$ each allocate $B \cdot d_{\text{hidden}}$ scalars.
-    \item Output matrix $\mathbf{Y}$ allocates $B \cdot d_{\text{out}}$ scalars.
-    \item Total auxiliary storage:
-    \begin{equation}
-    S(B, d_{\text{hidden}}, d_{\text{out}}) = \mathcal{O}(B \cdot (d_{\text{hidden}} + d_{\text{out}})).
-    \end{equation}
+    \item $G = x W_{\text{gate}}^T = [1.0(1) + 0, 1.0(-1) + 0] = [1.0, -1.0]$.
+    \item $U = x W_{\text{up}}^T = [1.0(2) + 0, 1.0(3) + 0] = [2.0, 3.0]$.
+    \item \textbf{SiLU on Gate}:
+    \begin{align}
+    \text{SiLU}(1.0) &= 1.0 \times \frac{1}{1 + e^{-1}} \approx 0.731059 \\
+    \text{SiLU}(-1.0) &= -1.0 \times \frac{1}{1 + e^1} \approx -0.268941
+    \end{align}
+    \item \textbf{Hadamard Product}:
+    \begin{align}
+    H_1 &= 0.731059 \times 2.0 \approx 1.462118 \\
+    H_2 &= -0.268941 \times 3.0 \approx -0.806823
+    \end{align}
 \end{enumerate}
 
-\section{Worked Example and Numerical Verification}
-\label{sec:worked_example}
+\section{Numerical Considerations and Edge Cases}
 
-Let $B = 1, d_{\text{in}} = 2, d_{\text{hidden}} = 2, d_{\text{out}} = 1$.
-Input: $\mathbf{X} = \begin{bmatrix} 1.0 & 2.0 \end{bmatrix}$.
-Weights:
-\begin{equation}
-\mathbf{W}_{\text{up}} = \begin{bmatrix} 0.5 & -1.0 \\ 1.0 & 0.0 \end{bmatrix}, \quad
-\mathbf{W}_{\text{gate}} = \begin{bmatrix} 1.0 & 0.0 \\ 0.0 & 1.0 \end{bmatrix}, \quad
-\mathbf{W}_{\text{down}} = \begin{bmatrix} 2.0 & 0.5 \end{bmatrix}.
-\end{equation}
-Variant: \texttt{reglu} ($\sigma(z) = \max(0, z)$).
-
-\subsection{Execution Trace}
-\begin{align}
-\mathbf{U} = \mathbf{X} \mathbf{W}_{\text{up}}^\top &= [1.0(0.5) + 2.0(-1.0), \; 1.0(1.0) + 2.0(0.0)] = [0.5 - 2.0, \; 1.0 + 0.0] = [-1.5, \; 1.0]. \\
-\mathbf{V} = \mathbf{X} \mathbf{W}_{\text{gate}}^\top &= [1.0(1.0) + 2.0(0.0), \; 1.0(0.0) + 2.0(1.0)] = [1.0, \; 2.0]. \\
-\sigma(\mathbf{V}) = \text{ReLU}(\mathbf{V}) &= [\max(0, 1.0), \; \max(0, 2.0)] = [1.0, \; 2.0]. \\
-\mathbf{H}_{\text{gated}} = \mathbf{U} \odot \sigma(\mathbf{V}) &= [-1.5 \times 1.0, \; 1.0 \times 2.0] = [-1.5, \; 2.0]. \\
-\mathbf{Y} = \mathbf{H}_{\text{gated}} \mathbf{W}_{\text{down}}^\top &= [-1.5(2.0) + 2.0(0.5)] = [-3.0 + 1.0] = [-2.0].
-\end{align}
-
-\section{References}
-\label{sec:references}
+\begin{itemize}
+    \item \textbf{Fused Gate and Up GEMM}: $W_{\text{gate}}$ and $W_{\text{up}}$ are typically stacked horizontally into a single $(2 d_{\text{hid}} \times d_{\text{in}})$ matrix, executing one combined GEMM.
+\end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{dauphin2017}
-Y.~N. Dauphin, A.~Fan, M.~Auli, and D.~Grangier.
-\newblock Language modeling with gated convolutional networks.
-\newblock In \emph{International Conference on Machine Learning (ICML)}, pages 933--941, 2017.
-
-\bibitem{shazeer2020}
-N.~Shazeer.
-\newblock GLU variants improve Transformer.
-\newblock \emph{arXiv preprint arXiv:2002.05202}, 2020.
-
-\bibitem{touvron2023}
-H.~Touvron, T.~Lavril, G.~Izacard, et~al.
-\newblock LLaMA: Open and efficient foundation language models.
-\newblock \emph{arXiv preprint arXiv:2302.13971}, 2023.
+\bibitem{shazeer2020} N.~Shazeer, ``GLU variants improve transformer,'' \emph{arXiv preprint arXiv:2002.05202}, 2020.
+\bibitem{dauphin2017} Y.~N.~Dauphin et al., ``Language modeling with gated convolutional networks,'' in \emph{ICML}, pp.~933--941, 2017.
+\bibitem{touvron2023llama1} H.~Touvron et al., ``Llama: Open and efficient foundation language models,'' \emph{arXiv:2302.13971}, 2023.
 \end{thebibliography}
 
 \end{document}

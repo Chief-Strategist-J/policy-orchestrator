@@ -1,255 +1,178 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{booktabs}
 \usepackage{hyperref}
 
-\newtheorem{theorem}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{property}{Property}
+\newtheorem{remark}{Remark}[section]
 
-\title{Mathematical Foundation and Universal Approximation Theory of Multilayer Perceptrons (ALGO-NN-02)}
-\author{Algorithms Engineering Group}
-\date{\today}
+\title{\textbf{Rigorous Mathematical Specification, Layer-Wise Composite Mappings, and Universal Approximation of the Multilayer Perceptron (MLP)}}
+\author{Architecture and Core Engine Team}
+\date{October 2026}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-This document provides the formal mathematical specification, topological properties, and computational complexity for feedforward Multilayer Perceptrons (MLPs). The layer-wise composition of affine linear projections and non-linear activation operators is developed across three levels of explanation: intuition, formal formulation, and practical application. We analyze the linear collapse theorem for non-activated networks, state the Universal Approximation Theorem with explicit separation of assumptions, guarantees, and limitations, and provide an exact numerical worked example matching the production implementation contract.
+This document presents the complete theoretical foundation and algorithmic specification of the Multi-Layer Perceptron (MLP) Feedforward Network. By composing alternating affine transformations and non-linear coordinate-wise activation functions across $L$ layers, MLPs form universal function approximators capable of modeling continuous functions on compact domains. We formalize forward layer recurrences, state the Universal Approximation Theorem, formulate complete algorithmic pseudo-code, derive computational complexity, work through a step-by-step numerical example, and discuss stability considerations.
 \end{abstract}
 
 \section{Notation and Mathematical Preliminaries}
-\label{sec:notation}
 
-Let $\mathbb{R}$ denote the field of real numbers, and $\mathbb{R}^n$ the $n$-dimensional Euclidean space. Matrices are denoted by uppercase bold letters ($\mathbf{W}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{z}, \mathbf{h}, \mathbf{b}$), and scalar coordinates by indexed roman letters ($W_{ij}, x_j$).
+Let $x \in \mathbb{R}^{d_0}$ denote an input vector, and let $L \in \mathbb{N}_{\ge 1}$ denote the total number of parametric layers in the network.
 
-\subsection{Matrix-Vector Affine Transformations}
-\paragraph{Intuition:} An affine transformation scales, rotates, and translates an input vector. In neural networks, it computes a set of linear combinations of the incoming signals, where each output neuron aggregates inputs according to learned synaptic weights and an offset bias.
-
-\paragraph{Mathematical Formulation:}
-For an input vector $\mathbf{h} \in \mathbb{R}^{d_{\text{in}}}$, weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, and bias vector $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$, the affine map $\mathcal{A}: \mathbb{R}^{d_{\text{in}}} \to \mathbb{R}^{d_{\text{out}}}$ is defined as:
-\begin{equation}
-\label{eq:affine_map}
-\mathbf{z} = \mathbf{W} \mathbf{h} + \mathbf{b}.
-\end{equation}
-In scalar coordinate notation, for each output coordinate $i \in \{1, \dots, d_{\text{out}}\}$:
-\begin{equation}
-z_i = \sum_{j=1}^{d_{\text{in}}} W_{ij} h_j + b_i.
-\end{equation}
-
-\paragraph{Worked Numerical Example:}
-Let $\mathbf{W} = \begin{bmatrix} 1.0 & 2.0 \\ -1.0 & 0.5 \end{bmatrix}$, $\mathbf{h} = \begin{bmatrix} 3.0 \\ 4.0 \end{bmatrix}$, and $\mathbf{b} = \begin{bmatrix} 0.5 \\ -1.0 \end{bmatrix}$.
-\begin{align}
-z_1 &= W_{11} h_1 + W_{12} h_2 + b_1 = 1.0(3.0) + 2.0(4.0) + 0.5 = 3.0 + 8.0 + 0.5 = 11.5, \\
-z_2 &= W_{21} h_1 + W_{22} h_2 + b_2 = -1.0(3.0) + 0.5(4.0) - 1.0 = -3.0 + 2.0 - 1.0 = -2.0.
-\end{align}
-Thus $\mathbf{z} = [11.5, -2.0]^\top$.
-
-\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $L \in \mathbb{N}$: Total number of parameterized layers in the network.
-    \item $d_0 \in \mathbb{N}$: Input feature dimensionality ($d_0 = d_{\text{in}}$).
-    \item $d_l \in \mathbb{N}$: Dimensionality (neuron count) of layer $l \in \{1, \dots, L\}$.
-    \item $\mathbf{x} = \mathbf{h}^{(0)} \in \mathbb{R}^{d_0}$: Input vector.
-    \item $\mathbf{W}^{(l)} \in \mathbb{R}^{d_l \times d_{l-1}}$: Weight matrix for layer $l$.
-    \item $\mathbf{b}^{(l)} \in \mathbb{R}^{d_l}$: Bias vector for layer $l$.
-    \item $\mathbf{z}^{(l)} \in \mathbb{R}^{d_l}$: Pre-activation vector at layer $l$.
-    \item $\mathbf{h}^{(l)} \in \mathbb{R}^{d_l}$: Post-activation state vector at layer $l$.
-    \item $\sigma: \mathbb{R} \to \mathbb{R}$: Element-wise non-linear activation function for hidden layers $l \in \{1, \dots, L-1\}$.
-    \item $\sigma_{\text{out}}: \mathbb{R} \to \mathbb{R}$: Element-wise activation function for the output layer $l = L$.
-    \item $C(K, \mathbb{R}^m)$: Banach space of continuous functions on compact domain $K \subset \mathbb{R}^n$ with supremum norm $\|f\|_\infty = \sup_{\mathbf{x} \in K} \|f(\mathbf{x})\|_2$.
+    \item $d_l \in \mathbb{N}_{\ge 1}$: Dimension of representation space at layer $l \in \{0, 1, \dots, L\}$.
+    \item $W^{(l)} \in \mathbb{R}^{d_l \times d_{l-1}}$: Weight matrix for layer $l$.
+    \item $b^{(l)} \in \mathbb{R}^{d_l}$: Bias vector for layer $l$.
+    \item $z^{(l)} \in \mathbb{R}^{d_l}$: Pre-activation vector at layer $l$.
+    \item $a^{(l)} \in \mathbb{R}^{d_l}$: Post-activation vector at layer $l$ ($a^{(0)} \equiv x$).
+    \item $\sigma_{\text{hid}}, \sigma_{\text{out}}$: Non-linear activation operators applied at hidden and output layers.
 \end{itemize}
 
+\begin{table}[h]
+\centering
+\caption{Summary of Mathematical Symbols for MLP Feedforward}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Type / Domain} & \textbf{Description} \\
+\midrule
+$x$ & $\mathbb{R}^{d_0}$ & Input feature vector \\
+$W^{(l)}$ & $\mathbb{R}^{d_l \times d_{l-1}}$ & Layer $l$ weight matrix \\
+$b^{(l)}$ & $\mathbb{R}^{d_l}$ & Layer $l$ bias vector \\
+$z^{(l)}$ & $\mathbb{R}^{d_l}$ & Pre-activation vector $W^{(l)} a^{(l-1)} + b^{(l)}$ \\
+$a^{(l)}$ & $\mathbb{R}^{d_l}$ & Post-activation vector $\sigma(z^{(l)})$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Problem Definition and Core Concepts}
-\label{sec:problem_definition}
 
-\subsection{Multilayer Feedforward Composition}
+\subsection{Intuition and Motivation}
+Single linear layers can only express hyperplanar boundaries. Multi-Layer Perceptrons construct deep hierarchical representations where early layers extract low-level spatial or temporal primitives, and deeper layers combine these primitives non-linearly to partition complex decision manifolds.
 
-\paragraph{Meaning:} A Multilayer Perceptron (MLP) is a sequential function composition alternating linear projections with non-linear activation functions.
-
-\paragraph{Purpose:} Linear models can only partition spaces with flat hyperplanes. Stacking non-linear layers allows the network to partition arbitrarily curved, disjoint, and topologically complex decision regions.
-
-\paragraph{Formal Specification:}
-\begin{definition}[Feedforward Multilayer Perceptron]
-Given depth $L \ge 1$, layer dimensions $(d_0, d_1, \dots, d_L)$, parameters $(\{\mathbf{W}^{(l)}\}_{l=1}^L, \{\mathbf{b}^{(l)}\}_{l=1}^L)$, and activations $(\sigma, \sigma_{\text{out}})$, an MLP is an operator $\mathcal{F}: \mathbb{R}^{d_0} \to \mathbb{R}^{d_L}$ defined by the recurrence:
+\subsection{Formal Mathematical Definition}
+\begin{definition}[MLP Forward Layer Recurrence]
+Given input $a^{(0)} = x \in \mathbb{R}^{d_0}$, for each layer $l \in \{1, \dots, L\}$:
 \begin{align}
-\mathbf{h}^{(0)} &= \mathbf{x}, \\
-\mathbf{z}^{(l)} &= \mathbf{W}^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}, \quad \forall l \in \{1, \dots, L\}, \label{eq:mlp_affine} \\
-\mathbf{h}^{(l)} &= \begin{cases}
-\sigma(\mathbf{z}^{(l)}) & \text{for } 1 \le l < L, \\
-\sigma_{\text{out}}(\mathbf{z}^{(L)}) & \text{for } l = L.
-\end{cases} \label{eq:mlp_act}
+z^{(l)} &= W^{(l)} a^{(l-1)} + b^{(l)} \label{eq:mlp_z} \\
+a^{(l)} &= \begin{cases}
+\sigma_{\text{hid}}\left(z^{(l)}\right) & \text{if } 1 \le l < L \\
+\sigma_{\text{out}}\left(z^{(L)}\right) & \text{if } l = L
+\end{cases} \label{eq:mlp_a}
 \end{align}
-where scalar activations apply coordinate-wise: $[\sigma(\mathbf{z})]_i = \sigma(z_i)$.
+The overall network function is the composite map:
+\begin{equation}
+f_{\text{MLP}}(x) = \left( \sigma_{\text{out}} \circ \mathcal{T}^{(L)} \circ \sigma_{\text{hid}} \circ \mathcal{T}^{(L-1)} \circ \dots \circ \sigma_{\text{hid}} \circ \mathcal{T}^{(1)} \right)(x)
+\end{equation}
+where $\mathcal{T}^{(l)}(v) \triangleq W^{(l)} v + b^{(l)}$.
 \end{definition}
 
-\subsection{Necessity of Non-Linearity: Linear Collapse}
-
-\begin{property}[Linear Network Collapse]
-If all activation functions $\sigma, \sigma_{\text{out}}$ are the identity map ($\sigma(z) = z$), a network of arbitrary depth $L$ collapses algebraically to a single affine transformation:
-\begin{equation}
-\mathcal{F}(\mathbf{x}) = \mathbf{W}_{\text{eff}} \mathbf{x} + \mathbf{b}_{\text{eff}},
-\end{equation}
-where $\mathbf{W}_{\text{eff}} = \mathbf{W}^{(L)} \mathbf{W}^{(L-1)} \cdots \mathbf{W}^{(1)} \in \mathbb{R}^{d_L \times d_0}$ and $\mathbf{b}_{\text{eff}} = \mathbf{b}^{(L)} + \sum_{l=1}^{L-1} \left( \prod_{k=l+1}^L \mathbf{W}^{(k)} \right) \mathbf{b}^{(l)}$.
-\end{property}
-\begin{proof}
-For $L=2$ with identity activations: $\mathbf{h}^{(1)} = \mathbf{W}^{(1)} \mathbf{x} + \mathbf{b}^{(1)}$. The output is:
-$$\mathbf{h}^{(2)} = \mathbf{W}^{(2)} (\mathbf{W}^{(1)} \mathbf{x} + \mathbf{b}^{(1)}) + \mathbf{b}^{(2)} = (\mathbf{W}^{(2)} \mathbf{W}^{(1)}) \mathbf{x} + (\mathbf{W}^{(2)} \mathbf{b}^{(1)} + \mathbf{b}^{(2)}).$$
-By associativity of matrix multiplication, this extends to all $L \ge 1$ by induction.
-\end{proof}
-
 \section{Algorithmic Specification}
-\label{sec:algorithm}
 
-Algorithm~\ref{alg:mlp_feedforward} defines the exact deterministic layer-by-layer evaluation implemented in \texttt{impl.py}.
+The computational execution implemented in \texttt{NnAlgoMlpFeedforward} is shown below.
 
 \begin{algorithm}[H]
-\caption{Deterministic MLP Feedforward Evaluation}
-\label{alg:mlp_feedforward}
+\caption{Multilayer Perceptron Forward Propagation}
 \begin{algorithmic}[1]
-\Require Input vector $\mathbf{x} \in \mathbb{R}^{d_0}$, weight matrices $\{\mathbf{W}^{(l)}\}_{l=1}^L$, bias vectors $\{\mathbf{b}^{(l)}\}_{l=1}^L$, activations $(\sigma, \sigma_{\text{out}})$.
-\Ensure Output vector $\mathbf{h}^{(L)}$, pre-activations $\mathcal{Z} = \{\mathbf{z}^{(l)}\}_{l=1}^L$, activations $\mathcal{H} = \{\mathbf{h}^{(l)}\}_{l=1}^L$.
-\State $\mathbf{h}^{(0)} \gets \mathbf{x}$
-\State $\mathcal{Z} \gets [\,], \quad \mathcal{H} \gets [\,]$
-\For{$l = 1 \textbf{ to } L$}
-    \State $\psi \gets \begin{cases} \sigma_{\text{out}} & \text{if } l = L \\ \sigma & \text{if } l < L \end{cases}$
-    \State $\mathbf{z}^{(l)} \gets \mathbf{0} \in \mathbb{R}^{d_l}$
-    \State $\mathbf{h}^{(l)} \gets \mathbf{0} \in \mathbb{R}^{d_l}$
-    \For{$i = 1 \textbf{ to } d_l$}
-        \State $z_i^{(l)} \gets b_i^{(l)}$
-        \For{$j = 1 \textbf{ to } d_{l-1}$}
-            \State $z_i^{(l)} \gets z_i^{(l)} + W_{ij}^{(l)} \cdot h_j^{(l-1)}$
+\Require Input vector $x \in \mathbb{R}^{d_0}$, layer weights $\{W^{(1)}, \dots, W^{(L)}\}$, biases $\{b^{(1)}, \dots, b^{(L)}\}$
+\Require Hidden activation $\sigma_{\text{hid}}$, output activation $\sigma_{\text{out}}$
+\Ensure Final output vector $\hat{y} = a^{(L)}$, list of pre-activations $\{z^{(l)}\}$ and post-activations $\{a^{(l)}\}$
+\State $L \gets \text{length}(W)$
+\State $a \gets x$
+\State $\text{all\_z} \gets \text{empty List}, \quad \text{all\_a} \gets [x]$
+\For{$l \gets 1 \textbf{ to } L$}
+    \State $d_{\text{out}} \gets \text{rows}(W[l]), \quad d_{\text{in}} \gets \text{cols}(W[l])$
+    \State $z \gets \text{new Array of size } d_{\text{out}}$
+    \For{$i \gets 1 \textbf{ to } d_{\text{out}}$}
+        \State $\text{sum} \gets 0.0$
+        \For{$j \gets 1 \textbf{ to } d_{\text{in}}$}
+            \State $\text{sum} \gets \text{sum} + W[l][i][j] \cdot a[j]$
         \EndFor
-        \State $h_i^{(l)} \gets \psi(z_i^{(l)})$
+        \State $z[i] \gets \text{sum} + b[l][i]$
     \EndFor
-    \State Append $\mathbf{z}^{(l)}$ to $\mathcal{Z}$
-    \State Append $\mathbf{h}^{(l)}$ to $\mathcal{H}$
+    \State $\text{all\_z}.\text{append}(z)$
+    \State $\text{act\_fn} \gets (\sigma_{\text{out}} \text{ if } l = L \text{ else } \sigma_{\text{hid}})$
+    \State $a \gets \text{new Array of size } d_{\text{out}}$
+    \For{$i \gets 1 \textbf{ to } d_{\text{out}}$}
+        \State $a[i] \gets \text{act\_fn}(z[i])$
+    \EndFor
+    \State $\text{all\_a}.\text{append}(a)$
 \EndFor
-\State \Return $(\mathbf{h}^{(L)}, \mathcal{Z}, \mathcal{H}, L, [d_0, d_1, \dots, d_L])$
+\State \Return $\{\text{output}: a, \text{pre\_activations}: \text{all\_z}, \text{activations}: \text{all\_a}\}$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Theoretical Guarantees: Universal Approximation}
-\label{sec:correctness}
+\section{Theoretical Guarantees and Universal Approximation}
 
 \begin{theorem}[Universal Approximation Theorem (Cybenko 1989, Hornik 1991)]
-\label{thm:universal_approx}
-\textbf{Assumptions:}
-\begin{enumerate}
-    \item Domain $K \subset \mathbb{R}^{d_0}$ is a compact (closed and bounded) subset.
-    \item Target function $f^*: K \to \mathbb{R}^{d_L}$ is continuous ($f^* \in C(K, \mathbb{R}^{d_L})$).
-    \item Activation function $\sigma: \mathbb{R} \to \mathbb{R}$ is continuous, non-constant, and bounded (or discriminatory, e.g., sigmoid or continuous non-polynomial functions like ReLU).
-    \item The output layer activation $\sigma_{\text{out}}$ is the linear identity map.
-\end{enumerate}
-
-\textbf{Guarantee:}
-For any target approximation tolerance $\varepsilon > 0$, there exists a finite hidden width $d_1 \in \mathbb{N}$, weight matrices $\mathbf{W}^{(1)} \in \mathbb{R}^{d_1 \times d_0}, \mathbf{W}^{(2)} \in \mathbb{R}^{d_L \times d_1}$, and biases $\mathbf{b}^{(1)} \in \mathbb{R}^{d_1}, \mathbf{b}^{(2)} \in \mathbb{R}^{d_L}$ such that the single-hidden-layer network $\mathcal{F}(\mathbf{x}) = \mathbf{W}^{(2)} \sigma(\mathbf{W}^{(1)} \mathbf{x} + \mathbf{b}^{(1)}) + \mathbf{b}^{(2)}$ satisfies:
+Let $\sigma: \mathbb{R} \to \mathbb{R}$ be any continuous non-polynomial activation function. Let $K \subset \mathbb{R}^{d_0}$ be any compact subset. For any continuous target function $f \in \mathcal{C}(K)$ and any error tolerance $\epsilon > 0$, there exists a single-hidden-layer MLP with finite hidden dimension $d_1 < \infty$ such that:
 \begin{equation}
-\sup_{\mathbf{x} \in K} \|\mathcal{F}(\mathbf{x}) - f^*(\mathbf{x})\|_\infty < \varepsilon.
+\sup_{x \in K} \left| \sum_{i=1}^{d_1} v_i \sigma(w_i^T x + b_i) - f(x) \right| < \epsilon
 \end{equation}
-
-\textbf{Limitations:}
-\begin{enumerate}
-    \item The theorem is an \emph{existence guarantee} (non-constructive); it does not provide an efficient optimization algorithm to find the parameters $(\mathbf{W}, \mathbf{b})$.
-    \item The required hidden width $d_1$ may grow exponentially with input dimension $d_0$ for worst-case functions (curse of dimensionality).
-    \item The guarantee applies to the compact set $K$; it provides no bounds on generalization behavior outside $K$.
-\end{enumerate}
 \end{theorem}
 
-\section{Complexity Derivation}
-\label{sec:complexity}
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Non-Constructive Bound}: The theorem guarantees existence, but gives no bound on training sample complexity or optimization tractability via gradient descent.
+\end{itemize}
+
+\section{Complexity Analysis}
 
 \subsection{Time Complexity}
-For a network with $L$ layers and dimensions $(d_0, d_1, \dots, d_L)$:
-\begin{enumerate}
-    \item \textbf{Matrix Multiplication at Layer $l$:} For each output unit $i \in \{1, \dots, d_l\}$, computing the dot product requires $d_{l-1}$ multiplications and $d_{l-1}$ additions, totaling $2 d_l d_{l-1}$ operations.
-    \item \textbf{Activation Application at Layer $l$:} Applying $\sigma$ across $d_l$ neurons takes $\mathcal{O}(d_l)$ operations.
-    \item \textbf{Total Layer $l$ Operations:} $\Theta(d_l d_{l-1} + d_l) = \Theta(d_l d_{l-1})$.
-    \item \textbf{Total Network Complexity:} Summing across all $L$ layers:
-    \begin{equation}
-    T(d_0, \dots, d_L) = \mathcal{O}\left( \sum_{l=1}^L d_l d_{l-1} \right).
-    \end{equation}
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Matrix Vector Multiplications}: Layer $l$ requires $d_l \cdot d_{l-1}$ multiply-accumulate operations.
+    \item \textbf{Total Time}: $\Theta\left( \sum_{l=1}^L d_l d_{l-1} \right)$ FLOPs.
+\end{itemize}
 
 \subsection{Space Complexity}
+\begin{itemize}
+    \item \textbf{Forward Activation Cache}: Stores all intermediate pre- and post-activation vectors $\Theta\left( \sum_{l=0}^L d_l \right)$ for backpropagation.
+\end{itemize}
+
+\section{Worked Numerical Example}
+
+Consider a 2-layer MLP with $d_0 = 2, d_1 = 2, d_2 = 1$, $\sigma_{\text{hid}} = \text{ReLU}$, $\sigma_{\text{out}} = \text{Identity}$:
+\begin{equation}
+x = \begin{bmatrix} 1.0 \\ -1.0 \end{bmatrix}, \quad W^{(1)} = \begin{bmatrix} 1.0 & 2.0 \\ -1.0 & 1.0 \end{bmatrix}, \quad b^{(1)} = \begin{bmatrix} 0.5 \\ 0.0 \end{bmatrix}
+\end{equation}
+\begin{equation}
+W^{(2)} = \begin{bmatrix} 2.0 & -1.0 \end{bmatrix}, \quad b^{(2)} = [0.1]
+\end{equation}
+
 \begin{enumerate}
-    \item Pre-activation buffer $\mathcal{Z}$ stores $\sum_{l=1}^L d_l$ scalars.
-    \item Activation buffer $\mathcal{H}$ stores $\sum_{l=1}^L d_l$ scalars.
-    \item Total auxiliary storage is strictly proportional to the total hidden and output neuron count:
+    \item \textbf{Layer 1 Pre-activations}:
+    \begin{align}
+    z_1^{(1)} &= 1.0(1.0) + 2.0(-1.0) + 0.5 = 1.0 - 2.0 + 0.5 = -0.50 \\
+    z_2^{(1)} &= -1.0(1.0) + 1.0(-1.0) + 0.0 = -1.0 - 1.0 = -2.00
+    \end{align}
+    \item \textbf{Layer 1 Post-activations} (ReLU):
+    \begin{align}
+    a_1^{(1)} &= \max(0, -0.5) = 0.00 \\
+    a_2^{(1)} &= \max(0, -2.0) = 0.00
+    \end{align}
+    \item \textbf{Layer 2 Output}:
     \begin{equation}
-    S(d_1, \dots, d_L) = \mathcal{O}\left( \sum_{l=1}^L d_l \right).
+    z^{(2)} = 2.0(0.0) - 1.0(0.0) + 0.1 = 0.10 \implies a^{(2)} = 0.10
     \end{equation}
 \end{enumerate}
 
-\section{Worked Example and Numerical Trace}
-\label{sec:worked_example}
+\section{Numerical Considerations and Edge Cases}
 
-Consider an MLP with architecture $[d_0=2, d_1=2, d_2=1]$ ($L=2$), hidden activation $\sigma = \text{ReLU}$, and output activation $\sigma_{\text{out}} = \text{identity}$.
-Input vector: $\mathbf{x} = [1.0, -2.0]^\top$.
-
-Parameters:
-\begin{equation}
-\mathbf{W}^{(1)} = \begin{bmatrix} 1.5 & -0.5 \\ 0.0 & 2.0 \end{bmatrix}, \quad
-\mathbf{b}^{(1)} = \begin{bmatrix} 0.5 \\ 1.0 \end{bmatrix}, \quad
-\mathbf{W}^{(2)} = \begin{bmatrix} 0.8 & -1.2 \end{bmatrix}, \quad
-\mathbf{b}^{(2)} = \begin{bmatrix} 0.2 \end{bmatrix}.
-\end{equation}
-
-\subsection{Step-by-Step Calculation}
-\paragraph{Layer 1 ($l=1$, Hidden Layer with ReLU):}
-Pre-activations $\mathbf{z}^{(1)} = \mathbf{W}^{(1)} \mathbf{x} + \mathbf{b}^{(1)}$:
-\begin{align}
-z_1^{(1)} &= 1.5(1.0) + (-0.5)(-2.0) + 0.5 = 1.5 + 1.0 + 0.5 = 3.0, \\
-z_2^{(1)} &= 0.0(1.0) + 2.0(-2.0) + 1.0 = 0.0 - 4.0 + 1.0 = -3.0.
-\end{align}
-Post-activations $\mathbf{h}^{(1)} = \text{ReLU}(\mathbf{z}^{(1)})$:
-\begin{align}
-h_1^{(1)} &= \max(0, 3.0) = 3.0, \\
-h_2^{(1)} &= \max(0, -3.0) = 0.0.
-\end{align}
-Thus $\mathbf{h}^{(1)} = [3.0, 0.0]^\top$.
-
-\paragraph{Layer 2 ($l=2$, Output Layer with Identity):}
-Pre-activation $\mathbf{z}^{(2)} = \mathbf{W}^{(2)} \mathbf{h}^{(1)} + \mathbf{b}^{(2)}$:
-\begin{equation}
-z_1^{(2)} = 0.8(3.0) + (-1.2)(0.0) + 0.2 = 2.4 + 0.0 + 0.2 = 2.6.
-\end{equation}
-Post-activation: $h_1^{(2)} = \text{identity}(2.6) = 2.6$.
-
-\paragraph{Final Result:}
-\begin{equation}
-\text{Output Vector } \mathbf{h}^{(2)} = [2.6].
-\end{equation}
-
-\section{Numerical Considerations and Boundary Stability}
-\label{sec:numerical}
-
-\begin{enumerate}
-    \item \textbf{Floating-Point Overflow in Non-Linearities:} For sigmoidal and tanh activations, large pre-activations $|z| > 50$ saturate to $1.0$ or $-1.0$. The implementation clamps exponentials to avoid floating-point overflow (\texttt{OverflowError}).
-    \item \textbf{Dead Neuron Propagation:} For $\sigma = \text{ReLU}$, when pre-activations $z_i^{(l)} \le 0$, the post-activation is exactly $0.0$, propagating zero signal to downstream layers.
-    \item \textbf{Dimensionality Integrity:} All inner loop dot products are validated against matching column and row dimensions: $\text{cols}(\mathbf{W}^{(l)}) = d_{l-1}$.
-\end{enumerate}
-
-\section{References}
-\label{sec:references}
+\begin{itemize}
+    \item \textbf{Dying ReLUs}: If large negative biases push all hidden unit pre-activations into $z < 0$, ReLU outputs identically zero and gradient flow dies.
+    \item \textbf{Vanishing Gradients}: Sigmoid/tanh activations saturate at $|z| > 5$, decaying backward gradients exponentially with depth.
+\end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{cybenko1989}
-G.~Cybenko.
-\newblock Approximation by superpositions of a sigmoidal function.
-\newblock \emph{Mathematics of Control, Signals, and Systems}, 2(4):303--314, 1989.
-\newblock DOI: 10.1007/BF02551274.
-
-\bibitem{hornik1991}
-K.~Hornik.
-\newblock Approximation capabilities of multilayer feedforward networks.
-\newblock \emph{Neural Networks}, 4(2):251--257, 1991.
-\newblock DOI: 10.1016/0893-6080(91)90009-T.
+\bibitem{cybenko1989} G.~Cybenko, ``Approximation by superpositions of a sigmoidal function,'' \emph{Mathematics of Control, Signals, and Systems}, vol.~2, no.~4, pp.~303--314, 1989.
+\bibitem{hornik1991} K.~Hornik, ``Approximation capabilities of multilayer feedforward networks,'' \emph{Neural Networks}, vol.~4, no.~2, pp.~251--257, 1991.
 \end{thebibliography}
 
 \end{document}

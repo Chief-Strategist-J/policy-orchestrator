@@ -1,232 +1,161 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{booktabs}
 \usepackage{hyperref}
 
-\newtheorem{theorem}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{property}{Property}
+\newtheorem{remark}{Remark}[section]
 
-\title{Mathematical Specification and Variance Scaling Theory of Linear Affine Layers (ALGO-NN-03)}
-\author{Algorithms Engineering Group}
-\date{\today}
+\title{\textbf{Rigorous Mathematical Specification, Affine Tensor Contractions, and Variance Scaling of the Linear Layer}}
+\author{Architecture and Core Engine Team}
+\date{October 2026}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-This document presents the mathematical foundation, matrix algebraic formulations, and statistical variance preservation theory for linear (affine) projection layers in deep neural architectures. Every mathematical operation is presented at three levels of explanation: intuition, formal formulation, and practical application. We provide a step-by-step derivation of forward and backward signal variance scaling, state the Glorot (Xavier), He (Kaiming), and LeCun theorems with explicitly separated assumptions, guarantees, and limitations, derive computational complexity bounds from primitive operations, and provide a verified numerical trace matching the production implementation contract.
+This document presents the complete mathematical formulation and algorithmic specification of the Linear (Affine) Layer $Y = X W^T + \mathbf{1} b^T$. As the universal computational building block of deep neural networks, the affine transformation maps input manifolds across dimensional spaces. We formalize tensor contraction mechanics, establish variance preservation bounds under standard initialization schemes, provide the complete algorithmic pseudo-code, derive computational complexities, step through a numerical calculation, and address numerical considerations.
 \end{abstract}
 
 \section{Notation and Mathematical Preliminaries}
-\label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers, and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{W}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{b}, \mathbf{y}$), and scalar indices by standard italics.
+Let $X \in \mathbb{R}^{B \times d_{\text{in}}}$ denote an input mini-batch tensor with batch size $B \in \mathbb{N}_{\ge 1}$ and input dimension $d_{\text{in}} \in \mathbb{N}_{\ge 1}$.
 
-\subsection{Matrix Multiplication with Transposed Weights}
-\paragraph{Intuition:} In a batched feedforward layer, each row of the input batch represents an independent data sample, and each row of the weight matrix represents the linear weights for one output feature channel. Multiplying the batch by the transposed weight matrix projects all samples simultaneously into the output channel space.
-
-\paragraph{Mathematical Formulation:}
-Let $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$ be a batch of $B$ samples, $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ be the weight matrix, and $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$ be the bias vector. The batched affine transformation is defined as:
-\begin{equation}
-\label{eq:affine_mat}
-\mathbf{Y} = \mathbf{X} \mathbf{W}^\top + \mathbf{1}_B \mathbf{b}^\top \in \mathbb{R}^{B \times d_{\text{out}}},
-\end{equation}
-where $\mathbf{1}_B = [1, 1, \dots, 1]^\top \in \mathbb{R}^B$. For each entry $(i, j)$ with $i \in \{1, \dots, B\}$ and $j \in \{1, \dots, d_{\text{out}}\}$:
-\begin{equation}
-\label{eq:scalar_expansion}
-Y_{ij} = \sum_{k=1}^{d_{\text{in}}} X_{ik} W_{jk} + b_j.
-\end{equation}
-
-\paragraph{Worked Numerical Example:}
-Let $B = 2, d_{\text{in}} = 3, d_{\text{out}} = 2$:
-\begin{equation}
-\mathbf{X} = \begin{bmatrix} 1.0 & 2.0 & -1.0 \\ 0.0 & -0.5 & 1.5 \end{bmatrix}, \quad
-\mathbf{W} = \begin{bmatrix} 0.5 & -1.0 & 2.0 \\ -2.0 & 0.0 & 1.0 \end{bmatrix}, \quad
-\mathbf{b} = \begin{bmatrix} 0.25 \\ -0.50 \end{bmatrix}.
-\end{equation}
-For sample 1 ($i=1$):
-\begin{align}
-Y_{11} &= X_{11} W_{11} + X_{12} W_{12} + X_{13} W_{13} + b_1 = 1.0(0.5) + 2.0(-1.0) + (-1.0)(2.0) + 0.25 = 0.5 - 2.0 - 2.0 + 0.25 = -3.25, \\
-Y_{12} &= X_{11} W_{21} + X_{12} W_{22} + X_{13} W_{23} + b_2 = 1.0(-2.0) + 2.0(0.0) + (-1.0)(1.0) - 0.50 = -2.0 + 0.0 - 1.0 - 0.50 = -3.50.
-\end{align}
-For sample 2 ($i=2$):
-\begin{align}
-Y_{21} &= 0.0(0.5) + (-0.5)(-1.0) + 1.5(2.0) + 0.25 = 0.0 + 0.5 + 3.0 + 0.25 = 3.75, \\
-Y_{22} &= 0.0(-2.0) + (-0.5)(0.0) + 1.5(1.0) - 0.50 = 0.0 + 0.0 + 1.5 - 0.50 = 1.00.
-\end{align}
-Output matrix:
-\begin{equation}
-\mathbf{Y} = \begin{bmatrix} -3.25 & -3.50 \\ 3.75 & 1.00 \end{bmatrix}.
-\end{equation}
-
-\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $B \in \mathbb{N}$: Batch size (number of independent examples).
-    \item $d_{\text{in}} \in \mathbb{N}$: Fan-in dimension (number of input features / columns of $\mathbf{X}$ and $\mathbf{W}$).
-    \item $d_{\text{out}} \in \mathbb{N}$: Fan-out dimension (number of output neurons / rows of $\mathbf{W}$).
-    \item $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$: Input batch matrix.
-    \item $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$: Trainable weight matrix.
-    \item $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$: Trainable bias vector.
-    \item $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$: Output activation matrix.
-    \item $\sigma^2 \in \mathbb{R}_{>0}$: Theoretical weight initialization variance.
-    \item $r \in \mathbb{R}_{>0}$: Uniform initialization half-width boundary ($W_{jk} \sim \mathcal{U}[-r, r]$).
+    \item $W \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$: Trainable weight matrix mapping $\mathbb{R}^{d_{\text{in}}} \to \mathbb{R}^{d_{\text{out}}}$.
+    \item $b \in \mathbb{R}^{d_{\text{out}}}$: Trainable scalar bias vector.
+    \item $Y \in \mathbb{R}^{B \times d_{\text{out}}}$: Output activation batch tensor.
+    \item $B, d_{\text{in}}, d_{\text{out}}$: Batch size, input feature dimension, and output feature dimension.
 \end{itemize}
 
-\section{Problem Definition and Core Concepts}
-\label{sec:problem_definition}
+\begin{table}[h]
+\centering
+\caption{Summary of Mathematical Symbols for Linear Layer}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Type / Domain} & \textbf{Description} \\
+\midrule
+$X$ & $\mathbb{R}^{B \times d_{\text{in}}}$ & Input batch matrix \\
+$W$ & $\mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ & Linear projection weights \\
+$b$ & $\mathbb{R}^{d_{\text{out}}}$ & Bias vector \\
+$Y$ & $\mathbb{R}^{B \times d_{\text{out}}}$ & Output batch activations \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{Fan-In and Fan-Out Metrics}
-\begin{definition}[Fan-in and Fan-out]
-For a linear transformation with weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$:
-\begin{align}
-\text{fan\_in} &= d_{\text{in}} = \text{number of incoming connections per neuron}, \\
-\text{fan\_out} &= d_{\text{out}} = \text{number of outgoing connections per input channel}.
-\end{align}
+\section{Problem Definition and Core Concepts}
+
+\subsection{Intuition and Motivation}
+A linear layer performs an affine transformation consisting of rotation, scaling, reflection, and translation. In deep architectures, stacking linear transformations interleaved with element-wise non-linear activations forms a universal function approximator. For a mini-batch of $B$ independent samples, the transformation processes each sample concurrently via matrix multiplication.
+
+\subsection{Formal Mathematical Definition}
+\begin{definition}[Affine Batch Transformation]
+Given input batch $X \in \mathbb{R}^{B \times d_{\text{in}}}$, weight matrix $W \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, and bias $b \in \mathbb{R}^{d_{\text{out}}}$:
+\begin{equation}
+Y = X W^T + \mathbf{1}_B b^T \label{eq:linear_batch}
+\end{equation}
+Coordinate-wise for sample $b \in \{1, \dots, B\}$ and output channel $j \in \{1, \dots, d_{\text{out}}\}$:
+\begin{equation}
+Y_{b, j} = \sum_{k=1}^{d_{\text{in}}} X_{b, k} W_{j, k} + b_j \label{eq:linear_elem}
+\end{equation}
 \end{definition}
 
 \section{Algorithmic Specification}
-\label{sec:algorithm}
 
-Algorithm~\ref{alg:linear_layer} defines the deterministic evaluation and initialization metric derivation.
+The computational implementation from \texttt{NnAlgoLinearAffineLayer} is shown below.
 
 \begin{algorithm}[H]
-\caption{Affine Matrix Multiplication and Variance Scaling Calculation}
-\label{alg:linear_layer}
+\caption{Linear Affine Layer Forward Evaluation}
 \begin{algorithmic}[1]
-\Require Input batch $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, bias $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$, mode $\in \{\text{kaiming\_uniform}, \text{glorot\_uniform}, \text{lecun\_uniform}\}$.
-\Ensure Transformed matrix $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$, dimensions $(B, d_{\text{in}}, d_{\text{out}})$, variance $\sigma^2$, bound $r$.
-\State $B \gets \text{rows}(\mathbf{X}), \quad d_{\text{in}} \gets \text{cols}(\mathbf{X}), \quad d_{\text{out}} \gets \text{rows}(\mathbf{W})$
-\State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{B \times d_{\text{out}}}$
-\For{$i = 1 \textbf{ to } B$}
-    \For{$j = 1 \textbf{ to } d_{\text{out}}$}
-        \State $\text{sum} \gets b_j$
-        \For{$k = 1 \textbf{ to } d_{\text{in}}$}
-            \State $\text{sum} \gets \text{sum} + X_{ik} \cdot W_{jk}$
+\Require Input batch $X \in \mathbb{R}^{B \times d_{\text{in}}}$, weight matrix $W \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, optional bias $b \in \mathbb{R}^{d_{\text{out}}}$
+\Ensure Output batch $Y \in \mathbb{R}^{B \times d_{\text{out}}}$
+\State $B \gets \text{rows}(X), \quad d_{\text{in}} \gets \text{cols}(X)$
+\State $d_{\text{out}} \gets \text{rows}(W)$
+\If{$B = 0$ \textbf{or} $\text{cols}(W) \ne d_{\text{in}}$}
+    \State \textbf{throw} PreconditionFailureException(``Matrix dimension mismatch'')
+\EndIf
+\State $Y \gets \text{new Matrix of shape } (B, d_{\text{out}})$
+\For{$i \gets 1 \textbf{ to } B$}
+    \For{$j \gets 1 \textbf{ to } d_{\text{out}}$}
+        \State $\text{sum} \gets 0.0$
+        \For{$k \gets 1 \textbf{ to } d_{\text{in}}$}
+            \State $\text{sum} \gets \text{sum} + X[i][k] \cdot W[j][k]$
         \EndFor
-        \State $Y_{ij} \gets \text{sum}$
+        \If{$b \text{ is not null}$}
+            \State $\text{sum} \gets \text{sum} + b[j]$
+        \EndIf
+        \State $Y[i][j] \gets \text{sum}$
     \EndFor
 \EndFor
-\If{$\text{mode} = \text{glorot\_uniform}$}
-    \State $\sigma^2 \gets \frac{2}{d_{\text{in}} + d_{\text{out}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}} + d_{\text{out}}}}$
-\ElsIf{$\text{mode} = \text{kaiming\_uniform}$}
-    \State $\sigma^2 \gets \frac{2}{d_{\text{in}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}}}}$
-\ElsIf{$\text{mode} = \text{lecun\_uniform}$}
-    \State $\sigma^2 \gets \frac{1}{d_{\text{in}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{3}{d_{\text{in}}}}$
-\EndIf
-\State \Return $(\mathbf{Y}, B, d_{\text{in}}, d_{\text{out}}, \sigma^2, r)$
+\State \Return $\{\text{output\_batch}: Y\}$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Theoretical Guarantees: Variance Scaling and Initialization}
-\label{sec:correctness}
+\section{Theoretical Guarantees and Variance Preservation}
 
-\subsection{Derivation of Signal Variance Preservation}
-Consider a linear layer $y = \sum_{k=1}^{d_{\text{in}}} w_k x_k$. Assume:
-\begin{enumerate}
-    \item Input elements $x_k$ are mutually independent, identically distributed with $\mathbb{E}[x_k] = 0$ and $\text{Var}(x_k) = \text{Var}(x)$.
-    \item Weight elements $w_k$ are mutually independent, identically distributed with $\mathbb{E}[w_k] = 0$ and $\text{Var}(w_k) = \text{Var}(w)$.
-    \item Inputs and weights are mutually independent.
-\end{enumerate}
-
-\paragraph{Step-by-Step Variance Derivation:}
+\begin{theorem}[Forward Output Variance Scaling]
+Let input coordinates $X_{b, k}$ be zero-mean with variance $\sigma_x^2$, and weights $W_{j, k}$ be independent zero-mean with variance $\sigma_w^2$. If bias $b = \mathbf{0}$, then:
 \begin{equation}
-\mathbb{E}[y] = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k x_k] = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k] \mathbb{E}[x_k] = 0.
+\mathbb{E}[Y_{b, j}] = 0 \quad \text{and} \quad \operatorname{Var}(Y_{b, j}) = d_{\text{in}} \sigma_x^2 \sigma_w^2
 \end{equation}
-For the variance of the sum of independent random variables:
-\begin{align}
-\text{Var}(y) &= \sum_{k=1}^{d_{\text{in}}} \text{Var}(w_k x_k) \nonumber \\
-&= \sum_{k=1}^{d_{\text{in}}} \left( \mathbb{E}[(w_k x_k)^2] - (\mathbb{E}[w_k x_k])^2 \right) \nonumber \\
-&= \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k^2] \mathbb{E}[x_k^2] \nonumber \\
-&= d_{\text{in}} \text{Var}(w) \text{Var}(x). \label{eq:var_forward}
-\end{align}
-To preserve signal scale across deep architectures ($\text{Var}(y) = \text{Var}(x)$), we require:
-\begin{equation}
-\text{Var}(w) = \frac{1}{d_{\text{in}}}.
-\end{equation}
-
-\begin{theorem}[Initialization Schemes Comparison]
-\label{thm:init_schemes}
-\textbf{Assumptions:}
-Linear layer operations with zero-mean inputs and weights, independent coordinates, and standard activation assumptions:
-\begin{enumerate}
-    \item \textbf{LeCun Scheme (Linear / Tanh):} Assumes linear activations ($\sigma(z) = z$). Enforces forward variance preservation: $\text{Var}(w) = \frac{1}{d_{\text{in}}}$.
-    \item \textbf{Glorot / Xavier Scheme (Symmetric Activations):} Balances forward signal propagation ($\text{Var}(w) = 1/d_{\text{in}}$) and backward gradient propagation ($\text{Var}(w) = 1/d_{\text{out}}$) by taking the harmonic mean:
-    \begin{equation}
-    \sigma^2 = \frac{2}{d_{\text{in}} + d_{\text{out}}}.
-    \end{equation}
-    \item \textbf{He / Kaiming Scheme (Rectified Activations):} Assumes ReLU activation ($\sigma(z) = \max(0, z)$), where exactly half of the activations are zeroed out in expectation ($\mathbb{E}[\text{ReLU}(z)^2] = \frac{1}{2} \text{Var}(z)$). To compensate for the $1/2$ variance loss:
-    \begin{equation}
-    \sigma^2 = \frac{2}{d_{\text{in}}}.
-    \end{equation}
-\end{enumerate}
-
-\textbf{Guarantee:}
-Drawing weights from distribution with variance $\sigma^2$ guarantees that forward activation variances and backward gradient variances neither explode exponentially nor vanish to zero at layer $0$.
-
-\textbf{Limitations:}
-\begin{enumerate}
-    \item Assumptions of independence and zero-mean distributions break down under correlated features and batch normalization shifts.
-    \item Residual connections introduce additive variance growth ($x + F(x)$), requiring additional branch scale adjustments ($1/\sqrt{2L}$).
-\end{enumerate}
 \end{theorem}
 
-\section{Complexity Derivation}
-\label{sec:complexity}
+\begin{proof}
+By linearity of expectation: $\mathbb{E}[Y_{b, j}] = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[X_{b, k}] \mathbb{E}[W_{j, k}] = 0$.
+Since terms in the sum are mutually independent:
+\begin{equation}
+\operatorname{Var}(Y_{b, j}) = \sum_{k=1}^{d_{\text{in}}} \operatorname{Var}(X_{b, k} W_{j, k}) = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[X_{b, k}^2] \mathbb{E}[W_{j, k}^2] = d_{\text{in}} \sigma_x^2 \sigma_w^2
+\end{equation}
+\end{proof}
+
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Linear Expressivity}: A sequence of purely linear layers $Y = X W_1^T W_2^T \dots W_L^T$ collapses algebraically to a single linear map $W_{\text{eff}} = W_L \dots W_1$. Non-linear activation functions must follow linear layers to build deep representations.
+\end{itemize}
+
+\section{Complexity Analysis}
 
 \subsection{Time Complexity}
-\begin{enumerate}
-    \item Evaluating equation~\eqref{eq:scalar_expansion} for $B$ rows and $d_{\text{out}}$ columns:
-    \item For each $(i, j)$, the inner loop computes $d_{\text{in}}$ multiplications and $d_{\text{in}}$ additions ($2 d_{\text{in}}$ operations).
-    \item Adding bias $b_j$ takes $1$ addition.
-    \item Total elementary operations: $B \cdot d_{\text{out}} \cdot (2 d_{\text{in}} + 1) = \Theta(B \cdot d_{\text{in}} \cdot d_{\text{out}})$.
-    \begin{equation}
-    T(B, d_{\text{in}}, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{out}}).
-    \end{equation}
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Matrix Contraction}: Computing $X W^T$ requires $B \times d_{\text{out}} \times d_{\text{in}}$ multiply-accumulate operations ($\mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{out}})$ FLOPs).
+    \item \textbf{Bias Addition}: Requires $B \cdot d_{\text{out}}$ scalar additions.
+    \item \textbf{Total Time}: $\Theta(B \cdot d_{\text{in}} \cdot d_{\text{out}})$ FLOPs.
+\end{itemize}
 
 \subsection{Space Complexity}
-\begin{enumerate}
-    \item Output matrix $\mathbf{Y}$ allocates $B \cdot d_{\text{out}}$ floating-point numbers.
-    \item Auxiliary memory complexity is strictly:
-    \begin{equation}
-    S(B, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{out}}).
-    \end{equation}
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Output Tensor Memory}: Stores output matrix $Y$ of size $B \times d_{\text{out}}$ ($\Theta(B \cdot d_{\text{out}})$ auxiliary memory).
+\end{itemize}
 
-\section{Numerical Considerations and Boundary Behaviors}
-\label{sec:numerical}
+\section{Worked Numerical Example}
 
-\begin{enumerate}
-    \item \textbf{Row-Major Memory Locality:} Matrix multiplications accumulate inner products along contiguous column strides ($k = 1 \dots d_{\text{in}}$), maximizing cache hit rates.
-    \item \textbf{Null Bias Handling:} When bias vector $\mathbf{b}$ is omitted or \texttt{null}, bias addition defaults to zero with zero overhead.
-    \item \textbf{Dimensionality Constraints:} Validates that $\text{cols}(\mathbf{X}) = d_{\text{in}} = \text{cols}(\mathbf{W})$ and $\text{len}(\mathbf{b}) = d_{\text{out}}$.
-\end{enumerate}
+Let $B=1, d_{\text{in}}=2, d_{\text{out}}=2$:
+\begin{equation}
+X = \begin{bmatrix} 2.0 & 3.0 \end{bmatrix}, \quad W = \begin{bmatrix} 0.5 & -0.5 \\ 1.0 & 2.0 \end{bmatrix}, \quad b = \begin{bmatrix} 0.1 \\ -0.2 \end{bmatrix}
+\end{equation}
 
-\section{References}
-\label{sec:references}
+\begin{align}
+Y_{1, 1} &= 2.0(0.5) + 3.0(-0.5) + 0.1 = 1.0 - 1.5 + 0.1 = -0.40 \\
+Y_{1, 2} &= 2.0(1.0) + 3.0(2.0) - 0.2 = 2.0 + 6.0 - 0.2 = 7.80
+\end{align}
+Output: $Y = \begin{bmatrix} -0.40 & 7.80 \end{bmatrix}$.
+
+\section{Numerical Considerations and Edge Cases}
+
+\begin{itemize}
+    \item \textbf{BLAS / GEMM Acceleration}: In modern deep learning libraries, linear layer forward evaluations are dispatched directly to hardware-optimized BLAS Level-3 GEMM routines (\texttt{cublasSgemm} / \texttt{rocBLAS}).
+    \item \textbf{Dimension Alignment}: Padded memory allocations aligned to 64-byte or 128-byte boundaries prevent cache line split penalties.
+\end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{glorot2010}
-X.~Glorot and Y.~Bengio.
-\newblock Understanding the difficulty of training deep feedforward neural networks.
-\newblock In \emph{Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics}, pages 249--256, 2010.
-
-\bibitem{he2015}
-K.~He, X.~Zhang, S.~Ren, and J.~Sun.
-\newblock Delving deep into rectifiers: Surpassing human-level performance on ImageNet classification.
-\newblock In \emph{Proceedings of the IEEE International Conference on Computer Vision}, pages 1026--1034, 2015.
-\newblock DOI: 10.1109/ICCV.2015.123.
-
-\bibitem{lecun1998}
-Y.~LeCun, L.~Bottou, G.~B. Orr, and K.-R. M{\"u}ller.
-\newblock Efficient BackProp.
-\newblock In \emph{Neural Networks: Tricks of the Trade}, pages 9--50. Springer, 1998.
+\bibitem{goodfellow2016} I.~Goodfellow, Y.~Bengio, and A.~Courville, \emph{Deep Learning}, MIT Press, 2016.
+\bibitem{glorot2010lin} X.~Glorot and Y.~Bengio, ``Understanding the difficulty of training deep feedforward neural networks,'' in \emph{AISTATS}, 2010.
 \end{thebibliography}
 
 \end{document}

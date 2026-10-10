@@ -1,250 +1,179 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{booktabs}
 \usepackage{hyperref}
 
-\newtheorem{theorem}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{property}{Property}
+\newtheorem{remark}{Remark}[section]
 
-\title{Mathematical Formulations, Analytic Derivatives, and Curvature Analysis of Smooth Non-Monotonic Activations (ALGO-NN-05)}
-\author{Algorithms Engineering Group}
-\date{\today}
+\title{\textbf{Rigorous Mathematical Specification, Probabilistic Expectation Gating, and Gradient Analysis of Smooth Activations (GELU, SiLU/Swish, Mish)}}
+\author{Architecture and Core Engine Team}
+\date{October 2026}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-This document formulates the mathematical properties, stochastic gating interpretations, analytic derivative calculus, and curvature characteristics of smooth non-monotonic activation functions (GELU Exact, GELU Tanh Approximation, SiLU/Swish, and Mish). Every formulation is presented at three levels of explanation: intuition, formal mathematics, and practical system role. We provide step-by-step first-derivative derivations, analyze the self-gating mechanism, derive computational complexity bounds, and provide a verified numerical trace matching the production implementation contract.
+This document presents the complete mathematical formulation and algorithmic specification of non-monotonic smooth activations: Gaussian Error Linear Unit (GELU exact and tanh approximation), Sigmoid Linear Unit (SiLU / Swish), and Mish. Unlike piecewise linear functions, smooth non-monotonic activations possess non-zero negative curvature and continuous higher-order derivatives, stabilizing optimization in modern Transformer (BERT, GPT, Llama) and Vision architectures. We formalize the stochastic regularization derivation, formulate complete algorithmic pseudo-code, derive complexity bounds, calculate a numerical example, and discuss Taylor series stability.
 \end{abstract}
 
 \section{Notation and Mathematical Preliminaries}
-\label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers, $\mathbb{R}^D$ the $D$-dimensional Euclidean vector space, and $\mathbb{R}^{N \times D}$ the matrix space. Tensors are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{Y}, \mathbf{G}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{y}$), and scalars by standard italics ($x, z$).
+Let $X \in \mathbb{R}^{N \times D}$ denote a 2D pre-activation tensor.
 
-\subsection{Smooth Non-Monotonic Self-Gating Operators}
-\paragraph{Intuition:} In smooth activations, the input $x$ is multiplied (gated) by a smooth probability or quasi-probability function that transitions softly from $0$ to $1$. Unlike hard thresholding in ReLU ($\max(0, x)$), smooth activations allow small negative inputs to produce small negative outputs, which preserves weak signals and provides continuous non-zero gradients everywhere.
-
-\paragraph{Mathematical Formulation:}
-For pre-activation scalar $x \in \mathbb{R}$, self-gated smooth activation functions take the general form:
-\begin{equation}
-\label{eq:self_gated}
-\psi(x) = x \cdot g(x),
-\end{equation}
-where $g(x) \in [0, 1]$ acts as a continuous soft gate. The first derivative via the product rule is:
-\begin{equation}
-\label{eq:derivative_general}
-\psi'(x) = g(x) + x \cdot g'(x).
-\end{equation}
-
-\paragraph{Worked Numerical Example:}
-Consider the SiLU / Swish function where $g(x) = \sigma(x) = \frac{1}{1 + e^{-x}}$.
-For $x = 2.0$:
-\begin{align}
-\sigma(2.0) &= \frac{1}{1 + e^{-2.0}} \approx \frac{1}{1 + 0.135335} \approx 0.880797, \\
-\text{SiLU}(2.0) &= 2.0 \cdot \sigma(2.0) \approx 2.0(0.880797) \approx 1.761594.
-\end{align}
-The analytic derivative is:
-\begin{equation}
-\text{SiLU}'(2.0) = \sigma(2.0) + 2.0 \cdot \sigma(2.0)(1 - \sigma(2.0)) \approx 0.880797 + 2.0(0.880797)(0.119203) \approx 1.090786.
-\end{equation}
-
-\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $N \in \mathbb{N}$: Batch dimension (number of independent tokens/samples).
-    \item $D \in \mathbb{N}$: Hidden channel dimension.
-    \item $\mathbf{X} \in \mathbb{R}^{N \times D}$: Input pre-activation tensor.
-    \item $\mathbf{Y} \in \mathbb{R}^{N \times D}$: Output activated tensor.
-    \item $\mathbf{G} \in \mathbb{R}^{N \times D}$: Exact analytic first derivative tensor $\frac{\partial \mathbf{Y}}{\partial \mathbf{X}}$.
-    \item $\Phi(x) = \frac{1}{2} \left[ 1 + \text{erf}\left(\frac{x}{\sqrt{2}}\right) \right]$: Standard normal cumulative distribution function (CDF).
-    \item $\text{erf}(z) = \frac{2}{\sqrt{\pi}} \int_0^z e^{-t^2} dt$: Standard Gauss error function.
-    \item $\sigma(x) = \frac{1}{1 + e^{-x}}$: Standard logistic sigmoid function.
-    \item $\text{softplus}(x) = \ln(1 + e^x)$: Smooth approximation to $\max(0, x)$.
+    \item $x \in \mathbb{R}$: Scalar pre-activation coordinate.
+    \item $\Phi(x) \triangleq \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-t^2/2} dt = \frac{1}{2}\left[1 + \operatorname{erf}\left(\frac{x}{\sqrt{2}}\right)\right]$: Standard Gaussian cumulative distribution function.
+    \item $\sigma(x) \triangleq \frac{1}{1 + e^{-x}}$: Standard logistic sigmoid function.
+    \item $\operatorname{softplus}(x) \triangleq \ln(1 + e^x)$: Smooth positive rectifier.
+    \item $\phi(x) \in \mathbb{R}$: Output activation value.
+    \item $\phi'(x)$: Exact analytical derivative.
 \end{itemize}
 
-\section{Problem Definition and Core Variants}
-\label{sec:problem_definition}
+\begin{table}[h]
+\centering
+\caption{Summary of Mathematical Symbols for Smooth Activations}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Type / Domain} & \textbf{Description} \\
+\midrule
+$x$ & $\mathbb{R}$ & Pre-activation scalar \\
+$\Phi(x)$ & $[0, 1]$ & Standard Normal CDF \\
+$\sigma(x)$ & $(0, 1)$ & Logistic sigmoid \\
+$\phi(x)$ & $\mathbb{R}$ & Post-activation output \\
+$\phi'(x)$ & $\mathbb{R}$ & Analytic derivative \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\begin{definition}[Gaussian Error Linear Unit (GELU Exact)]
-\label{def:gelu_exact}
-The exact GELU activation weights the input $x$ by the probability that a standard normal variable $X \sim \mathcal{N}(0, 1)$ is less than or equal to $x$:
-\begin{equation}
-\label{eq:gelu_exact}
-\text{GELU}(x) = x \cdot \Phi(x) = x \cdot P(X \le x) = \frac{x}{2} \left[ 1 + \text{erf}\left( \frac{x}{\sqrt{2}} \right) \right].
-\end{equation}
-Its exact analytic first derivative is:
-\begin{equation}
-\label{eq:gelu_exact_grad}
-\frac{d}{dx}\text{GELU}(x) = \Phi(x) + x \cdot \Phi'(x) = \frac{1}{2} \left[ 1 + \text{erf}\left( \frac{x}{\sqrt{2}} \right) \right] + \frac{x}{\sqrt{2\pi}} e^{-\frac{x^2}{2}}.
-\end{equation}
-\end{definition}
+\section{Problem Definition and Core Concepts}
 
-\begin{definition}[GELU Tanh Approximation]
-\label{def:gelu_tanh}
-The standard computational approximation to GELU introduced by Hendrycks and Gimpel (2016) is:
-\begin{equation}
-\label{eq:gelu_tanh}
-\text{GELU}_{\text{tanh}}(x) = \frac{x}{2} \left[ 1 + \tanh\left( \sqrt{\frac{2}{\pi}} \left( x + 0.044715 \, x^3 \right) \right) \right].
-\end{equation}
-Let $u(x) = \sqrt{\frac{2}{\pi}} (x + 0.044715 \, x^3)$ and $t(x) = \tanh(u(x))$. The derivative is:
-\begin{equation}
-\frac{d}{dx}\text{GELU}_{\text{tanh}}(x) = \frac{1}{2} (1 + t(x)) + \frac{x}{2} (1 - t(x)^2) \sqrt{\frac{2}{\pi}} (1 + 3 \times 0.044715 \, x^2).
-\end{equation}
-\end{definition}
+\subsection{Intuition and Motivation}
+In standard ReLU ($\max(0, x)$), input values are deterministically multiplied by 0 or 1 based on sign alone. GELU bridges deterministic activation with stochastic dropout: an input $x$ is multiplied by $m \sim \operatorname{Bernoulli}(\Phi(x))$, where the probability that $x$ drops to 0 increases smoothly as $x$ becomes more negative. The expected activation is $\mathbb{E}[m \cdot x] = x \cdot \Phi(x)$. This continuous curve allows small negative values to propagate small negative gradients, preventing dead neurons.
 
-\begin{definition}[Sigmoid Linear Unit / Swish (SiLU)]
-\label{def:silu}
-\begin{equation}
-\text{SiLU}(x) = x \cdot \sigma(x) = \frac{x}{1 + e^{-x}}.
-\end{equation}
-Its first derivative is:
-\begin{equation}
-\frac{d}{dx}\text{SiLU}(x) = \sigma(x) + x \cdot \sigma(x)(1 - \sigma(x)) = \sigma(x) (1 + x(1 - \sigma(x))).
-\end{equation}
-\end{definition}
-
-\begin{definition}[Mish Activation]
-\label{def:mish}
-\begin{equation}
-\text{Mish}(x) = x \cdot \tanh(\text{softplus}(x)) = x \cdot \tanh(\ln(1 + e^x)).
-\end{equation}
-Let $\omega(x) = \text{softplus}(x) = \ln(1 + e^x)$ and $\delta(x) = \sigma(x) = \frac{1}{1 + e^{-x}}$. The derivative is:
-\begin{equation}
-\frac{d}{dx}\text{Mish}(x) = \tanh(\omega(x)) + x \cdot \text{sech}^2(\omega(x)) \cdot \delta(x).
-\end{equation}
+\subsection{Formal Mathematical Definition}
+\begin{definition}[Smooth Activation Equations and Derivatives]
+\begin{enumerate}
+    \item \textbf{GELU Exact}:
+    \begin{align}
+    \operatorname{GELU}(x) &= x \Phi(x) = \frac{x}{2} \left[ 1 + \operatorname{erf}\left( \frac{x}{\sqrt{2}} \right) \right] \label{eq:gelu_exact} \\
+    \frac{d}{dx}\operatorname{GELU}(x) &= \Phi(x) + x \cdot \frac{e^{-x^2/2}}{\sqrt{2\pi}} \label{eq:gelu_grad}
+    \end{align}
+    \item \textbf{GELU Tanh Approximation}:
+    \begin{align}
+    \operatorname{GELU}_{\text{tanh}}(x) &= \frac{x}{2} \left[ 1 + \tanh\left( \sqrt{\frac{2}{\pi}} \left( x + 0.044715 x^3 \right) \right) \right] \label{eq:gelu_tanh}
+    \end{align}
+    \item \textbf{SiLU / Swish}:
+    \begin{align}
+    \operatorname{SiLU}(x) &= x \cdot \sigma(x) = \frac{x}{1 + e^{-x}} \label{eq:silu_def} \\
+    \frac{d}{dx}\operatorname{SiLU}(x) &= \sigma(x) + x \sigma(x)(1 - \sigma(x)) = \operatorname{SiLU}(x) + \sigma(x)(1 - \operatorname{SiLU}(x)) \label{eq:silu_grad}
+    \end{align}
+    \item \textbf{Mish}:
+    \begin{align}
+    \operatorname{Mish}(x) &= x \cdot \tanh(\operatorname{softplus}(x)) = x \cdot \tanh(\ln(1 + e^x)) \label{eq:mish_def}
+    \end{align}
+\end{enumerate}
 \end{definition}
 
 \section{Algorithmic Specification}
-\label{sec:algorithm}
 
-Algorithm~\ref{alg:smooth_act} specifies the exact forward pass and analytic gradient calculation.
+The computational pipeline implemented in \texttt{NnAlgoSmoothActivations} is shown below.
 
 \begin{algorithm}[H]
-\caption{Deterministic Smooth Non-Monotonic Activation and Gradient Evaluation}
-\label{alg:smooth_act}
+\caption{Smooth Activations Forward Evaluation and Analytic Derivatives}
 \begin{algorithmic}[1]
-\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant $\in \{\text{gelu\_exact}, \text{gelu\_tanh}, \text{silu}, \text{mish}\}$.
-\Ensure Output tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$, derivative tensor $\mathbf{G} \in \mathbb{R}^{N \times D}$, stats $(\mu, \sigma^2, \min, \max)$.
-\State $N \gets \text{rows}(\mathbf{X}), \quad D \gets \text{cols}(\mathbf{X})$
-\State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{N \times D}, \quad \mathbf{G} \gets \mathbf{0} \in \mathbb{R}^{N \times D}$
-\For{$i = 1 \textbf{ to } N$}
-    \For{$j = 1 \textbf{ to } D$}
-        \State $x \gets X_{ij}$
+\Require Input tensor $X \in \mathbb{R}^{N \times D}$, variant $\in \{\text{gelu\_exact}, \text{gelu\_tanh}, \text{silu}, \text{mish}\}$
+\Ensure Activated tensor $Y \in \mathbb{R}^{N \times D}$, derivative tensor $G \in \mathbb{R}^{N \times D}$
+\State $N \gets \text{rows}(X), \quad D \gets \text{cols}(X)$
+\State $Y \gets \text{new Matrix of shape } (N, D), \quad G \gets \text{new Matrix of shape } (N, D)$
+\State $C \gets \sqrt{2.0 / \pi} \approx 0.7978845608028654$
+\For{$i \gets 1 \textbf{ to } N$}
+    \For{$j \gets 1 \textbf{ to } D$}
+        \State $x \gets X[i][j]$
         \If{$\text{variant} = \text{gelu\_exact}$}
-            \State $\Phi \gets 0.5 \cdot (1.0 + \text{erf}(x / \sqrt{2}))$
-            \State $y \gets x \cdot \Phi$
-            \State $g \gets \Phi + \frac{x}{\sqrt{2\pi}} \cdot \exp(-0.5 \cdot x^2)$
+            \State $\text{cdf} \gets 0.5 \cdot (1.0 + \operatorname{erf}(x / \sqrt{2.0}))$
+            \State $Y[i][j] \gets x \cdot \text{cdf}$
+            \State $G[i][j] \gets \text{cdf} + x \cdot (\exp(-0.5 \cdot x^2) / \sqrt{2.0 \cdot \pi})$
         \ElsIf{$\text{variant} = \text{gelu\_tanh}$}
-            \State $u \gets \sqrt{2/\pi} \cdot (x + 0.044715 \cdot x^3)$
+            \State $u \gets C \cdot (x + 0.044715 \cdot x^3)$
             \State $t \gets \tanh(u)$
-            \State $y \gets 0.5 \cdot x \cdot (1.0 + t)$
-            \State $u' \gets \sqrt{2/\pi} \cdot (1.0 + 3.0 \cdot 0.044715 \cdot x^2)$
-            \State $g \gets 0.5 \cdot (1.0 + t) + 0.5 \cdot x \cdot (1.0 - t^2) \cdot u'$
+            \State $Y[i][j] \gets 0.5 \cdot x \cdot (1.0 + t)$
+            \State $G[i][j] \gets 0.5 \cdot (1.0 + t) + 0.5 \cdot x \cdot (1.0 - t^2) \cdot C \cdot (1.0 + 3.0 \cdot 0.044715 \cdot x^2)$
         \ElsIf{$\text{variant} = \text{silu}$}
             \State $s \gets 1.0 / (1.0 + \exp(-x))$
-            \State $y \gets x \cdot s$
-            \State $g \gets s \cdot (1.0 + x \cdot (1.0 - s))$
+            \State $Y[i][j] \gets x \cdot s$
+            \State $G[i][j] \gets s \cdot (1.0 + x \cdot (1.0 - s))$
         \ElsIf{$\text{variant} = \text{mish}$}
-            \State $sp \gets \ln(1.0 + \exp(x)) \textbf{ if } x < 20.0 \textbf{ else } x$
-            \State $t \gets \tanh(sp)$
-            \State $y \gets x \cdot t$
-            \State $s \gets 1.0 / (1.0 + \exp(-x))$
-            \State $g \gets t + x \cdot (1.0 - t^2) \cdot s$
+            \State $\text{sp} \gets \ln(1.0 + \exp(x))$
+            \State $t \gets \tanh(\text{sp})$
+            \State $Y[i][j] \gets x \cdot t$
+            \State $G[i][j] \gets t + x \cdot (1.0 - t^2) \cdot (1.0 / (1.0 + \exp(-x)))$
         \EndIf
-        \State $Y_{ij} \gets y, \quad G_{ij} \gets g$
     \EndFor
 \EndFor
-\State \Return $(\mathbf{Y}, \mathbf{G}, \text{metrics})$
+\State \Return $\{\text{output\_tensor}: Y, \text{gradients}: G\}$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Theoretical Guarantees: Non-Monotonicity and Curvature}
-\label{sec:correctness}
+\section{Theoretical Guarantees and Smooth Curvature}
 
-\begin{theorem}[Non-Monotonicity and Global Minimum]
-\label{thm:smooth_min}
-\textbf{Assumptions:}
-Let $\psi: \mathbb{R} \to \mathbb{R}$ be GELU Exact, GELU Tanh, SiLU, or Mish.
-
-\textbf{Guarantee:}
-\begin{enumerate}
-    \item \textbf{Non-Monotonicity:} $\psi$ is strictly non-monotonic on $\mathbb{R}$. It achieves a unique global minimum in the negative half-line $x^* \in (-1.5, -0.5)$ where $\psi(x^*) < 0$.
-    \item \textbf{Asymptotic Behaviors:}
-    \begin{align}
-    \lim_{x \to +\infty} \psi(x) = x, \quad \lim_{x \to +\infty} \psi'(x) = 1, \\
-    \lim_{x \to -\infty} \psi(x) = 0, \quad \lim_{x \to -\infty} \psi'(x) = 0.
-    \end{align}
-    \item \textbf{Smoothness ($C^\infty$):} $\psi$ is infinitely differentiable on $\mathbb{R}$, providing smooth gradient landscapes that eliminate the dead gradient traps of standard ReLU.
-\end{enumerate}
-
-\textbf{Limitations:}
-Evaluating transcendental functions ($\text{erf}, \exp, \tanh$) introduces small additional FLOPS relative to piecewise linear rectifiers (mitigated by vectorized SIMD instructions and GPU special function units).
+\begin{theorem}[Non-Monotonic Global Minimum]
+Both $\operatorname{GELU}(x)$ and $\operatorname{SiLU}(x)$ are non-monotonic $\mathcal{C}^\infty$ smooth functions with a single unique global minimum in the negative half-plane:
+\begin{align}
+\min_{x \in \mathbb{R}} \operatorname{GELU}(x) &\approx -0.1700 \quad \text{at } x \approx -0.7518 \\
+\min_{x \in \mathbb{R}} \operatorname{SiLU}(x) &\approx -0.2785 \quad \text{at } x \approx -1.2785
+\end{align}
 \end{theorem}
 
-\section{Complexity Derivation}
-\label{sec:complexity}
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Higher Transcendental Cost}: Evaluating $\operatorname{erf}$ or $\tanh$ requires $\approx 5\times$ to $10\times$ more cycles than a simple $\max(0, x)$ comparison.
+\end{itemize}
 
-\subsection{Time Complexity}
+\section{Complexity Analysis}
+
+\subsection{Time and Space Complexity}
+\begin{itemize}
+    \item \textbf{Time}: $\Theta(ND)$ transcendental arithmetic operations.
+    \item \textbf{Space}: $\Theta(ND)$ auxiliary memory for activation caching.
+\end{itemize}
+
+\section{Worked Numerical Example}
+
+Consider $x = 1.0$ under SiLU and GELU exact.
+
 \begin{enumerate}
-    \item For tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, there are $N \cdot D$ elements.
-    \item Each element evaluates a constant number of transcendental floating-point operations ($\mathcal{O}(1)$).
-    \item Total time complexity:
-    \begin{equation}
-    T(N, D) = \mathcal{O}(N \cdot D).
-    \end{equation}
+    \item \textbf{SiLU ($x=1.0$)}:
+    \begin{align}
+    \sigma(1.0) &= \frac{1}{1 + e^{-1}} \approx 0.7310586 \\
+    Y_{\text{SiLU}} &= 1.0 \times 0.7310586 = 0.7310586 \\
+    G_{\text{SiLU}} &= 0.7310586 \times (1.0 + 1.0 \times (1.0 - 0.7310586)) \\
+    &= 0.7310586 \times (1.0 + 0.2689414) = 0.7310586 \times 1.2689414 \approx 0.927670
+    \end{align}
+    \item \textbf{GELU Exact ($x=1.0$)}:
+    \begin{align}
+    \Phi(1.0) &= 0.5(1 + \operatorname{erf}(1/\sqrt{2})) \approx 0.8413447 \\
+    Y_{\text{GELU}} &= 1.0 \times 0.8413447 = 0.8413447 \\
+    G_{\text{GELU}} &= 0.8413447 + 1.0 \times \frac{e^{-0.5}}{\sqrt{2\pi}} = 0.8413447 + 0.2419707 \approx 1.083315
+    \end{align}
 \end{enumerate}
 
-\subsection{Space Complexity}
-\begin{enumerate}
-    \item Output tensor $\mathbf{Y}$ allocates $N \cdot D$ scalars.
-    \item Gradient tensor $\mathbf{G}$ allocates $N \cdot D$ scalars.
-    \item Auxiliary memory complexity:
-    \begin{equation}
-    S(N, D) = \mathcal{O}(N \cdot D).
-    \end{equation}
-\end{enumerate}
+\section{Numerical Considerations and Edge Cases}
 
-\section{Worked Example and Numerical Verification}
-\label{sec:worked_example}
-
-Consider input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 2}$:
-\begin{equation}
-\mathbf{X} = \begin{bmatrix} 0.0 & 1.0 \\ -1.0 & 2.0 \end{bmatrix}.
-\end{equation}
-
-\subsection{Exact Numeric Evaluations}
-\paragraph{1. GELU Exact:}
-\begin{align}
-X_{11} = 0.0: & \quad \Phi(0) = 0.5 \implies Y_{11} = 0.0(0.5) = 0.0, \quad G_{11} = 0.5 + 0.0 = 0.5. \\
-X_{12} = 1.0: & \quad \Phi(1) \approx 0.841345 \implies Y_{12} = 1.0(0.841345) \approx 0.841345, \quad G_{12} \approx 0.841345 + 0.241971 = 1.083316. \\
-X_{21} = -1.0: & \quad \Phi(-1) \approx 0.158655 \implies Y_{21} = -1.0(0.158655) \approx -0.158655, \quad G_{21} \approx 0.158655 - 0.241971 = -0.083316. \\
-X_{22} = 2.0: & \quad \Phi(2) \approx 0.977250 \implies Y_{22} = 2.0(0.977250) \approx 1.954500, \quad G_{22} \approx 0.977250 + 0.107982 = 1.085232.
-\end{align}
-
-\section{References}
-\label{sec:references}
+\begin{itemize}
+    \item \textbf{Mish Softplus Overflow Protection}: For $x > 20$, $\operatorname{softplus}(x) \approx x$ and $\tanh(x) \approx 1$, preventing float exponent overflow.
+\end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{hendrycks2016}
-D.~Hendrycks and K.~Gimpel.
-\newblock Gaussian error linear units (GELUs).
-\newblock \emph{arXiv preprint arXiv:1606.08415}, 2016.
-
-\bibitem{ramachandran2017}
-P.~Ramachandran, B.~Zoph, and Q.~V. Le.
-\newblock Searching for activation functions.
-\newblock \emph{arXiv preprint arXiv:1710.05941}, 2017.
-
-\bibitem{misra2019}
-D.~Misra.
-\newblock Mish: A self regularized non-monotonic activation function.
-\newblock \emph{arXiv preprint arXiv:1908.08681}, 2019.
+\bibitem{hendrycks2016} D.~Hendrycks and K.~Gimpel, ``Gaussian error linear units (GELUs),'' \emph{arXiv preprint arXiv:1606.08415}, 2016.
+\bibitem{ramachandran2017} P.~Ramachandran, B.~Zoph, and Q.~V.~Le, ``Searching for activation functions,'' \emph{arXiv preprint arXiv:1710.05941}, 2017.
+\bibitem{misra2019} D.~Misra, ``Mish: A self regularized non-monotonic activation function,'' \emph{arXiv preprint arXiv:1908.08681}, 2019.
 \end{thebibliography}
 
 \end{document}

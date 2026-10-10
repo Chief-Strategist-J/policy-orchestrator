@@ -1,406 +1,188 @@
-\documentclass[11pt]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{booktabs}
 \usepackage{hyperref}
 
-\newtheorem{theorem}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}{Definition}
-\newtheorem{property}{Property}
+\newtheorem{remark}{Remark}[section]
 
-\title{Mathematical Specification and Convergence Analysis of the Perceptron Learning Rule (ALGO-NN-01)}
-\author{Algorithms Engineering Group}
-\date{\today}
+\title{\textbf{Rigorous Mathematical Specification, Geometric Margin Dynamics, and Convergence Analysis of the Perceptron Learning Rule}}
+\author{Architecture and Core Engine Team}
+\date{October 2026}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-This document presents the rigorous mathematical specification, algorithmic mechanics, and formal theoretical guarantees of the classical Perceptron learning rule. Every mathematical concept is structured across three levels of explanation: intuitive meaning, formal formulation, and practical algorithmic application. Theoretical claims strictly isolate underlying assumptions, mathematical guarantees, and boundary limitations. The convergence properties under linear separability are established via Novikoff's theorem with every intermediate algebraic step and norm inequality justified, and the execution is verified against the canonical Logical AND dataset.
+This document provides the foundational mathematical specification, geometric margin dynamics, and convergence proof for Rosenblatt's Perceptron Learning Algorithm. Operating on linearly separable binary data, the perceptron updates an affine hyperplane iteratively upon misclassification. We establish Novikoff's convergence theorem with explicit step-by-step proofs, detail the algorithmic pseudo-code matching the reference implementation, derive computational complexity, calculate a complete numerical example, and examine numerical edge cases.
 \end{abstract}
 
 \section{Notation and Mathematical Preliminaries}
-\label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers, $\mathbb{R}^d$ the $d$-dimensional Euclidean space, and $\mathbb{N} = \{1, 2, 3, \dots\}$. Vectors are denoted by boldface lowercase letters ($\mathbf{x}, \mathbf{w}$), matrices by boldface uppercase letters ($\mathbf{X}$), and scalars by standard letters ($b, \eta, z$).
+Let $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N$ denote a training dataset of $N$ samples, where $x_i \in \mathbb{R}^d$ is the feature vector and $y_i \in \{0, 1\}$ is the binary target class label.
 
-\subsection{Coordinate and Inner Product Mechanics}
-\paragraph{Intuitive Meaning:} The inner product (dot product) combines corresponding feature measurements of an input vector weighted by their learned importance coefficients into a single cumulative score.
-
-\paragraph{Formal Mathematical Definition:}
-For vectors $\mathbf{w} = [w_1, w_2, \dots, w_d]^\top \in \mathbb{R}^d$ and $\mathbf{x} = [x_1, x_2, \dots, x_d]^\top \in \mathbb{R}^d$, the standard Euclidean inner product is defined as:
-\begin{equation}
-\label{eq:dot_product}
-\langle \mathbf{w}, \mathbf{x} \rangle = \mathbf{w}^\top \mathbf{x} = \sum_{j=1}^d w_j x_j.
-\end{equation}
-The induced Euclidean ($\ell_2$) norm is:
-\begin{equation}
-\|\mathbf{w}\|_2 = \sqrt{\langle \mathbf{w}, \mathbf{w} \rangle} = \sqrt{\sum_{j=1}^d w_j^2}.
-\end{equation}
-
-\paragraph{Worked Numerical Example:}
-Let $\mathbf{w} = [2.0, 3.0]^\top$ and $\mathbf{x} = [4.0, 5.0]^\top$. The inner product evaluates to:
-\begin{equation}
-\mathbf{w}^\top \mathbf{x} = 2.0(4.0) + 3.0(5.0) = 8.0 + 15.0 = 23.0.
-\end{equation}
-If scalar bias $b = -10.0$, the net affine activation is $z = \mathbf{w}^\top \mathbf{x} + b = 23.0 - 10.0 = 13.0$.
-
-\paragraph{Algorithmic Interpretation:}
-The inner product reduces high-dimensional attribute arrays into a scalar summary that can be compared against a decision threshold.
-
-\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $N \in \mathbb{N}$: Total number of training samples in the dataset.
-    \item $d \in \mathbb{N}$: Dimensionality of the feature space.
-    \item $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$: Training dataset with $\mathbf{x}_i \in \mathbb{R}^d$ and binary target labels $y_i \in \{0, 1\}$.
-    \item $\tilde{y}_i = 2y_i - 1 \in \{-1, +1\}$: Symmetric signed label mapping ($0 \mapsto -1, 1 \mapsto +1$).
-    \item $\mathbf{w} \in \mathbb{R}^d$: Learned normal weight vector defining the hyperplane orientation.
-    \item $b \in \mathbb{R}$: Learned scalar bias term defining the hyperplane translation from the origin.
-    \item $\tilde{\mathbf{x}}_i = [\mathbf{x}_i^\top, 1]^\top \in \mathbb{R}^{d+1}$: Homogeneous augmented feature vector.
-    \item $\tilde{\mathbf{w}} = [\mathbf{w}^\top, b]^\top \in \mathbb{R}^{d+1}$: Homogeneous augmented parameter vector.
-    \item $\eta \in \mathbb{R}_{>0}$: Learning rate scaling step size.
-    \item $E_{\max} \in \mathbb{N}$: Hard upper bound on training epochs.
-    \item $z_i = \mathbf{w}^\top \mathbf{x}_i + b$: Scalar activation value for instance $i$.
-    \item $\hat{y}_i \in \{0, 1\}$: Predicted binary class label for instance $i$.
-    \item $e_i = y_i - \hat{y}_i \in \{-1, 0, +1\}$: Directional classification error.
+    \item $y_i' \triangleq 2y_i - 1 \in \{-1, +1\}$: Bipolar signed label representation.
+    \item $w \in \mathbb{R}^d$: Trainable weight vector of dimension $d$.
+    \item $b \in \mathbb{R}$: Trainable scalar bias.
+    \item $\tilde{x}_i \triangleq [x_i^T, 1]^T \in \mathbb{R}^{d+1}$: Homogeneous augmented input vector.
+    \item $\tilde{w} \triangleq [w^T, b]^T \in \mathbb{R}^{d+1}$: Homogeneous augmented weight vector.
+    \item $\eta > 0$: Learning rate step size.
+    \item $R \triangleq \max_{i=1, \dots, N} \|x_i\|_2$: Maximum sample radius in feature space.
+    \item $\gamma > 0$: Geometric separation margin.
 \end{itemize}
 
+\begin{table}[h]
+\centering
+\caption{Summary of Mathematical Symbols for Perceptron Learning}
+\begin{tabular}{lll}
+\toprule
+\textbf{Symbol} & \textbf{Type / Domain} & \textbf{Description} \\
+\midrule
+$x_i$ & $\mathbb{R}^d$ & Input feature vector \\
+$y_i$ & $\{0, 1\}$ & Binary label \\
+$y_i'$ & $\{-1, +1\}$ & Signed bipolar target label ($2y_i - 1$) \\
+$w, b$ & $\mathbb{R}^d, \mathbb{R}$ & Weight vector and bias term \\
+$\eta$ & $\mathbb{R}_{> 0}$ & Learning rate \\
+$R$ & $\mathbb{R}_{> 0}$ & Maximum sample Euclidean radius \\
+$\gamma$ & $\mathbb{R}_{> 0}$ & Geometric margin \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Problem Definition and Core Concepts}
-\label{sec:problem_definition}
 
-\subsection{Linear Decision Boundary and Linear Separability}
+\subsection{Intuition and Motivation}
+The Perceptron is the foundational linear classification unit of neural networks. It defines an oriented decision hyperplane $\mathcal{H} = \{x \in \mathbb{R}^d : w^T x + b = 0\}$ dividing feature space into two half-spaces. If an incoming sample is correctly classified ($y_i'(w^T x_i + b) > 0$), no update occurs. If misclassified ($y_i'(w^T x_i + b) \le 0$), the hyperplane normal is rotated towards the misclassified point by adding $\eta y_i' x_i$, strictly reducing future error.
 
-\paragraph{Meaning:} A dataset is linearly separable if a flat geometric boundary (a line in 2D, a plane in 3D, a hyperplane in $d$ dimensions) can perfectly partition all positive samples from all negative samples without a single misclassification.
-
-\paragraph{Purpose:} Linear separability defines the exact structural precondition required for the classical single-layer Perceptron to guarantee convergence to a zero-error parameter configuration.
-
-\paragraph{Mechanism:} The boundary is characterized by the zero-level set of the affine activation function $z(\mathbf{x}) = \mathbf{w}^\top \mathbf{x} + b = 0$. Samples yielding $z(\mathbf{x}) > 0$ lie on the positive side, while samples with $z(\mathbf{x}) \le 0$ lie on the negative side.
-
-\paragraph{Formal Specification:}
-\begin{definition}[Linear Separability]
-A dataset $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ with signed labels $\tilde{y}_i = 2y_i - 1 \in \{-1, +1\}$ is \emph{linearly separable} if there exists an augmented vector $\tilde{\mathbf{w}}^* = [(\mathbf{w}^*)^\top, b^*]^\top \in \mathbb{R}^{d+1}$ with $\|\tilde{\mathbf{w}}^*\|_2 = 1$ and a strictly positive functional margin $\gamma > 0$ such that:
+\subsection{Formal Mathematical Definition}
+\begin{definition}[Linear Separability and Perceptron Update]
+A dataset $\mathcal{D}$ is linearly separable with margin $\gamma > 0$ if there exists an optimal unit vector $u^* \in \mathbb{R}^{d+1}$ ($\|u^*\|_2 = 1$) such that:
 \begin{equation}
-\label{eq:separability_condition}
-\tilde{y}_i \left( \langle \mathbf{w}^*, \mathbf{x}_i \rangle + b^* \right) \ge \gamma > 0, \quad \forall i \in \{1, \dots, N\}.
+y_i' (u^{*T} \tilde{x}_i) \ge \gamma \quad \forall i \in \{1, \dots, N\}
+\end{equation}
+For any sample $i$ where $\hat{y}_i' = \operatorname{sign}(w^T x_i + b) \ne y_i'$, the update rule is:
+\begin{equation}
+w \gets w + \eta y_i' x_i, \quad b \gets b + \eta y_i' \label{eq:perceptron_update}
 \end{equation}
 \end{definition}
 
-\paragraph{Assumptions and Boundaries:}
-Equation~\eqref{eq:separability_condition} assumes noise-free, non-overlapping class distributions. If no such $(\mathbf{w}^*, b^*)$ exists (e.g., the XOR problem), the data is non-separable, and the classical Perceptron update rule will not converge.
+\section{Algorithmic Specification}
 
-\subsection{The Heaviside Threshold Decision Function}
-
-\paragraph{Formal Definition:}
-The decision rule maps an input $\mathbf{x} \in \mathbb{R}^d$ to a binary output $\hat{y} \in \{0, 1\}$ via the strict step function:
-\begin{equation}
-\label{eq:decision_rule}
-\hat{y}(\mathbf{x}) = \begin{cases} 
-1 & \text{if } \mathbf{w}^\top \mathbf{x} + b > 0, \\ 
-0 & \text{if } \mathbf{w}^\top \mathbf{x} + b \le 0.
-\end{cases}
-\end{equation}
-
-\paragraph{Boundary Semantics:}
-Points satisfying $\mathbf{w}^\top \mathbf{x} + b = 0$ lie exactly on the decision boundary and are assigned label $0$ by convention. The strict inequality ($> 0$) ensures deterministic assignment for all points in $\mathbb{R}^d$.
-
-\section{Algorithmic Mechanics and Update Formulations}
-\label{sec:algorithm}
-
-\subsection{Mistake-Driven Parameter Update Rule}
-The Perceptron algorithm operates by iterating over training samples and adjusting parameters only when a prediction error occurs ($e_i \ne 0$).
-
-\paragraph{Derivation of the Update Step:}
-Let $(\mathbf{w}^{(t)}, b^{(t)})$ represent parameters before mistake step $t$. For training pair $(\mathbf{x}_i, y_i)$:
-\begin{equation}
-e_i = y_i - \hat{y}(\mathbf{x}_i) = y_i - \mathbf{1}_{\{\mathbf{w}^{(t)\top} \mathbf{x}_i + b^{(t)} > 0\}}.
-\end{equation}
-The discrete error $e_i$ takes values in $\{-1, 0, +1\}$:
-\begin{enumerate}
-    \item \textbf{Case 1: Correct Prediction ($e_i = 0$).} When $y_i = \hat{y}_i$, parameters remain unchanged:
-    $$\mathbf{w}^{(t+1)} = \mathbf{w}^{(t)}, \quad b^{(t+1)} = b^{(t)}.$$
-    \item \textbf{Case 2: False Negative ($y_i = 1, \hat{y}_i = 0 \implies e_i = +1$).} The model predicted negative for a positive sample because $\mathbf{w}^{(t)\top} \mathbf{x}_i + b^{(t)} \le 0$. The parameters are incremented:
-    $$\mathbf{w}^{(t+1)} = \mathbf{w}^{(t)} + \eta \mathbf{x}_i, \quad b^{(t+1)} = b^{(t)} + \eta.$$
-    This increases the activation on $\mathbf{x}_i$:
-    $$\mathbf{w}^{(t+1)\top} \mathbf{x}_i + b^{(t+1)} = (\mathbf{w}^{(t)\top} \mathbf{x}_i + b^{(t)}) + \eta (\|\mathbf{x}_i\|_2^2 + 1) > \mathbf{w}^{(t)\top} \mathbf{x}_i + b^{(t)}.$$
-    \item \textbf{Case 3: False Positive ($y_i = 0, \hat{y}_i = 1 \implies e_i = -1$).} The model predicted positive for a negative sample because $\mathbf{w}^{(t)\top} \mathbf{x}_i + b^{(t)} > 0$. The parameters are decremented:
-    $$\mathbf{w}^{(t+1)} = \mathbf{w}^{(t)} - \eta \mathbf{x}_i, \quad b^{(t+1)} = b^{(t)} - \eta.$$
-\end{enumerate}
-
-\paragraph{Worked Numerical Update:}
-Suppose $\mathbf{w}^{(0)} = [1.0, 1.0]^\top$, $b^{(0)} = 0.0$, $\eta = 0.5$, and sample $\mathbf{x} = [2.0, 4.0]^\top$ with label $y = 1$.
-Activation: $z = 1.0(2.0) + 1.0(4.0) + 0.0 = 6.0 > 0 \implies \hat{y} = 1 \implies e = 1 - 1 = 0$ (no update).
-Suppose another sample $\mathbf{x}' = [2.0, 4.0]^\top$ has label $y' = 0$.
-Activation: $z = 6.0 > 0 \implies \hat{y} = 1 \implies e = 0 - 1 = -1$ (mistake).
-Updated weights and bias:
-\begin{align}
-\mathbf{w}^{(1)} &= \begin{bmatrix} 1.0 \\ 1.0 \end{bmatrix} + 0.5(-1)\begin{bmatrix} 2.0 \\ 4.0 \end{bmatrix} = \begin{bmatrix} 1.0 - 1.0 \\ 1.0 - 2.0 \end{bmatrix} = \begin{bmatrix} 0.0 \\ -1.0 \end{bmatrix}, \\
-b^{(1)} &= 0.0 + 0.5(-1) = -0.5.
-\end{align}
-
-\subsection{Pseudocode Specification}
-Algorithm~\ref{alg:perceptron} specifies the complete deterministic training routine implemented in \texttt{impl.py}.
+The operational execution implemented in \texttt{NnAlgoPerceptronLearning} is shown below.
 
 \begin{algorithm}[H]
-\caption{Perceptron Mistake-Driven Learning Routine}
-\label{alg:perceptron}
+\caption{Perceptron Learning Algorithm}
 \begin{algorithmic}[1]
-\Require Feature matrix $\mathbf{X} \in \mathbb{R}^{N \times d}$, labels $\mathbf{y} \in \{0, 1\}^N$, learning rate $\eta > 0$, maximum epochs $E_{\max} \ge 1$, initial weights $\mathbf{w}^{(0)} \in \mathbb{R}^d$, initial bias $b^{(0)} \in \mathbb{R}$.
-\Ensure Parameter tuple $(\mathbf{w}, b)$, convergence boolean, epochs trained, update count, final error count, geometric margin.
-\State $\mathbf{w} \gets \mathbf{w}^{(0)}, \quad b \gets b^{(0)}$
-\State $\text{total\_updates} \gets 0, \quad \text{converged} \gets \textbf{false}, \quad \text{final\_error\_count} \gets 0$
-\For{$\text{epoch} = 1 \textbf{ to } E_{\max}$}
-    \State $\text{epochs\_trained} \gets \text{epoch}$
-    \State $\text{epoch\_errors} \gets 0$
-    \For{$i = 1 \textbf{ to } N$}
-        \State $z \gets \sum_{j=1}^d w_j x_{ij} + b$
-        \State $\hat{y} \gets \begin{cases} 1 & \text{if } z > 0 \\ 0 & \text{if } z \le 0 \end{cases}$
-        \State $e \gets y_i - \hat{y}$
-        \If{$e \ne 0$}
-            \State $\text{epoch\_errors} \gets \text{epoch\_errors} + 1$
-            \State $\text{total\_updates} \gets \text{total\_updates} + 1$
-            \For{$j = 1 \textbf{ to } d$}
-                \State $w_j \gets w_j + \eta \cdot e \cdot x_{ij}$
+\Require Features $X \in \mathbb{R}^{N \times d}$, labels $Y \in \{0, 1\}^N$, learning rate $\eta > 0$, max epochs $E \ge 1$
+\Ensure Learned weights $w \in \mathbb{R}^d$, bias $b \in \mathbb{R}$, convergence flag, epoch and update counts
+\State $w \gets \mathbf{0} \in \mathbb{R}^d, \quad b \gets 0.0$
+\State $\text{converged} \gets \textbf{false}, \quad \text{total\_updates} \gets 0$
+\For{$\text{epoch} \gets 1 \textbf{ to } E$}
+    \State $\text{errors} \gets 0$
+    \For{$i \gets 1 \textbf{ to } N$}
+        \State $y_i' \gets 2 \cdot Y[i] - 1$
+        \State $\text{score} \gets \sum_{j=1}^d w[j] \cdot X[i][j] + b$
+        \State $\hat{y} \gets \begin{cases} 1 & \text{if } \text{score} > 0 \\ 0 & \text{otherwise} \end{cases}$
+        \If{$\hat{y} \ne Y[i]$}
+            \For{$j \gets 1 \textbf{ to } d$}
+                \State $w[j] \gets w[j] + \eta \cdot y_i' \cdot X[i][j]$
             \EndFor
-            \State $b \gets b + \eta \cdot e$
+            \State $b \gets b + \eta \cdot y_i'$
+            \State $\text{errors} \gets \text{errors} + 1$
+            \State $\text{total\_updates} \gets \text{total\_updates} + 1$
         \EndIf
     \EndFor
-    \State $\text{final\_error\_count} \gets \text{epoch\_errors}$
-    \If{$\text{epoch\_errors} = 0$}
+    \If{$\text{errors} = 0$}
         \State $\text{converged} \gets \textbf{true}$
         \State \textbf{break}
     \EndIf
 \EndFor
-\State $\text{margin} \gets \textbf{null}$
-\If{$\text{converged} = \textbf{true} \textbf{ and } \|\mathbf{w}\|_2 > 0$}
-    \State $\text{margin} \gets \min_{i=1}^N \frac{(2y_i - 1)(\sum_{j=1}^d w_j x_{ij} + b)}{\|\mathbf{w}\|_2}$
-\EndIf
-\State \Return $(\mathbf{w}, b, \text{converged}, \text{epochs\_trained}, \text{total\_updates}, \text{final\_error\_count}, \text{margin})$
+\State \Return $\{w, b, \text{converged}, \text{epochs\_trained}: \text{epoch}, \text{total\_updates}, \text{final\_error\_count}: \text{errors}\}$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Theoretical Guarantees, Convergence, and Proofs}
-\label{sec:correctness}
+\section{Theoretical Guarantees and Novikoff's Convergence Theorem}
 
-\begin{theorem}[Novikoff's Perceptron Convergence Theorem]
-\label{thm:novikoff}
-\textbf{Assumptions:}
-\begin{enumerate}
-    \item Dataset $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ is linearly separable in homogeneous coordinates $\tilde{\mathbf{x}}_i = [\mathbf{x}_i^\top, 1]^\top \in \mathbb{R}^{d+1}$ with bounding radius $R = \max_{1 \le i \le N} \|\tilde{\mathbf{x}}_i\|_2 < \infty$.
-    \item There exists an optimal unit vector $\tilde{\mathbf{w}}^* \in \mathbb{R}^{d+1}$ ($\|\tilde{\mathbf{w}}^*\|_2 = 1$) and margin $\gamma > 0$ such that $\tilde{y}_i \langle \tilde{\mathbf{w}}^*, \tilde{\mathbf{x}}_i \rangle \ge \gamma$ for all $i \in \{1, \dots, N\}$.
-    \item Initial parameters are set to $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$, and learning rate $\eta = 1$.
-\end{enumerate}
-
-\textbf{Guarantee:}
-The total number of mistake updates $M$ made by the Perceptron algorithm is bounded from above by:
+\begin{theorem}[Novikoff's Perceptron Convergence Theorem (1962)]
+Let $\mathcal{D} = \{(x_i, y_i')\}_{i=1}^N$ be linearly separable with augmented margin $\gamma > 0$ under unit vector $u^*$. Let $R = \max_i \|\tilde{x}_i\|_2$. Starting from $\tilde{w}_0 = \mathbf{0}$, the perceptron makes at most $k_{\max}$ mistake updates:
 \begin{equation}
-\label{eq:novikoff_bound}
-M \le \left( \frac{R}{\gamma} \right)^2.
+k_{\max} \le \left(\frac{R}{\gamma}\right)^2
 \end{equation}
-The algorithm is guaranteed to terminate with zero training errors in at most $\lceil (R/\gamma)^2 \rceil$ total mistake updates.
-
-\textbf{Limitations:}
-\begin{enumerate}
-    \item The bound applies exclusively when the linear separability assumption with $\gamma > 0$ holds strictly.
-    \item On non-separable datasets, the guarantee does not apply; the algorithm will fail to converge and will reach $E_{\max}$.
-    \item The theorem bounds total mistakes $M$, not the number of non-mistake passes or wall-clock convergence time.
-\end{enumerate}
 \end{theorem}
 
 \begin{proof}
-Let $\tilde{\mathbf{w}}^{(t)}$ denote the augmented parameter vector after $t$ cumulative updates, starting from $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$. If the $t$-th update is triggered by sample $(\tilde{\mathbf{x}}_i, \tilde{y}_i)$, a misclassification occurred, meaning:
+Let $\tilde{w}_k$ denote the augmented weight vector after $k$ updates.
+\textbf{Lower Bound}: Using the update $\tilde{w}_k = \tilde{w}_{k-1} + \eta y_i' \tilde{x}_i$:
 \begin{equation}
-\label{eq:misclass_condition}
-\tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle \le 0.
+u^{*T} \tilde{w}_k = u^{*T} \tilde{w}_{k-1} + \eta y_i' (u^{*T} \tilde{x}_i) \ge u^{*T} \tilde{w}_{k-1} + \eta \gamma
 \end{equation}
-The update equation in homogeneous coordinates is:
-\begin{equation}
-\tilde{\mathbf{w}}^{(t)} = \tilde{\mathbf{w}}^{(t-1)} + \tilde{y}_i \tilde{\mathbf{x}}_i.
-\end{equation}
+By induction from $\tilde{w}_0 = \mathbf{0}$, $u^{*T} \tilde{w}_k \ge k \eta \gamma$. By Cauchy-Schwarz, $\|\tilde{w}_k\|_2 = \|u^*\|_2 \|\tilde{w}_k\|_2 \ge u^{*T} \tilde{w}_k \ge k \eta \gamma$, so $\|\tilde{w}_k\|_2^2 \ge k^2 \eta^2 \gamma^2$.
 
-\paragraph{Step 1: Establishing a Lower Bound on $\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle$.}
-Take the inner product of $\tilde{\mathbf{w}}^{(t)}$ with the target separator $\tilde{\mathbf{w}}^*$:
+\textbf{Upper Bound}: Since an update occurs only when $y_i' (\tilde{w}_{k-1}^T \tilde{x}_i) \le 0$:
 \begin{equation}
-\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle = \langle \tilde{\mathbf{w}}^{(t-1)} + \tilde{y}_i \tilde{\mathbf{x}}_i, \tilde{\mathbf{w}}^* \rangle = \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{w}}^* \rangle + \tilde{y}_i \langle \tilde{\mathbf{x}}_i, \tilde{\mathbf{w}}^* \rangle.
+\|\tilde{w}_k\|_2^2 = \|\tilde{w}_{k-1}\|_2^2 + 2 \eta y_i' (\tilde{w}_{k-1}^T \tilde{x}_i) + \eta^2 \|\tilde{x}_i\|_2^2 \le \|\tilde{w}_{k-1}\|_2^2 + \eta^2 R^2
 \end{equation}
-Applying Assumption 2 ($\tilde{y}_i \langle \tilde{\mathbf{w}}^*, \tilde{\mathbf{x}}_i \rangle \ge \gamma$):
+By induction, $\|\tilde{w}_k\|_2^2 \le k \eta^2 R^2$. Combining both bounds:
 \begin{equation}
-\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle \ge \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{w}}^* \rangle + \gamma.
+k^2 \eta^2 \gamma^2 \le \|\tilde{w}_k\|_2^2 \le k \eta^2 R^2 \implies k \le \left(\frac{R}{\gamma}\right)^2
 \end{equation}
-By unrolling this recurrence for $t$ steps from $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$:
-\begin{equation}
-\label{eq:proof_lower_bound}
-\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle \ge t \gamma.
-\end{equation}
-
-\paragraph{Step 2: Establishing an Upper Bound on $\|\tilde{\mathbf{w}}^{(t)}\|_2^2$.}
-Expand the squared Euclidean norm of $\tilde{\mathbf{w}}^{(t)}$:
-\begin{align}
-\|\tilde{\mathbf{w}}^{(t)}\|_2^2 &= \|\tilde{\mathbf{w}}^{(t-1)} + \tilde{y}_i \tilde{\mathbf{x}}_i\|_2^2 \nonumber \\
-&= \|\tilde{\mathbf{w}}^{(t-1)}\|_2^2 + 2 \tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle + \|\tilde{\mathbf{x}}_i\|_2^2.
-\end{align}
-By the misclassification condition~\eqref{eq:misclass_condition}, the middle term is non-positive: $2 \tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle \le 0$. Applying the bounding radius $\|\tilde{\mathbf{x}}_i\|_2^2 \le R^2$:
-\begin{equation}
-\|\tilde{\mathbf{w}}^{(t)}\|_2^2 \le \|\tilde{\mathbf{w}}^{(t-1)}\|_2^2 + R^2.
-\end{equation}
-Unrolling this recurrence for $t$ updates from $\|\tilde{\mathbf{w}}^{(0)}\|_2^2 = 0$:
-\begin{equation}
-\label{eq:proof_upper_bound}
-\|\tilde{\mathbf{w}}^{(t)}\|_2^2 \le t R^2.
-\end{equation}
-
-\paragraph{Step 3: Combining Bounds via Cauchy-Schwarz Inequality.}
-Recall the Cauchy-Schwarz inequality for any Euclidean vectors $\mathbf{u}, \mathbf{v}$:
-\begin{equation}
-|\langle \mathbf{u}, \mathbf{v} \rangle| \le \|\mathbf{u}\|_2 \|\mathbf{v}\|_2.
-\end{equation}
-Setting $\mathbf{u} = \tilde{\mathbf{w}}^{(t)}$ and $\mathbf{v} = \tilde{\mathbf{w}}^*$ (where $\|\tilde{\mathbf{w}}^*\|_2 = 1$ by assumption):
-\begin{equation}
-\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle \le \|\tilde{\mathbf{w}}^{(t)}\|_2 \|\tilde{\mathbf{w}}^*\|_2 = \|\tilde{\mathbf{w}}^{(t)}\|_2.
-\end{equation}
-Squaring both sides and substituting the lower bound~\eqref{eq:proof_lower_bound} and upper bound~\eqref{eq:proof_upper_bound}:
-\begin{equation}
-(t \gamma)^2 \le \langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle^2 \le \|\tilde{\mathbf{w}}^{(t)}\|_2^2 \le t R^2.
-\end{equation}
-Dividing the inequality $(t \gamma)^2 \le t R^2$ by $t \gamma^2$ (since $t \ge 1$ and $\gamma > 0$):
-\begin{equation}
-t \le \frac{R^2}{\gamma^2}.
-\end{equation}
-Since the update counter $t$ must be an integer, $M \le \lfloor (R/\gamma)^2 \rfloor$, proving the theorem.
 \end{proof}
 
-\section{Complexity Derivation}
-\label{sec:complexity}
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Linear Separability Requirement}: If data is not linearly separable (e.g., XOR problem), the perceptron algorithm never converges and cycles indefinitely.
+\end{itemize}
+
+\section{Complexity Analysis}
 
 \subsection{Time Complexity}
-\begin{enumerate}
-    \item \textbf{Inner Product Computation:} For each sample, evaluating $\sum_{j=1}^d w_j x_{ij}$ requires exactly $d$ multiplications and $d-1$ additions. Adding bias $b$ takes $1$ addition. Total: $2d$ floating-point operations ($\Theta(d)$).
-    \item \textbf{Threshold and Error Comparison:} Step evaluation $\hat{y} = \mathbf{1}_{\{z > 0\}}$ and $e = y_i - \hat{y}$ take $\mathcal{O}(1)$ operations.
-    \item \textbf{Parameter Update Step:} When a mistake occurs ($e \ne 0$), updating $w_j \leftarrow w_j + \eta e x_{ij}$ across all $j \in \{1, \dots, d\}$ requires $d$ multiplications and $d$ additions; updating $b \leftarrow b + \eta e$ takes $1$ multiplication and $1$ addition. Total: $2d + 2$ operations ($\Theta(d)$).
-    \item \textbf{Per-Epoch Cost:} With $N$ samples per epoch, each taking $\Theta(d)$ time, one full epoch takes $\Theta(N \cdot d)$ operations.
-    \item \textbf{Total Time:} For $E$ epochs executed until convergence ($E \le E_{\max}$):
-    \begin{equation}
-    T(N, d, E) = \mathcal{O}(E \cdot N \cdot d).
-    \end{equation}
-    In the worst case where training reaches $E_{\max}$, $T_{\text{worst}} = \mathcal{O}(E_{\max} \cdot N \cdot d)$.
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Per Epoch}: Evaluating $N$ samples of dimension $d$ requires $\mathcal{O}(Nd)$ FLOPs.
+    \item \textbf{Total Time}: $\mathcal{O}(E \cdot N d)$ where $E \le \lceil R^2 / \gamma^2 \rceil$.
+\end{itemize}
 
 \subsection{Space Complexity}
-\begin{enumerate}
-    \item Parameter storage requires vector $\mathbf{w} \in \mathbb{R}^d$ ($d$ numbers) and scalar $b \in \mathbb{R}$ ($1$ number).
-    \item The algorithm performs in-place scalar accumulation and allocates no intermediate matrices or historical buffers.
-    \item Total auxiliary space complexity:
-    \begin{equation}
-    S(d) = \mathcal{O}(d).
-    \end{equation}
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Auxiliary Memory}: Stores $w \in \mathbb{R}^d$ and $b \in \mathbb{R}$, requiring $\Theta(d)$ auxiliary space.
+\end{itemize}
 
-\section{Worked Example and Numerical Verification}
-\label{sec:worked_example}
+\section{Worked Numerical Example}
 
-Consider the canonical 2D Logical AND dataset with $N = 4$ samples:
-\begin{equation}
-\mathcal{S}_{\text{AND}} = \left\{ 
-(\mathbf{x}_1 = [0.0, 0.0]^\top, y_1 = 0), \;
-(\mathbf{x}_2 = [0.0, 1.0]^\top, y_2 = 0), \;
-(\mathbf{x}_3 = [1.0, 0.0]^\top, y_3 = 0), \;
-(\mathbf{x}_4 = [1.0, 1.0]^\top, y_4 = 1)
-\right\}.
-\end{equation}
-Hyperparameters: $\mathbf{w}^{(0)} = [0.0, 0.0]^\top$, $b^{(0)} = 0.0$, $\eta = 1.0$, $E_{\max} = 10$.
-
-\subsection{Step-by-Step Training Trace}
-Table~\ref{tab:and_trace} traces every sample forward pass and parameter update.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{ccccccccl}
-\toprule
-\textbf{Epoch} & \textbf{Sample} & $\mathbf{x}_i$ & $y_i$ & $z = \mathbf{w}^\top \mathbf{x} + b$ & $\hat{y}$ & $e$ & \textbf{Action} & \textbf{State $(\mathbf{w}, b)$} \\
-\midrule
-1 & $S_1$ & $[0, 0]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[0, 0], b=0$ \\
-1 & $S_2$ & $[0, 1]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[0, 0], b=0$ \\
-1 & $S_3$ & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[0, 0], b=0$ \\
-1 & $S_4$ & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & Update $+[1, 1], +1$ & $\mathbf{w}=[1, 1], b=1$ \\
-\midrule
-2 & $S_1$ & $[0, 0]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[0, 0], -1$ & $\mathbf{w}=[1, 1], b=0$ \\
-2 & $S_2$ & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[0, 1], -1$ & $\mathbf{w}=[1, 0], b=-1$ \\
-2 & $S_3$ & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[1, 0], b=-1$ \\
-2 & $S_4$ & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & Update $+[1, 1], +1$ & $\mathbf{w}=[2, 1], b=0$ \\
-\midrule
-3 & $S_1$ & $[0, 0]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[2, 1], b=0$ \\
-3 & $S_2$ & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[0, 1], -1$ & $\mathbf{w}=[2, 0], b=-1$ \\
-3 & $S_3$ & $[1, 0]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[1, 0], -1$ & $\mathbf{w}=[1, 0], b=-2$ \\
-3 & $S_4$ & $[1, 1]$ & 1 & $-1.0$ & 0 & $+1$ & Update $+[1, 1], +1$ & $\mathbf{w}=[2, 1], b=-1$ \\
-\midrule
-4 & $S_1$ & $[0, 0]$ & 0 & $-1.0$ & 0 & 0 & None & $\mathbf{w}=[2, 1], b=-1$ \\
-4 & $S_2$ & $[0, 1]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[2, 1], b=-1$ \\
-4 & $S_3$ & $[1, 0]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[1, 0], -1$ & $\mathbf{w}=[1, 1], b=-2$ \\
-4 & $S_4$ & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & Update $+[1, 1], +1$ & $\mathbf{w}=[2, 2], b=-1$ \\
-\midrule
-5 & $S_1$ & $[0, 0]$ & 0 & $-1.0$ & 0 & 0 & None & $\mathbf{w}=[2, 2], b=-1$ \\
-5 & $S_2$ & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & Update $-[0, 1], -1$ & $\mathbf{w}=[2, 1], b=-2$ \\
-5 & $S_3$ & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & None & $\mathbf{w}=[2, 1], b=-2$ \\
-5 & $S_4$ & $[1, 1]$ & 1 & $1.0$ & 1 & 0 & None & $\mathbf{w}=[2, 1], b=-2$ \\
-\midrule
-6 & $S_1$ & $[0, 0]$ & 0 & $-2.0$ & 0 & 0 & None (Correct) & $\mathbf{w}=[2, 1], b=-2$ \\
-6 & $S_2$ & $[0, 1]$ & 0 & $-1.0$ & 0 & 0 & None (Correct) & $\mathbf{w}=[2, 1], b=-2$ \\
-6 & $S_3$ & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & None (Correct) & $\mathbf{w}=[2, 1], b=-2$ \\
-6 & $S_4$ & $[1, 1]$ & 1 & $1.0$ & 1 & 0 & None (Correct) & $\mathbf{w}=[2, 1], b=-2$ \\
-\bottomrule
-\end{tabular}
-\caption{Complete trace of weights, biases, and error signals across 6 training epochs for Logical AND.}
-\label{tab:and_trace}
-\end{table}
-
-\subsection{Distinction Between Zero Training Error and Geometric Margin}
-At the end of Epoch 6, all 4 samples are classified correctly ($\text{epoch\_errors} = 0$), so $\text{converged} = \textbf{true}$ with final parameters $\mathbf{w}^* = [2.0, 1.0]^\top$ and $b^* = -2.0$.
-Evaluating individual sample margins:
-\begin{align}
-\text{Sample } 1 \; ([0, 0], y=0): & \quad z_1 = -2.0 \le 0 \implies \hat{y}_1 = 0 \implies \text{Margin}_1 = \frac{(2(0)-1)(-2.0)}{\sqrt{2^2 + 1^2}} = \frac{+2.0}{\sqrt{5}} \approx 0.894, \\
-\text{Sample } 2 \; ([0, 1], y=0): & \quad z_2 = -1.0 \le 0 \implies \hat{y}_2 = 0 \implies \text{Margin}_2 = \frac{(2(0)-1)(-1.0)}{\sqrt{5}} = \frac{+1.0}{\sqrt{5}} \approx 0.447, \\
-\text{Sample } 3 \; ([1, 0], y=0): & \quad z_3 = 0.0 \le 0 \implies \hat{y}_3 = 0 \implies \text{Margin}_3 = \frac{(2(0)-1)(0.0)}{\sqrt{5}} = 0.0, \\
-\text{Sample } 4 \; ([1, 1], y=1): & \quad z_4 = +1.0 > 0 \implies \hat{y}_4 = 1 \implies \text{Margin}_4 = \frac{(2(1)-1)(+1.0)}{\sqrt{5}} = \frac{+1.0}{\sqrt{5}} \approx 0.447.
-\end{align}
-The minimal geometric margin across the dataset is $\gamma = \min \{0.894, 0.447, 0.0, 0.447\} = 0.0$.
-This establishes a key distinction:
-\begin{property}[Zero Error vs. Positive Margin]
-Zero training error under the strict Heaviside threshold ($z > 0$) requires $\tilde{y}_i z_i \ge 0$ for non-positive samples ($z \le 0 \implies \hat{y}=0$). A sample lying exactly on the decision boundary ($z=0$) is correctly classified as class $0$ with zero loss, but yields a geometric margin of exactly $0.0$.
-\end{property}
-
-\section{Numerical Considerations and Boundary Stability}
-\label{sec:numerical}
+Consider $N=2, d=2$:
+$x_1 = [1.0, 2.0]^T, y_1 = 1 \implies y_1' = +1$.
+$x_2 = [-1.0, -1.0]^T, y_2 = 0 \implies y_2' = -1$.
+Let $\eta = 1.0, w_0 = [0.0, 0.0]^T, b_0 = 0.0$.
 
 \begin{enumerate}
-    \item \textbf{Invariance to Learning Rate $\eta$:} If initial parameters are $\mathbf{0}$, the sequence of classification decisions and mistakes is algebraically invariant under any positive scalar $\eta > 0$. The learned parameters scale linearly with $\eta$: $\mathbf{w}_\eta = \eta \mathbf{w}_1$ and $b_\eta = \eta b_1$. The activation signs $\text{sgn}(\mathbf{w}_\eta^\top \mathbf{x} + b_\eta) = \text{sgn}(\mathbf{w}_1^\top \mathbf{x} + b_1)$ are identical.
-    \item \textbf{Floating-Point Stability:} Dot product summations use standard 64-bit float precision. For feature coordinates with extreme magnitude differences, feature standardization ($\mu = 0, \sigma = 1$) prevents numerical underflow or floating-point cancellation.
-    \item \textbf{Zero-Norm Protection:} If training terminates with $\|\mathbf{w}\|_2 = 0$, margin calculation is safely returned as \texttt{null} to prevent division by zero.
+    \item \textbf{Sample 1}: $\text{score} = 0(1) + 0(2) + 0 = 0 \implies \hat{y}_1 = 0 \ne 1$. Update:
+    \begin{align}
+    w &\gets [0, 0]^T + 1.0(+1)[1, 2]^T = [1.0, 2.0]^T \\
+    b &\gets 0 + 1.0(+1) = 1.0
+    \end{align}
+    \item \textbf{Sample 2}: $\text{score} = 1(-1) + 2(-1) + 1 = -2 \implies \hat{y}_2 = 0 == y_2$. Correct!
+    \item \textbf{Epoch 2 Verification}:
+    Sample 1: $\text{score} = 1(1) + 2(2) + 1 = 6 > 0 \implies \hat{y}_1 = 1$.
+    Sample 2: $\text{score} = -2 < 0 \implies \hat{y}_2 = 0$.
+    Zero errors $\implies$ Converged in 2 epochs with 1 update.
 \end{enumerate}
 
-\section{References}
-\label{sec:references}
+\section{Numerical Considerations and Edge Cases}
+
+\begin{itemize}
+    \item \textbf{Zero-Crossing Decision Threshold}: Strict inequality ($w^T x + b > 0$) is used to ensure deterministic binary output assignment.
+    \item \textbf{Scale Invariance}: Scaling all inputs by scalar $c > 0$ scales $R \to c R$ and $\gamma \to c \gamma$, keeping $k_{\max} \le (R/\gamma)^2$ strictly invariant.
+\end{itemize}
 
 \begin{thebibliography}{9}
-\bibitem{rosenblatt1958}
-F.~Rosenblatt.
-\newblock The Perceptron: A probabilistic model for information storage and organization in the brain.
-\newblock \emph{Psychological Review}, 65(6):386--408, 1958.
-\newblock DOI: 10.1037/h0042519.
-
-\bibitem{novikoff1962}
-A.~B.~J. Novikoff.
-\newblock On convergence proofs on perceptrons.
-\newblock In \emph{Proceedings of the Symposium on the Mathematical Theory of Automata}, volume~12, pages 615--622, 1962.
-
-\bibitem{minsky1969}
-M.~Minsky and S.~A. Papert.
-\newblock \emph{Perceptrons: An Introduction to Computational Geometry}.
-\newblock MIT Press, Cambridge, MA, 1969.
-\newblock ISBN: 978-0262630221.
+\bibitem{rosenblatt1958} F.~Rosenblatt, ``The perceptron: A probabilistic model for information storage and organization in the brain,'' \emph{Psychological Review}, vol.~65, no.~6, pp.~386--408, 1958.
+\bibitem{novikoff1962} A.~B.~Novikoff, ``On convergence proofs on perceptrons,'' in \emph{Symposium on the Mathematical Theory of Automata}, vol.~12, pp.~615--622, 1962.
 \end{thebibliography}
 
 \end{document}
