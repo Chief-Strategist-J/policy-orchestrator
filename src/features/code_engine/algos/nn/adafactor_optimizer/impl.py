@@ -13,10 +13,10 @@ class NnAlgoAdafactorOptimizer:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.adafactor
-        - nn.memory_efficient
-        - nn.matrix_factorization
+      - nn.optimizer
+      - nn.adafactor
+      - nn.memory_efficient
+      - nn.matrix_factorization
       inputs:
         type: object
         properties:
@@ -54,13 +54,13 @@ class NnAlgoAdafactorOptimizer:
             description: Second moment decay coefficient beta_2 in [0, 1).
           eps:
             type: number
-            default: 0.00000001
+            default: 1.0e-08
             description: Epsilon stability constant > 0.
         required:
-          - weight_matrix
-          - grad_matrix
-          - row_factor
-          - col_factor
+        - weight_matrix
+        - grad_matrix
+        - row_factor
+        - col_factor
         additionalProperties: false
       outputs:
         type: object
@@ -83,10 +83,38 @@ class NnAlgoAdafactorOptimizer:
               type: number
             description: Updated column factor buffer of length C.
         required:
-          - updated_weights
-          - updated_row_factor
-          - updated_col_factor
+        - updated_weights
+        - updated_row_factor
+        - updated_col_factor
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

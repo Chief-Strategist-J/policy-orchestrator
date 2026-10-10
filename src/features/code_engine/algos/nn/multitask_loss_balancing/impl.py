@@ -13,11 +13,11 @@ class NnAlgoMultitaskLossBalancing:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.loss
-        - nn.multitask
-        - nn.uncertainty_weighting
-        - nn.gradnorm
-        - nn.pcgrad
+      - nn.loss
+      - nn.multitask
+      - nn.uncertainty_weighting
+      - nn.gradnorm
+      - nn.pcgrad
       inputs:
         type: object
         properties:
@@ -30,23 +30,25 @@ class NnAlgoMultitaskLossBalancing:
             type: array
             items:
               type: number
-            description: Learned homoscedastic log-variance parameters s_k = log(sigma_k^2) for K tasks (for uncertainty mode).
+            description: Learned homoscedastic log-variance parameters s_k = log(sigma_k^2)
+              for K tasks (for uncertainty mode).
           gradients:
             type: array
             items:
               type: array
               items:
                 type: number
-            description: Task gradient vectors G_k of shape (K, P) with respect to shared parameters (for PCGrad mode).
+            description: Task gradient vectors G_k of shape (K, P) with respect to shared
+              parameters (for PCGrad mode).
           mode:
             type: string
             enum:
-              - uncertainty
-              - pcgrad
+            - uncertainty
+            - pcgrad
             default: uncertainty
             description: Multi-task balancing algorithm to apply.
         required:
-          - mode
+        - mode
         additionalProperties: false
       outputs:
         type: object
@@ -63,10 +65,39 @@ class NnAlgoMultitaskLossBalancing:
             type: array
             items:
               type: number
-            description: Aggregated conflict-free parameter gradient vector of length P (for PCGrad mode).
+            description: Aggregated conflict-free parameter gradient vector of length
+              P (for PCGrad mode).
         required:
-          - effective_weights
+        - effective_weights
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

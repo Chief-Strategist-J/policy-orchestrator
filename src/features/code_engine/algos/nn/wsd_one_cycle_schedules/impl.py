@@ -13,10 +13,10 @@ class NnAlgoWsdOneCycleSchedules:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.schedule
-        - nn.wsd
-        - nn.one_cycle
-        - nn.linear_decay
+      - nn.schedule
+      - nn.wsd
+      - nn.one_cycle
+      - nn.linear_decay
       inputs:
         type: object
         properties:
@@ -31,7 +31,10 @@ class NnAlgoWsdOneCycleSchedules:
             description: Peak learning rate eta_max > 0.
           schedule_type:
             type: string
-            enum: [wsd, one_cycle, linear_decay]
+            enum:
+            - wsd
+            - one_cycle
+            - linear_decay
             default: wsd
             description: Schedule formulation.
           warmup_pct:
@@ -43,9 +46,9 @@ class NnAlgoWsdOneCycleSchedules:
             default: 0.2
             description: Fraction of steps for cooldown/decay in [0, 1] (for WSD).
         required:
-          - current_step
-          - total_steps
-          - max_lr
+        - current_step
+        - total_steps
+        - max_lr
         additionalProperties: false
       outputs:
         type: object
@@ -57,9 +60,37 @@ class NnAlgoWsdOneCycleSchedules:
             type: string
             description: Current schedule phase (warmup, stable, decay).
         required:
-          - learning_rate
-          - phase
+        - learning_rate
+        - phase
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

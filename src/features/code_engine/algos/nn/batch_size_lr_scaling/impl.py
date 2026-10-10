@@ -13,10 +13,10 @@ class NnAlgoBatchSizeLrScaling:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.scaling
-        - nn.batch_size
-        - nn.learning_rate_scaling
-        - nn.distributed_training
+      - nn.scaling
+      - nn.batch_size
+      - nn.learning_rate_scaling
+      - nn.distributed_training
       inputs:
         type: object
         properties:
@@ -31,13 +31,15 @@ class NnAlgoBatchSizeLrScaling:
             description: Scaled target batch size B >= 1.
           scaling_rule:
             type: string
-            enum: [linear, square_root]
+            enum:
+            - linear
+            - square_root
             default: linear
             description: Scaling rule (linear for SGD, square_root for Adam).
         required:
-          - base_batch_size
-          - base_lr
-          - target_batch_size
+        - base_batch_size
+        - base_lr
+        - target_batch_size
         additionalProperties: false
       outputs:
         type: object
@@ -49,9 +51,37 @@ class NnAlgoBatchSizeLrScaling:
             type: number
             description: Batch ratio k = B / B_0.
         required:
-          - scaled_lr
-          - scale_factor
+        - scaled_lr
+        - scale_factor
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

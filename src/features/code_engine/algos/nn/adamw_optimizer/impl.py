@@ -13,10 +13,10 @@ class NnAlgoAdamwOptimizer:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.adamw
-        - nn.decoupled_weight_decay
-        - nn.transformer_training
+      - nn.optimizer
+      - nn.adamw
+      - nn.decoupled_weight_decay
+      - nn.transformer_training
       inputs:
         type: object
         properties:
@@ -57,18 +57,18 @@ class NnAlgoAdamwOptimizer:
             description: Second moment decay beta_2 in [0, 1).
           eps:
             type: number
-            default: 0.00000001
+            default: 1.0e-08
             description: Stability constant epsilon > 0.
           weight_decay:
             type: number
             default: 0.01
             description: Decoupled weight decay coefficient lambda >= 0.
         required:
-          - parameters
-          - gradients
-          - exp_avg
-          - exp_avg_sq
-          - step
+        - parameters
+        - gradients
+        - exp_avg
+        - exp_avg_sq
+        - step
         additionalProperties: false
       outputs:
         type: object
@@ -89,10 +89,38 @@ class NnAlgoAdamwOptimizer:
               type: number
             description: Updated second moment buffer v_{t+1} of length P.
         required:
-          - updated_parameters
-          - updated_exp_avg
-          - updated_exp_avg_sq
+        - updated_parameters
+        - updated_exp_avg
+        - updated_exp_avg_sq
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

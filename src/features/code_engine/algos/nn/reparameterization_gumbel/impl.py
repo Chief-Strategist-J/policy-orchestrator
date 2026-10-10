@@ -13,18 +13,21 @@ class NnAlgoReparameterizationGumbel:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.stochastic
-        - nn.reparameterization
-        - nn.vae
-        - nn.gumbel_softmax
+      - nn.stochastic
+      - nn.reparameterization
+      - nn.vae
+      - nn.gumbel_softmax
       inputs:
         type: object
         properties:
           mode:
             type: string
-            enum: [gaussian, gumbel_softmax]
+            enum:
+            - gaussian
+            - gumbel_softmax
             default: gaussian
-            description: Continuous Gaussian reparameterization vs discrete Gumbel-Softmax relaxation.
+            description: Continuous Gaussian reparameterization vs discrete Gumbel-Softmax
+              relaxation.
           mean:
             type: array
             items:
@@ -34,17 +37,20 @@ class NnAlgoReparameterizationGumbel:
             type: array
             items:
               type: number
-            description: Latent log-variance vector log(sigma^2) of length D (for Gaussian mode).
+            description: Latent log-variance vector log(sigma^2) of length D (for Gaussian
+              mode).
           noise:
             type: array
             items:
               type: number
-            description: Standard normal noise samples epsilon ~ N(0, I) of length D (for Gaussian mode).
+            description: Standard normal noise samples epsilon ~ N(0, I) of length D (for
+              Gaussian mode).
           logits:
             type: array
             items:
               type: number
-            description: Unnormalized category logits z of length K (for Gumbel-Softmax mode).
+            description: Unnormalized category logits z of length K (for Gumbel-Softmax
+              mode).
           gumbel_noise:
             type: array
             items:
@@ -57,9 +63,10 @@ class NnAlgoReparameterizationGumbel:
           hard:
             type: boolean
             default: false
-            description: Whether to return hard one-hot samples in forward pass with soft gradients backward.
+            description: Whether to return hard one-hot samples in forward pass with soft
+              gradients backward.
         required:
-          - mode
+        - mode
         additionalProperties: false
       outputs:
         type: object
@@ -80,8 +87,36 @@ class NnAlgoReparameterizationGumbel:
               type: number
             description: Gradient dL/d(log_var) (for Gaussian mode).
         required:
-          - samples
+        - samples
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

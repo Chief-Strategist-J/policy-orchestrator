@@ -166,7 +166,7 @@ class NnAlgoSqueezeExcitationCbam:
         w1_reduce: Sequence[Sequence[float]],
         w2_expand: Sequence[Sequence[float]],
         mode: Literal["se", "cbam"] = "se",
-        spatial_conv_weights: Optional[Sequence[Sequence[Sequence[float]]]]] = None,
+        spatial_conv_weights: Optional[Sequence[Sequence[Sequence[float]]]] = None,
     ) -> Dict[str, Any]:
         if not input_tensor or not input_tensor[0] or not input_tensor[0][0]:
             raise ValueError("Precondition failed: input_tensor must be non-empty 3D array.")

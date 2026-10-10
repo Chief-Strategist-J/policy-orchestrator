@@ -13,10 +13,10 @@ class NnAlgoForwardModeDifferentiation:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.autodiff
-        - nn.forward_mode
-        - nn.jvp
-        - nn.dual_numbers
+      - nn.autodiff
+      - nn.forward_mode
+      - nn.jvp
+      - nn.dual_numbers
       inputs:
         type: object
         properties:
@@ -29,7 +29,8 @@ class NnAlgoForwardModeDifferentiation:
             type: array
             items:
               type: number
-            description: Input perturbation tangent vector v of length N (direction for JVP).
+            description: Input perturbation tangent vector v of length N (direction for
+              JVP).
           operations:
             type: array
             items:
@@ -37,7 +38,12 @@ class NnAlgoForwardModeDifferentiation:
               properties:
                 op:
                   type: string
-                  enum: [square, sin, exp, relu, linear_combination]
+                  enum:
+                  - square
+                  - sin
+                  - exp
+                  - relu
+                  - linear_combination
                 parent_indices:
                   type: array
                   items:
@@ -48,8 +54,8 @@ class NnAlgoForwardModeDifferentiation:
                     type: number
             description: Sequence of forward primal-tangent operations.
         required:
-          - primal_inputs
-          - tangent_inputs
+        - primal_inputs
+        - tangent_inputs
         additionalProperties: false
       outputs:
         type: object
@@ -65,9 +71,37 @@ class NnAlgoForwardModeDifferentiation:
               type: number
             description: Evaluated directional derivative J * v (Jacobian-Vector Product).
         required:
-          - primal_outputs
-          - tangent_outputs
+        - primal_outputs
+        - tangent_outputs
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

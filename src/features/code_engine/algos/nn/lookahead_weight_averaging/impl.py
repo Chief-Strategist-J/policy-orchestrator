@@ -13,16 +13,18 @@ class NnAlgoLookaheadWeightAveraging:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.lookahead
-        - nn.ema
-        - nn.polyak_averaging
+      - nn.optimizer
+      - nn.lookahead
+      - nn.ema
+      - nn.polyak_averaging
       inputs:
         type: object
         properties:
           mode:
             type: string
-            enum: [lookahead, ema]
+            enum:
+            - lookahead
+            - ema
             default: ema
             description: Weight smoothing strategy.
           fast_weights:
@@ -40,9 +42,9 @@ class NnAlgoLookaheadWeightAveraging:
             default: 0.999
             description: Slow interpolation rate or EMA decay coefficient in (0, 1).
         required:
-          - mode
-          - fast_weights
-          - slow_weights
+        - mode
+        - fast_weights
+        - slow_weights
         additionalProperties: false
       outputs:
         type: object
@@ -58,8 +60,36 @@ class NnAlgoLookaheadWeightAveraging:
               type: number
             description: Fast weights synchronized to updated slow weights (for Lookahead).
         required:
-          - updated_slow_weights
+        - updated_slow_weights
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

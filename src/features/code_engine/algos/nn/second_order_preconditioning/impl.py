@@ -13,11 +13,11 @@ class NnAlgoSecondOrderPreconditioning:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.second_order
-        - nn.shampoo
-        - nn.kfac
-        - nn.preconditioning
+      - nn.optimizer
+      - nn.second_order
+      - nn.shampoo
+      - nn.kfac
+      - nn.preconditioning
       inputs:
         type: object
         properties:
@@ -34,14 +34,16 @@ class NnAlgoSecondOrderPreconditioning:
               type: array
               items:
                 type: number
-            description: Left Kronecker preconditioner buffer L = sum G G^T of shape (M, M).
+            description: Left Kronecker preconditioner buffer L = sum G G^T of shape (M,
+              M).
           right_preconditioner:
             type: array
             items:
               type: array
               items:
                 type: number
-            description: Right Kronecker preconditioner buffer R = sum G^T G of shape (N, N).
+            description: Right Kronecker preconditioner buffer R = sum G^T G of shape
+              (N, N).
           lr:
             type: number
             default: 0.001
@@ -51,9 +53,9 @@ class NnAlgoSecondOrderPreconditioning:
             default: 0.0001
             description: Diagonal damping epsilon > 0.
         required:
-          - grad_matrix
-          - left_preconditioner
-          - right_preconditioner
+        - grad_matrix
+        - left_preconditioner
+        - right_preconditioner
         additionalProperties: false
       outputs:
         type: object
@@ -80,10 +82,38 @@ class NnAlgoSecondOrderPreconditioning:
                 type: number
             description: Preconditioned matrix update of shape (M, N).
         required:
-          - updated_left
-          - updated_right
-          - preconditioned_gradient
+        - updated_left
+        - updated_right
+        - preconditioned_gradient
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

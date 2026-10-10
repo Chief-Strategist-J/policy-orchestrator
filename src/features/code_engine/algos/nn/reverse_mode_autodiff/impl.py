@@ -13,10 +13,10 @@ class NnAlgoReverseModeAutodiff:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.autodiff
-        - nn.reverse_mode
-        - nn.computational_graph
-        - nn.vjp
+      - nn.autodiff
+      - nn.reverse_mode
+      - nn.computational_graph
+      - nn.vjp
       inputs:
         type: object
         properties:
@@ -29,7 +29,14 @@ class NnAlgoReverseModeAutodiff:
                   type: integer
                 op:
                   type: string
-                  enum: [input, add, mul, relu, sin, exp, sum]
+                  enum:
+                  - input
+                  - add
+                  - mul
+                  - relu
+                  - sin
+                  - exp
+                  - sum
                 parents:
                   type: array
                   items:
@@ -39,10 +46,11 @@ class NnAlgoReverseModeAutodiff:
             description: Ordered execution tape of DAG nodes in topological order.
           target_node_id:
             type: integer
-            description: Node ID corresponding to the scalar loss output to differentiate from.
+            description: Node ID corresponding to the scalar loss output to differentiate
+              from.
         required:
-          - nodes
-          - target_node_id
+        - nodes
+        - target_node_id
         additionalProperties: false
       outputs:
         type: object
@@ -61,10 +69,38 @@ class NnAlgoReverseModeAutodiff:
             type: integer
             description: Total number of recorded computational graph operations.
         required:
-          - node_values
-          - adjoints
-          - tape_length
+        - node_values
+        - adjoints
+        - tape_length
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

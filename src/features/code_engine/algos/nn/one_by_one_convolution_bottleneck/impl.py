@@ -159,7 +159,7 @@ class NnAlgoOneByOneConvolutionBottleneck:
     def forward(
         input_tensor: Sequence[Sequence[Sequence[float]]],
         w_reduce: Sequence[Sequence[float]],
-        w_spatial: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        w_spatial: Sequence[Sequence[Sequence[Sequence[float]]]],
         w_expand: Sequence[Sequence[float]],
         padding: int = 1,
     ) -> Dict[str, Any]:

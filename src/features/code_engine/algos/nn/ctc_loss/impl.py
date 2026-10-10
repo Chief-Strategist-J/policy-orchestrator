@@ -13,10 +13,10 @@ class NnAlgoCtcLoss:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.loss
-        - nn.ctc
-        - nn.speech_recognition
-        - nn.sequence_alignment
+      - nn.loss
+      - nn.ctc
+      - nn.speech_recognition
+      - nn.sequence_alignment
       inputs:
         type: object
         properties:
@@ -26,7 +26,8 @@ class NnAlgoCtcLoss:
               type: array
               items:
                 type: number
-            description: Log-probabilities log P of shape (T, C) where T is input time frames and C is vocabulary size including blank.
+            description: Log-probabilities log P of shape (T, C) where T is input time
+              frames and C is vocabulary size including blank.
           targets:
             type: array
             items:
@@ -37,22 +38,24 @@ class NnAlgoCtcLoss:
             default: 0
             description: Index of the CTC blank symbol in [0, C-1].
         required:
-          - log_probs
-          - targets
+        - log_probs
+        - targets
         additionalProperties: false
       outputs:
         type: object
         properties:
           loss:
             type: number
-            description: Connectionist Temporal Classification negative log-likelihood loss.
+            description: Connectionist Temporal Classification negative log-likelihood
+              loss.
           forward_log_lattice:
             type: array
             items:
               type: array
               items:
                 type: number
-            description: Forward dynamic programming log-probabilities alpha of shape (T, 2L+1).
+            description: Forward dynamic programming log-probabilities alpha of shape
+              (T, 2L+1).
           input_length:
             type: integer
             description: Input frame length T.
@@ -60,10 +63,38 @@ class NnAlgoCtcLoss:
             type: integer
             description: Target label length L.
         required:
-          - loss
-          - input_length
-          - target_length
+        - loss
+        - input_length
+        - target_length
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

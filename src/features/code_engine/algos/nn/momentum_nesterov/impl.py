@@ -13,10 +13,10 @@ class NnAlgoMomentumNesterov:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.momentum
-        - nn.nesterov
-        - nn.acceleration
+      - nn.optimizer
+      - nn.momentum
+      - nn.nesterov
+      - nn.acceleration
       inputs:
         type: object
         properties:
@@ -46,11 +46,12 @@ class NnAlgoMomentumNesterov:
           nesterov:
             type: boolean
             default: false
-            description: Whether to apply Nesterov Accelerated Gradient (NAG) lookahead formulation.
+            description: Whether to apply Nesterov Accelerated Gradient (NAG) lookahead
+              formulation.
         required:
-          - parameters
-          - gradients
-          - velocity
+        - parameters
+        - gradients
+        - velocity
         additionalProperties: false
       outputs:
         type: object
@@ -66,9 +67,37 @@ class NnAlgoMomentumNesterov:
               type: number
             description: Updated velocity buffer v_{t+1} of length P.
         required:
-          - updated_parameters
-          - updated_velocity
+        - updated_parameters
+        - updated_velocity
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

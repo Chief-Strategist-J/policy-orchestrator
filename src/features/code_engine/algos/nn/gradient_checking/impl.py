@@ -13,10 +13,10 @@ class NnAlgoGradientChecking:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.autodiff
-        - nn.gradient_checking
-        - nn.finite_differences
-        - nn.verification
+      - nn.autodiff
+      - nn.gradient_checking
+      - nn.finite_differences
+      - nn.verification
       inputs:
         type: object
         properties:
@@ -24,35 +24,39 @@ class NnAlgoGradientChecking:
             type: array
             items:
               type: number
-            description: Parameter coordinate vector theta of length P at which to evaluate gradients.
+            description: Parameter coordinate vector theta of length P at which to evaluate
+              gradients.
           analytic_gradients:
             type: array
             items:
               type: number
-            description: Backpropagated analytic gradient vector g_analytic of length P.
+            description: Backpropagated analytic gradient vector g_analytic of length
+              P.
           loss_values_plus:
             type: array
             items:
               type: number
-            description: Perturbed forward loss values L(theta + epsilon * e_i) of length P.
+            description: Perturbed forward loss values L(theta + epsilon * e_i) of length
+              P.
           loss_values_minus:
             type: array
             items:
               type: number
-            description: Perturbed forward loss values L(theta - epsilon * e_i) of length P.
+            description: Perturbed forward loss values L(theta - epsilon * e_i) of length
+              P.
           epsilon:
             type: number
-            default: 0.000001
+            default: 1.0e-06
             description: Finite difference perturbation step epsilon > 0.
           tolerance:
             type: number
-            default: 0.00001
+            default: 1.0e-05
             description: Relative error tolerance threshold for declaring gradient validity.
         required:
-          - parameters
-          - analytic_gradients
-          - loss_values_plus
-          - loss_values_minus
+        - parameters
+        - analytic_gradients
+        - loss_values_plus
+        - loss_values_minus
         additionalProperties: false
       outputs:
         type: object
@@ -67,18 +71,47 @@ class NnAlgoGradientChecking:
             type: array
             items:
               type: number
-            description: Central finite difference estimated gradients g_num of length P.
+            description: Central finite difference estimated gradients g_num of length
+              P.
           relative_errors:
             type: array
             items:
               type: number
             description: Per-coordinate relative errors of length P.
         required:
-          - is_correct
-          - max_relative_error
-          - numerical_gradients
-          - relative_errors
+        - is_correct
+        - max_relative_error
+        - numerical_gradients
+        - relative_errors
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

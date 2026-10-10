@@ -173,7 +173,7 @@ class NnAlgoInceptionMultibranchBlocks:
     @staticmethod
     def _conv2d_padded(
         x: Sequence[Sequence[Sequence[float]]],
-        w: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        w: Sequence[Sequence[Sequence[Sequence[float]]]],
         pad: int,
     ) -> List[List[List[float]]]:
         C_in = len(x)
@@ -236,9 +236,9 @@ class NnAlgoInceptionMultibranchBlocks:
         input_tensor: Sequence[Sequence[Sequence[float]]],
         branch1_w1x1: Sequence[Sequence[float]],
         branch2_w_red: Sequence[Sequence[float]],
-        branch2_w3x3: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        branch2_w3x3: Sequence[Sequence[Sequence[Sequence[float]]]],
         branch3_w_red: Sequence[Sequence[float]],
-        branch3_w5x5: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        branch3_w5x5: Sequence[Sequence[Sequence[Sequence[float]]]],
         branch4_w1x1: Sequence[Sequence[float]],
     ) -> Dict[str, Any]:
         if not input_tensor or not input_tensor[0] or not input_tensor[0][0]:

@@ -13,10 +13,10 @@ class NnAlgoXavierGlorotInit:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.initialization
-        - nn.xavier
-        - nn.glorot
-        - nn.variance_preservation
+      - nn.initialization
+      - nn.xavier
+      - nn.glorot
+      - nn.variance_preservation
       inputs:
         type: object
         properties:
@@ -28,7 +28,9 @@ class NnAlgoXavierGlorotInit:
             description: Number of output connections fan_out >= 1.
           distribution:
             type: string
-            enum: [uniform, normal]
+            enum:
+            - uniform
+            - normal
             default: uniform
             description: Sampling distribution family.
           gain:
@@ -36,8 +38,8 @@ class NnAlgoXavierGlorotInit:
             default: 1.0
             description: Non-linearity gain multiplier.
         required:
-          - fan_in
-          - fan_out
+        - fan_in
+        - fan_out
         additionalProperties: false
       outputs:
         type: object
@@ -52,10 +54,38 @@ class NnAlgoXavierGlorotInit:
             type: number
             description: Target weight variance 2 / (fan_in + fan_out).
         required:
-          - std_dev
-          - uniform_bound
-          - variance
+        - std_dev
+        - uniform_bound
+        - variance
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

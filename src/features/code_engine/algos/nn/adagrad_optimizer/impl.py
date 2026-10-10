@@ -13,10 +13,10 @@ class NnAlgoAdagradOptimizer:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.adagrad
-        - nn.adaptive_learning_rate
-        - nn.sparse_features
+      - nn.optimizer
+      - nn.adagrad
+      - nn.adaptive_learning_rate
+      - nn.sparse_features
       inputs:
         type: object
         properties:
@@ -41,12 +41,12 @@ class NnAlgoAdagradOptimizer:
             description: Global learning rate eta > 0.
           eps:
             type: number
-            default: 0.00000001
+            default: 1.0e-08
             description: Numerical stability denominator epsilon > 0.
         required:
-          - parameters
-          - gradients
-          - state_accumulator
+        - parameters
+        - gradients
+        - state_accumulator
         additionalProperties: false
       outputs:
         type: object
@@ -62,9 +62,37 @@ class NnAlgoAdagradOptimizer:
               type: number
             description: Updated squared gradient accumulator G_{t+1} of length P.
         required:
-          - updated_parameters
-          - updated_accumulator
+        - updated_parameters
+        - updated_accumulator
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

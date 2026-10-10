@@ -172,7 +172,7 @@ class NnAlgoResnetResidualBlocks:
     @staticmethod
     def _conv2d(
         x: Sequence[Sequence[Sequence[float]]],
-        w: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        w: Sequence[Sequence[Sequence[Sequence[float]]]],
         stride: int = 1,
         padding: int = 0,
     ) -> List[List[List[float]]]:
@@ -228,11 +228,11 @@ class NnAlgoResnetResidualBlocks:
     @staticmethod
     def forward(
         input_tensor: Sequence[Sequence[Sequence[float]]],
-        conv1_weights: Sequence[Sequence[Sequence[Sequence[float]]]]],
-        conv2_weights: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        conv1_weights: Sequence[Sequence[Sequence[Sequence[float]]]],
+        conv2_weights: Sequence[Sequence[Sequence[Sequence[float]]]],
         block_type: Literal["basic", "bottleneck"] = "basic",
-        conv3_weights: Optional[Sequence[Sequence[Sequence[Sequence[float]]]]]] = None,
-        shortcut_weights: Optional[Sequence[Sequence[Sequence[Sequence[float]]]]]] = None,
+        conv3_weights: Optional[Sequence[Sequence[Sequence[Sequence[float]]]]] = None,
+        shortcut_weights: Optional[Sequence[Sequence[Sequence[Sequence[float]]]]] = None,
         stride: int = 1,
     ) -> Dict[str, Any]:
         if not input_tensor or not input_tensor[0] or not input_tensor[0][0]:

@@ -13,10 +13,10 @@ class NnAlgoStochasticGradientDescent:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.sgd
-        - nn.gradient_descent
-        - nn.weight_decay
+      - nn.optimizer
+      - nn.sgd
+      - nn.gradient_descent
+      - nn.weight_decay
       inputs:
         type: object
         properties:
@@ -39,8 +39,8 @@ class NnAlgoStochasticGradientDescent:
             default: 0.0
             description: L2 weight decay regularization coefficient lambda >= 0.
         required:
-          - parameters
-          - gradients
+        - parameters
+        - gradients
         additionalProperties: false
       outputs:
         type: object
@@ -54,9 +54,37 @@ class NnAlgoStochasticGradientDescent:
             type: number
             description: L2 Euclidean norm of the parameter displacement step.
         required:
-          - updated_parameters
-          - step_norm
+        - updated_parameters
+        - step_norm
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

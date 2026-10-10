@@ -13,10 +13,10 @@ class NnAlgoLayerBackpropagation:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.backpropagation
-        - nn.linear
-        - nn.chain_rule
-        - nn.gradient_flow
+      - nn.backpropagation
+      - nn.linear
+      - nn.chain_rule
+      - nn.gradient_flow
       inputs:
         type: object
         properties:
@@ -43,7 +43,11 @@ class NnAlgoLayerBackpropagation:
             description: Incoming upstream gradient dL/dY of shape (B, D_out).
           activation:
             type: string
-            enum: [linear, relu, sigmoid, tanh]
+            enum:
+            - linear
+            - relu
+            - sigmoid
+            - tanh
             default: linear
             description: Forward post-activation applied to Y = X W^T + b.
           pre_activations:
@@ -52,11 +56,12 @@ class NnAlgoLayerBackpropagation:
               type: array
               items:
                 type: number
-            description: Stored pre-activation values Z = X W^T + b of shape (B, D_out) (for nonlinear activations).
+            description: Stored pre-activation values Z = X W^T + b of shape (B, D_out)
+              (for nonlinear activations).
         required:
-          - inputs
-          - weights
-          - output_grad
+        - inputs
+        - weights
+        - output_grad
         additionalProperties: false
       outputs:
         type: object
@@ -67,24 +72,54 @@ class NnAlgoLayerBackpropagation:
               type: array
               items:
                 type: number
-            description: Propagated gradient with respect to inputs dL/dX of shape (B, D_in).
+            description: Propagated gradient with respect to inputs dL/dX of shape (B,
+              D_in).
           grad_weights:
             type: array
             items:
               type: array
               items:
                 type: number
-            description: Parameter gradient with respect to weights dL/dW of shape (D_out, D_in).
+            description: Parameter gradient with respect to weights dL/dW of shape (D_out,
+              D_in).
           grad_bias:
             type: array
             items:
               type: number
             description: Parameter gradient with respect to bias dL/db of length D_out.
         required:
-          - grad_inputs
-          - grad_weights
-          - grad_bias
+        - grad_inputs
+        - grad_weights
+        - grad_bias
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

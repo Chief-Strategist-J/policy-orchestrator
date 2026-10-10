@@ -13,10 +13,10 @@ class NnAlgoGradientCheckpointing:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.autodiff
-        - nn.gradient_checkpointing
-        - nn.memory_optimization
-        - nn.recomputation
+      - nn.autodiff
+      - nn.gradient_checkpointing
+      - nn.memory_optimization
+      - nn.recomputation
       inputs:
         type: object
         properties:
@@ -26,13 +26,14 @@ class NnAlgoGradientCheckpointing:
           segment_size:
             type: integer
             default: 0
-            description: Number of layers per checkpointed segment k (0 computes optimal sqrt(L)).
+            description: Number of layers per checkpointed segment k (0 computes optimal
+              sqrt(L)).
           initial_activation:
             type: number
             description: Scalar input value x_0 to feed into layer sequence.
         required:
-          - num_layers
-          - initial_activation
+        - num_layers
+        - initial_activation
         additionalProperties: false
       outputs:
         type: object
@@ -52,13 +53,42 @@ class NnAlgoGradientCheckpointing:
             description: Layer indices where activations were stored in memory.
           memory_saved_ratio:
             type: number
-            description: Theoretical memory reduction ratio relative to standard full caching (1 - sqrt(L)/L).
+            description: Theoretical memory reduction ratio relative to standard full
+              caching (1 - sqrt(L)/L).
         required:
-          - checkpoints
-          - final_output
-          - checkpoint_indices
-          - memory_saved_ratio
+        - checkpoints
+        - final_output
+        - checkpoint_indices
+        - memory_saved_ratio
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

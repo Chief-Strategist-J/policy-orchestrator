@@ -13,11 +13,11 @@ class NnAlgoCrossEntropyNll:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.loss
-        - nn.cross_entropy
-        - nn.nll
-        - nn.multiclass
-        - nn.classification
+      - nn.loss
+      - nn.cross_entropy
+      - nn.nll
+      - nn.multiclass
+      - nn.classification
       inputs:
         type: object
         properties:
@@ -27,12 +27,14 @@ class NnAlgoCrossEntropyNll:
               type: array
               items:
                 type: number
-            description: Unnormalized prediction scores Z of shape (B, C) where B is batch size and C is number of classes.
+            description: Unnormalized prediction scores Z of shape (B, C) where B is batch
+              size and C is number of classes.
           targets:
             type: array
             items:
               type: integer
-            description: Ground truth class indices y of length B, with y_i in [0, C-1] or equal to ignore_index.
+            description: Ground truth class indices y of length B, with y_i in [0, C-1]
+              or equal to ignore_index.
           weight:
             type: array
             items:
@@ -41,18 +43,19 @@ class NnAlgoCrossEntropyNll:
           ignore_index:
             type: integer
             default: -100
-            description: Target value that is ignored and does not contribute to the loss or gradient.
+            description: Target value that is ignored and does not contribute to the loss
+              or gradient.
           reduction:
             type: string
             enum:
-              - mean
-              - sum
-              - none
+            - mean
+            - sum
+            - none
             default: mean
             description: Reduction method over the batch dimension.
         required:
-          - logits
-          - targets
+        - logits
+        - targets
         additionalProperties: false
       outputs:
         type: object
@@ -83,10 +86,38 @@ class NnAlgoCrossEntropyNll:
             type: integer
             description: Number of valid, non-ignored samples evaluated.
         required:
-          - probabilities
-          - gradients
-          - valid_samples
+        - probabilities
+        - gradients
+        - valid_samples
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

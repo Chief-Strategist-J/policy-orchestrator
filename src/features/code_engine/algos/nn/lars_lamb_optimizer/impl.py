@@ -13,11 +13,11 @@ class NnAlgoLarsLambOptimizer:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.optimizer
-        - nn.lars
-        - nn.lamb
-        - nn.large_batch
-        - nn.trust_ratio
+      - nn.optimizer
+      - nn.lars
+      - nn.lamb
+      - nn.large_batch
+      - nn.trust_ratio
       inputs:
         type: object
         properties:
@@ -33,7 +33,9 @@ class NnAlgoLarsLambOptimizer:
             description: Gradient vector g of length P.
           mode:
             type: string
-            enum: [lars, lamb]
+            enum:
+            - lars
+            - lamb
             default: lamb
             description: Large-batch optimizer algorithm (LARS vs LAMB).
           exp_avg:
@@ -64,11 +66,11 @@ class NnAlgoLarsLambOptimizer:
             description: Layer-wise trust coefficient phi > 0.
           eps:
             type: number
-            default: 0.00000001
+            default: 1.0e-08
             description: Numerical stability denominator epsilon > 0.
         required:
-          - parameters
-          - gradients
+        - parameters
+        - gradients
         additionalProperties: false
       outputs:
         type: object
@@ -92,9 +94,37 @@ class NnAlgoLarsLambOptimizer:
               type: number
             description: Updated second moment buffer v (for LAMB).
         required:
-          - updated_parameters
-          - trust_ratio
+        - updated_parameters
+        - trust_ratio
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

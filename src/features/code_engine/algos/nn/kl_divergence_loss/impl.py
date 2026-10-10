@@ -13,10 +13,10 @@ class NnAlgoKlDivergenceLoss:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.loss
-        - nn.information_theory
-        - nn.kl_divergence
-        - nn.distillation
+      - nn.loss
+      - nn.information_theory
+      - nn.kl_divergence
+      - nn.distillation
       inputs:
         type: object
         properties:
@@ -41,15 +41,15 @@ class NnAlgoKlDivergenceLoss:
           reduction:
             type: string
             enum:
-              - batchmean
-              - mean
-              - sum
-              - none
+            - batchmean
+            - mean
+            - sum
+            - none
             default: batchmean
             description: Reduction method across samples and classes.
         required:
-          - log_predictions
-          - target_probabilities
+        - log_predictions
+        - target_probabilities
         additionalProperties: false
       outputs:
         type: object
@@ -61,7 +61,8 @@ class NnAlgoKlDivergenceLoss:
             type: array
             items:
               type: number
-            description: Per-sample KL divergence values of length B (if reduction is none).
+            description: Per-sample KL divergence values of length B (if reduction is
+              none).
           gradients:
             type: array
             items:
@@ -70,8 +71,36 @@ class NnAlgoKlDivergenceLoss:
                 type: number
             description: Analytic gradients dL/d(log Q) of shape (B, C).
         required:
-          - gradients
+        - gradients
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

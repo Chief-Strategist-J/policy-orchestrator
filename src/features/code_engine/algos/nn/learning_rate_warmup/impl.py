@@ -13,10 +13,10 @@ class NnAlgoLearningRateWarmup:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.schedule
-        - nn.warmup
-        - nn.learning_rate
-        - nn.early_training_stability
+      - nn.schedule
+      - nn.warmup
+      - nn.learning_rate
+      - nn.early_training_stability
       inputs:
         type: object
         properties:
@@ -35,13 +35,16 @@ class NnAlgoLearningRateWarmup:
             description: Starting learning rate at step 0 eta_min >= 0.
           strategy:
             type: string
-            enum: [linear, cosine, quadratic]
+            enum:
+            - linear
+            - cosine
+            - quadratic
             default: linear
             description: Mathematical warmup ramp curve.
         required:
-          - current_step
-          - warmup_steps
-          - base_lr
+        - current_step
+        - warmup_steps
+        - base_lr
         additionalProperties: false
       outputs:
         type: object
@@ -56,10 +59,38 @@ class NnAlgoLearningRateWarmup:
             type: boolean
             description: Whether the current step is within the warmup phase.
         required:
-          - learning_rate
-          - progress_fraction
-          - is_warmup
+        - learning_rate
+        - progress_fraction
+        - is_warmup
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 

@@ -151,7 +151,7 @@ class NnAlgoUnetEncoderDecoder:
     @staticmethod
     def _conv2d_same(
         x: Sequence[Sequence[Sequence[float]]],
-        w: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        w: Sequence[Sequence[Sequence[Sequence[float]]]],
     ) -> List[List[List[float]]]:
         C_in = len(x)
         H = len(x[0])
@@ -224,9 +224,9 @@ class NnAlgoUnetEncoderDecoder:
     @staticmethod
     def forward(
         input_tensor: Sequence[Sequence[Sequence[float]]],
-        enc1_weights: Sequence[Sequence[Sequence[Sequence[float]]]]],
-        enc2_weights: Sequence[Sequence[Sequence[Sequence[float]]]]],
-        dec1_weights: Sequence[Sequence[Sequence[Sequence[float]]]]],
+        enc1_weights: Sequence[Sequence[Sequence[Sequence[float]]]],
+        enc2_weights: Sequence[Sequence[Sequence[Sequence[float]]]],
+        dec1_weights: Sequence[Sequence[Sequence[Sequence[float]]]],
     ) -> Dict[str, Any]:
         if not input_tensor or not input_tensor[0] or not input_tensor[0][0]:
             raise ValueError("Precondition failed: input_tensor must be non-empty 3D array.")

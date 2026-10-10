@@ -13,10 +13,10 @@ class NnAlgoFocalLoss:
       version: 1.0.0
       category: nn
       capability_tags:
-        - nn.loss
-        - nn.focal_loss
-        - nn.imbalanced_learning
-        - nn.object_detection
+      - nn.loss
+      - nn.focal_loss
+      - nn.imbalanced_learning
+      - nn.object_detection
       inputs:
         type: object
         properties:
@@ -33,22 +33,24 @@ class NnAlgoFocalLoss:
           alpha:
             type: number
             default: 0.25
-            description: Weighting factor alpha in (0, 1) for class 1 (class 0 gets 1 - alpha).
+            description: Weighting factor alpha in (0, 1) for class 1 (class 0 gets 1
+              - alpha).
           gamma:
             type: number
             default: 2.0
-            description: Focusing parameter gamma >= 0 that modulates the easy example penalty.
+            description: Focusing parameter gamma >= 0 that modulates the easy example
+              penalty.
           reduction:
             type: string
             enum:
-              - mean
-              - sum
-              - none
+            - mean
+            - sum
+            - none
             default: mean
             description: Reduction mode across samples.
         required:
-          - logits
-          - targets
+        - logits
+        - targets
         additionalProperties: false
       outputs:
         type: object
@@ -75,10 +77,38 @@ class NnAlgoFocalLoss:
             type: integer
             description: Number of samples N evaluated.
         required:
-          - probabilities
-          - gradients
-          - sample_count
+        - probabilities
+        - gradients
+        - sample_count
         additionalProperties: false
+      parameters: {}
+      input_assumptions:
+      - Input tensors and parameters satisfy dimensionality and finite numerical bounds.
+      purity: pure
+      determinism: deterministic
+      idempotency: not_applicable
+      reversibility: not_applicable
+      side_effects: none
+      concurrency_model: thread_safe
+      hardware_target: cpu_scalar
+      exactness: exact
+      error_bound: Standard IEEE-754 floating point precision
+      uses_model: false
+      complexity:
+        variables:
+          N: tensor/parameter dimension
+        time_worst: O(N)
+        time_typical: O(N)
+        space: O(N)
+      preconditions:
+      - Input tensors are non-empty and conform to defined mathematical shapes.
+      postconditions:
+      - Output values and arrays are populated without NaN or infinite values.
+      certificate: Exact implementation matching analytical mathematical derivation.
+      compatible_adapters: []
+      related_algos: []
+      references:
+      - https://arxiv.org/
     ---
     """
 
