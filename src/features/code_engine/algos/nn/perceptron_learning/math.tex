@@ -1,0 +1,341 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{property}{Property}
+
+\title{Mathematical Specification and Convergence Analysis of the Perceptron Learning Rule (ALGO-NN-01)}
+\author{Algorithms Engineering Group}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides the formal mathematical foundation, rigorous convergence guarantees, complexity derivations, and numerical analysis for the classical Perceptron learning algorithm. The mistake-driven weight and bias update rule is formulated, proven to converge under the linear separability hypothesis via Novikoff's Theorem, and validated through an exact step-by-step worked trace matching the production implementation contract.
+\end{abstract}
+
+\section{Notation}
+\label{sec:notation}
+
+Let $\mathbb{R}$ denote the set of real numbers, $\mathbb{N}$ the set of natural numbers $\{1, 2, \dots\}$, and $\mathbb{N}_0 = \mathbb{N} \cup \{0\}$. Vectors are denoted in bold lowercase (e.g., $\mathbf{x}, \mathbf{w} \in \mathbb{R}^d$), and scalars in standard typeface ($b, \eta \in \mathbb{R}$).
+
+\begin{itemize}
+    \item $N \in \mathbb{N}$: Total number of training samples.
+    \item $d \in \mathbb{N}$: Dimensionality of the feature space.
+    \item $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$: Training dataset where $\mathbf{x}_i \in \mathbb{R}^d$ and $y_i \in \{0, 1\}$.
+    \item $\tilde{y}_i = 2y_i - 1 \in \{-1, +1\}$: Signed representation of binary labels.
+    \item $\mathbf{w} \in \mathbb{R}^d$: Learned weight vector.
+    \item $b \in \mathbb{R}$: Learned scalar bias term.
+    \item $\tilde{\mathbf{x}}_i = [\mathbf{x}_i^\top, 1]^\top \in \mathbb{R}^{d+1}$: Augmented feature vector with homogeneous bias coordinate.
+    \item $\tilde{\mathbf{w}} = [\mathbf{w}^\top, b]^\top \in \mathbb{R}^{d+1}$: Augmented weight vector.
+    \item $\eta \in \mathbb{R}_{> 0}$: Learning rate parameter.
+    \item $E_{\max} \in \mathbb{N}$: Maximum number of training epochs.
+    \item $\langle \mathbf{u}, \mathbf{v} \rangle = \mathbf{u}^\top \mathbf{v} = \sum_{j=1}^d u_j v_j$: Standard Euclidean inner product on $\mathbb{R}^d$.
+    \item $\|\mathbf{u}\|_2 = \sqrt{\langle \mathbf{u}, \mathbf{u} \rangle}$: Standard $\ell_2$ Euclidean norm.
+    \item $\Theta(z) = \mathbf{1}_{\{z > 0\}}$: Heavyside step activation function with strictly positive threshold.
+\end{itemize}
+
+\section{Problem Definition}
+\label{sec:problem_definition}
+
+\begin{definition}[Linear Separability]
+A dataset $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ is \emph{linearly separable} if there exists an optimal augmented hyperplane $\tilde{\mathbf{w}}^* = [(\mathbf{w}^*)^\top, b^*]^\top \in \mathbb{R}^{d+1}$ with $\|\tilde{\mathbf{w}}^*\|_2 = 1$ and a strictly positive geometric margin $\gamma > 0$ such that:
+\begin{equation}
+\label{eq:separability_margin}
+\tilde{y}_i \left( \langle \mathbf{w}^*, \mathbf{x}_i \rangle + b^* \right) \ge \gamma, \quad \forall i \in \{1, \dots, N\}.
+\end{equation}
+\end{definition}
+
+\begin{definition}[Perceptron Decision Function]
+Given a weight vector $\mathbf{w} \in \mathbb{R}^d$ and bias $b \in \mathbb{R}$, the binary prediction $\hat{y} \in \{0, 1\}$ for an input $\mathbf{x} \in \mathbb{R}^d$ is generated according to:
+\begin{equation}
+\label{eq:decision_rule}
+\hat{y}(\mathbf{x}) = \begin{cases} 
+1 & \text{if } \langle \mathbf{w}, \mathbf{x} \rangle + b > 0, \\ 
+0 & \text{if } \langle \mathbf{w}, \mathbf{x} \rangle + b \le 0.
+\end{cases}
+\end{equation}
+\end{definition}
+
+\begin{definition}[Perceptron Optimization Objective]
+The objective is to find parameter pair $(\mathbf{w}^*, b^*)$ such that the total classification error on dataset $\mathcal{S}$ is identically zero:
+\begin{equation}
+\mathcal{L}(\mathbf{w}, b; \mathcal{S}) = \sum_{i=1}^N \left| y_i - \hat{y}(\mathbf{x}_i) \right| = 0.
+\end{equation}
+\end{definition}
+
+\section{Algorithm}
+\label{sec:algorithm}
+
+The algorithm processes training examples sequentially across epochs. Parameters are updated exclusively when a misclassification occurs (mistake-driven update rule).
+
+\subsection{Recurrence and Update Rule}
+Let $(\mathbf{w}^{(t)}, b^{(t)})$ denote the parameter state before the $t$-th update step. When processing sample $(\mathbf{x}_i, y_i)$, the mistake signal $e_i \in \{-1, 0, +1\}$ is computed as:
+\begin{equation}
+\label{eq:error_signal}
+e_i = y_i - \hat{y}(\mathbf{x}_i) = y_i - \mathbf{1}_{\{\langle \mathbf{w}^{(t)}, \mathbf{x}_i \rangle + b^{(t)} > 0\}}.
+\end{equation}
+If $e_i \ne 0$, the state transitions via:
+\begin{align}
+\mathbf{w}^{(t+1)} &= \mathbf{w}^{(t)} + \eta \, e_i \, \mathbf{x}_i, \label{eq:weight_update} \\
+b^{(t+1)} &= b^{(t)} + \eta \, e_i. \label{eq:bias_update}
+\end{align}
+If $e_i = 0$, the parameter state remains unchanged: $(\mathbf{w}^{(t+1)}, b^{(t+1)}) = (\mathbf{w}^{(t)}, b^{(t)})$.
+
+\subsection{Pseudocode}
+Algorithm~\ref{alg:perceptron} specifies the complete operational procedure implemented in \texttt{impl.py}.
+
+\begin{algorithm}[H]
+\caption{Perceptron Mistake-Driven Learning Rule}
+\label{alg:perceptron}
+\begin{algorithmic}[1]
+\Require Feature matrix $\mathbf{X} \in \mathbb{R}^{N \times d}$, labels $\mathbf{y} \in \{0, 1\}^N$, learning rate $\eta > 0$, maximum epochs $E_{\max} \ge 1$, initial weights $\mathbf{w}^{(0)} \in \mathbb{R}^d$, initial bias $b^{(0)} \in \mathbb{R}$.
+\Ensure Learned parameters $(\mathbf{w}, b)$, convergence indicator, epoch count, update count, final error count, geometric margin.
+\State $\mathbf{w} \gets \mathbf{w}^{(0)}$
+\State $b \gets b^{(0)}$
+\State $\text{total\_updates} \gets 0$
+\State $\text{converged} \gets \textbf{false}$
+\State $\text{epochs\_trained} \gets 0$
+\State $\text{final\_error\_count} \gets 0$
+\For{$\text{epoch} = 1 \textbf{ to } E_{\max}$}
+    \State $\text{epochs\_trained} \gets \text{epoch}$
+    \State $\text{epoch\_errors} \gets 0$
+    \For{$i = 1 \textbf{ to } N$}
+        \State $z \gets \sum_{j=1}^d w_j x_{ij} + b$
+        \State $\hat{y} \gets \begin{cases} 1 & \text{if } z > 0 \\ 0 & \text{otherwise} \end{cases}$
+        \State $e \gets y_i - \hat{y}$
+        \If{$e \ne 0$}
+            \State $\text{epoch\_errors} \gets \text{epoch\_errors} + 1$
+            \State $\text{total\_updates} \gets \text{total\_updates} + 1$
+            \For{$j = 1 \textbf{ to } d$}
+                \State $w_j \gets w_j + \eta \cdot e \cdot x_{ij}$
+            \EndFor
+            \State $b \gets b + \eta \cdot e$
+        \EndIf
+    \EndFor
+    \State $\text{final\_error_count} \gets \text{epoch\_errors}$
+    \If{$\text{epoch\_errors} = 0$}
+        \State $\text{converged} \gets \textbf{true}$
+        \State \textbf{break}
+    \EndIf
+\EndFor
+\State $\text{margin} \gets \textbf{null}$
+\If{$\text{converged} = \textbf{true} \textbf{ and } \|\mathbf{w}\|_2 > 0$}
+    \State $\text{margin} \gets \min_{i=1}^N \frac{(2y_i - 1)(\sum_{j=1}^d w_j x_{ij} + b)}{\|\mathbf{w}\|_2}$
+\EndIf
+\State \Return $(\mathbf{w}, b, \text{converged}, \text{epochs\_trained}, \text{total\_updates}, \text{final\_error\_count}, \text{margin})$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Correctness and Convergence}
+\label{sec:correctness}
+
+The fundamental theoretical guarantee of the Perceptron algorithm is established by Novikoff's Theorem (1962).
+
+\begin{theorem}[Novikoff's Perceptron Convergence Theorem]
+\label{thm:novikoff}
+Let $\mathcal{S} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ be a linearly separable dataset with homogeneous representation $\tilde{\mathbf{x}}_i = [\mathbf{x}_i^\top, 1]^\top \in \mathbb{R}^{d+1}$ bounded by radius $R = \max_{1 \le i \le N} \|\tilde{\mathbf{x}}_i\|_2$. Suppose there exists an augmented unit vector $\tilde{\mathbf{w}}^* \in \mathbb{R}^{d+1}$ ($\|\tilde{\mathbf{w}}^*\|_2 = 1$) and margin $\gamma > 0$ satisfying:
+\begin{equation}
+\tilde{y}_i \langle \tilde{\mathbf{w}}^*, \tilde{\mathbf{x}}_i \rangle \ge \gamma, \quad \forall i \in \{1, \dots, N\}.
+\end{equation}
+Starting from initial augmented parameters $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$, the Perceptron algorithm with learning rate $\eta > 0$ makes at most $M$ mistakes (parameter updates), where:
+\begin{equation}
+\label{eq:novikoff_bound}
+M \le \left( \frac{R}{\gamma} \right)^2.
+\end{equation}
+Consequently, the training loop terminates with zero errors in a finite number of steps.
+\end{theorem}
+
+\begin{proof}
+Without loss of generality, rescale $\eta = 1$ (as the sequence of mistake decisions is invariant under any strictly positive scaling factor $\eta > 0$, see Section~\ref{sec:numerical}).
+
+Let $\tilde{\mathbf{w}}^{(t)}$ denote the augmented weight vector after $t$ mistake updates, with $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$. If the $t$-th update is triggered by example $(\tilde{\mathbf{x}}_i, \tilde{y}_i)$, then by definition of a misclassification, we have $\tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle \le 0$. The update rule is:
+\begin{equation}
+\tilde{\mathbf{w}}^{(t)} = \tilde{\mathbf{w}}^{(t-1)} + \tilde{y}_i \tilde{\mathbf{x}}_i.
+\end{equation}
+
+\paragraph{Step 1: Lower bound on $\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle$.}
+Taking the inner product with the optimal separator $\tilde{\mathbf{w}}^*$:
+\begin{equation}
+\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle = \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{w}}^* \rangle + \tilde{y}_i \langle \tilde{\mathbf{x}}_i, \tilde{\mathbf{w}}^* \rangle \ge \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{w}}^* \rangle + \gamma.
+\end{equation}
+By induction starting from $\tilde{\mathbf{w}}^{(0)} = \mathbf{0}$:
+\begin{equation}
+\label{eq:lower_bound}
+\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle \ge t \gamma.
+\end{equation}
+
+\paragraph{Step 2: Upper bound on $\|\tilde{\mathbf{w}}^{(t)}\|_2^2$.}
+Expanding the squared Euclidean norm:
+\begin{align}
+\|\tilde{\mathbf{w}}^{(t)}\|_2^2 &= \|\tilde{\mathbf{w}}^{(t-1)} + \tilde{y}_i \tilde{\mathbf{x}}_i\|_2^2 \\
+&= \|\tilde{\mathbf{w}}^{(t-1)}\|_2^2 + 2 \tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle + \|\tilde{\mathbf{x}}_i\|_2^2.
+\end{align}
+Since a mistake occurred on $\tilde{\mathbf{x}}_i$, the cross term satisfies $\tilde{y}_i \langle \tilde{\mathbf{w}}^{(t-1)}, \tilde{\mathbf{x}}_i \rangle \le 0$. Utilizing the bounding radius $\|\tilde{\mathbf{x}}_i\|_2 \le R$:
+\begin{equation}
+\|\tilde{\mathbf{w}}^{(t)}\|_2^2 \le \|\tilde{\mathbf{w}}^{(t-1)}\|_2^2 + R^2.
+\end{equation}
+By induction from $\|\tilde{\mathbf{w}}^{(0)}\|_2^2 = 0$:
+\begin{equation}
+\label{eq:upper_bound}
+\|\tilde{\mathbf{w}}^{(t)}\|_2^2 \le t R^2.
+\end{equation}
+
+\paragraph{Step 3: Combining bounds via Cauchy-Schwarz inequality.}
+Applying the Cauchy-Schwarz inequality to $\langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle$ with $\|\tilde{\mathbf{w}}^*\|_2 = 1$:
+\begin{equation}
+(t \gamma)^2 \le \langle \tilde{\mathbf{w}}^{(t)}, \tilde{\mathbf{w}}^* \rangle^2 \le \|\tilde{\mathbf{w}}^{(t)}\|_2^2 \|\tilde{\mathbf{w}}^*\|_2^2 \le t R^2.
+\end{equation}
+Dividing both sides by $t \gamma^2$ yields:
+\begin{equation}
+t \le \frac{R^2}{\gamma^2}.
+\end{equation}
+Because the number of updates $t$ is an integer bounded from above by $(R/\gamma)^2$, the algorithm can execute at most $M = \lfloor (R/\gamma)^2 \rfloor$ total updates before achieving zero misclassifications across the entire training set.
+\end{proof}
+
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{itemize}
+    \item \textbf{Per-Sample Forward Step:} Computing inner product $\langle \mathbf{w}, \mathbf{x}_i \rangle = \sum_{j=1}^d w_j x_{ij}$ requires $d$ floating-point multiplications and $d-1$ additions, followed by 1 addition for bias $b$ and 1 comparison. This is strictly $\Theta(d)$ elementary operations.
+    \item \textbf{Per-Sample Update Step:} In the event of a misclassification, updating vector $\mathbf{w}$ performs $d$ multiplications and $d$ additions; updating $b$ performs 1 multiplication and 1 addition. This is strictly $\Theta(d)$ elementary operations.
+    \item \textbf{Per-Epoch Complexity:} For an epoch over $N$ samples, time is $N \cdot \Theta(d) = \Theta(N \cdot d)$.
+    \item \textbf{Total Time Complexity:} With at most $E \le E_{\max}$ epochs executed:
+    \begin{equation}
+    T(N, d, E) = \mathcal{O}(E \cdot N \cdot d).
+    \end{equation}
+    In the worst case (e.g., reaching $E_{\max}$ without convergence or converging at epoch $E_{\max}$), $T_{\text{worst}} = \mathcal{O}(E_{\max} \cdot N \cdot d)$.
+\end{itemize}
+
+\subsection{Space Complexity}
+\begin{itemize}
+    \item Parameter storage requires $\mathbf{w} \in \mathbb{R}^d$ ($d$ floats) and scalar $b$ ($1$ float).
+    \item No auxiliary buffers, graphs, recursion stacks, or caching tables are allocated.
+    \item Space complexity is strictly:
+    \begin{equation}
+    S(d) = \mathcal{O}(d).
+    \end{equation}
+\end{itemize}
+
+\section{Approximation and Error Analysis}
+\label{sec:error_analysis}
+
+\subsection{Separable Regime}
+When the data is linearly separable, Theorem~\ref{thm:novikoff} guarantees an exact zero-error solution ($\mathcal{L} = 0$). The upper bound on mistakes is strictly determined by the normalized data radius $R$ and maximum margin $\gamma$:
+\begin{equation}
+M \le \left( \frac{R}{\gamma} \right)^2.
+\end{equation}
+
+\subsection{Non-Separable Regime (Minsky-Papert Limitation)}
+When the dataset is not linearly separable (e.g., the standard XOR problem), no separating hyperplane exists ($\gamma \le 0$). The Perceptron learning rule enters an infinite limit cycle or non-convergent chaotic oscillation across weight space. The execution is strictly bounded by $E_{\max}$, terminating with $\text{converged} = \textbf{false}$, non-zero $\text{final\_error\_count}$, and $\text{margin} = \textbf{null}$.
+
+\section{Worked Example}
+\label{sec:worked_example}
+
+Consider the canonical linearly separable 2-input logical AND function:
+\begin{equation}
+\mathcal{S}_{\text{AND}} = \left\{ 
+(\mathbf{x}_1 = [0, 0]^\top, y_1 = 0), \quad
+(\mathbf{x}_2 = [0, 1]^\top, y_2 = 0), \quad
+(\mathbf{x}_3 = [1, 0]^\top, y_3 = 0), \quad
+(\mathbf{x}_4 = [1, 1]^\top, y_4 = 1)
+\right\}.
+\end{equation}
+We configure $\eta = 1.0$, $E_{\max} = 10$, $\mathbf{w}^{(0)} = [0.0, 0.0]^\top$, $b^{(0)} = 0.0$.
+
+Table~\ref{tab:worked_example} details the complete step-by-step trace matching \texttt{impl.py}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Detailed Step-by-Step Training Trace on Logical AND}
+\label{tab:worked_example}
+\begin{tabular}{ccccccccl}
+\toprule
+\textbf{Epoch} & \textbf{Sample} & $\mathbf{x}_i$ & $y_i$ & $z = \mathbf{w} \cdot \mathbf{x} + b$ & $\hat{y}$ & $e = y - \hat{y}$ & $\mathbf{w}$ & $b$ \\
+\midrule
+1 & 1 & $[0, 0]$ & 0 & $0.0$ & 0 & 0 & $[0.0, 0.0]$ & $0.0$ \\
+1 & 2 & $[0, 1]$ & 0 & $0.0$ & 0 & 0 & $[0.0, 0.0]$ & $0.0$ \\
+1 & 3 & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & $[0.0, 0.0]$ & $0.0$ \\
+1 & 4 & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & $[1.0, 1.0]$ & $1.0$ \\
+\midrule
+2 & 1 & $[0, 0]$ & 0 & $1.0$ & 1 & $-1$ & $[1.0, 1.0]$ & $0.0$ \\
+2 & 2 & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & $[1.0, 0.0]$ & $-1.0$ \\
+2 & 3 & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & $[1.0, 0.0]$ & $-1.0$ \\
+2 & 4 & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & $[2.0, 1.0]$ & $0.0$ \\
+\midrule
+3 & 1 & $[0, 0]$ & 0 & $0.0$ & 0 & 0 & $[2.0, 1.0]$ & $0.0$ \\
+3 & 2 & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & $[2.0, 0.0]$ & $-1.0$ \\
+3 & 3 & $[1, 0]$ & 0 & $1.0$ & 1 & $-1$ & $[1.0, 0.0]$ & $-2.0$ \\
+3 & 4 & $[1, 1]$ & 1 & $-1.0$ & 0 & $+1$ & $[2.0, 1.0]$ & $-1.0$ \\
+\midrule
+4 & 1 & $[0, 0]$ & 0 & $-1.0$ & 0 & 0 & $[2.0, 1.0]$ & $-1.0$ \\
+4 & 2 & $[0, 1]$ & 0 & $0.0$ & 0 & 0 & $[2.0, 1.0]$ & $-1.0$ \\
+4 & 3 & $[1, 0]$ & 0 & $1.0$ & 1 & $-1$ & $[1.0, 1.0]$ & $-2.0$ \\
+4 & 4 & $[1, 1]$ & 1 & $0.0$ & 0 & $+1$ & $[2.0, 2.0]$ & $-1.0$ \\
+\midrule
+5 & 1 & $[0, 0]$ & 0 & $-1.0$ & 0 & 0 & $[2.0, 2.0]$ & $-1.0$ \\
+5 & 2 & $[0, 1]$ & 0 & $1.0$ & 1 & $-1$ & $[2.0, 1.0]$ & $-2.0$ \\
+5 & 3 & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+5 & 4 & $[1, 1]$ & 1 & $1.0$ & 1 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+\midrule
+6 & 1 & $[0, 0]$ & 0 & $-2.0$ & 0 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+6 & 2 & $[0, 1]$ & 0 & $-1.0$ & 0 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+6 & 3 & $[1, 0]$ & 0 & $0.0$ & 0 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+6 & 4 & $[1, 1]$ & 1 & $+1.0$ & 1 & 0 & $[2.0, 1.0]$ & $-2.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Final Result:}
+\begin{itemize}
+    \item Learned Weights: $\mathbf{w}^* = [2.0, 1.0]^\top$
+    \item Learned Bias: $b^* = -2.0$
+    \item Convergence: $\text{converged} = \textbf{true}$
+    \item Epochs Trained: $E = 6$
+    \item Total Updates: $10$
+    \item Final Error Count: $0$
+    \item Geometric Margin: $\gamma = \min \{ \frac{2.0}{\sqrt{5}}, \frac{1.0}{\sqrt{5}}, \frac{0.0}{\sqrt{5}}, \frac{1.0}{\sqrt{5}} \} = 0.0$
+\end{itemize}
+
+\section{Numerical Considerations}
+\label{sec:numerical}
+
+\begin{enumerate}
+    \item \textbf{Scale Invariance of Learning Rate $\eta$:} Scaling $\eta > 0$ scales the trajectory $(\mathbf{w}^{(t)}, b^{(t)}) = \eta (\mathbf{w}_{\text{unit}}^{(t)}, b_{\text{unit}}^{(t)})$. Because the decision threshold $\text{sign}(\langle \mathbf{w}, \mathbf{x} \rangle + b) = \text{sign}(\eta(\langle \mathbf{w}_{\text{unit}}, \mathbf{x} \rangle + b_{\text{unit}}))$ is strictly scale-invariant for all $\eta > 0$, varying $\eta$ generates an identical sequence of update mistakes for integer/rational inputs when initialized at zero.
+    \item \textbf{Threshold Boundary Definition:} At exact zero activation $z = 0$, the implementation maps $\hat{y} = 0$. Consequently, samples with $y_i = 0$ lying exactly on the hyperplane satisfy $e = 0$ and do not trigger updates.
+    \item \textbf{Zero Weight Vector Safeguard:} If $\mathbf{w} = \mathbf{0}$ at convergence (e.g. for trivial datasets), $\|\mathbf{w}\|_2 = 0$; the implementation guards against division by zero by returning $\text{margin} = \textbf{null}$.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{rosenblatt1958perceptron}
+F.~Rosenblatt.
+\newblock The Perceptron: A probabilistic model for information storage and organization in the brain.
+\newblock {\em Psychological Review}, 65(6):386--408, 1958.
+\newblock DOI: \href{https://doi.org/10.1037/h0042519}{10.1037/h0042519}.
+
+\bibitem{novikoff1962convergence}
+A.~B.~J.~Novikoff.
+\newblock On convergence proofs on perceptrons.
+\newblock In {\em Proceedings of the Symposium on the Mathematical Theory of Automata}, volume~12, pages 615--622. Polytechnic Institute of Brooklyn, 1962.
+
+\bibitem{minsky1969perceptrons}
+M.~Minsky and S.~A.~Papert.
+\newblock {\em Perceptrons: An Introduction to Computational Geometry}.
+\newblock MIT Press, Cambridge, MA, 1969.
+\newblock ISBN: 978-0262630221.
+
+\end{thebibliography}
+
+\end{document}
