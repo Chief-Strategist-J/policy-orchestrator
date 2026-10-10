@@ -1,304 +1,226 @@
 # Perceptron Mistake-Driven Learning Rule (ALGO-NN-01)
 
 > **ID:** ALGO-NN-01  
-> **Summary:** The fundamental single-neuron linear classifier that iteratively learns separating hyperplanes via mistake-driven parameter updates.
+> **Summary:** The fundamental single-neuron linear threshold classifier that iteratively learns separating hyperplanes via mistake-driven parameter updates.
 
 ---
 
-## 1. Intuitive Definition & Plain-English Glossary
+## 1. Formal Mathematical Formulation & Definitions
 
-If you don't come from a mathematics background, think of the **Perceptron** as a **smart decision-making scale with adjustable weight dials**.
+The **Perceptron** is a linear binary classification model that maps an input feature vector $\mathbf{x} \in \mathbb{R}^d$ to a discrete binary label $\hat{y} \in \{0, 1\}$ using a learned weight vector $\mathbf{w} \in \mathbb{R}^d$ and a scalar bias $b \in \mathbb{R}$.
 
-Imagine you are a bank manager deciding whether to approve or reject a loan application based on two numbers: `Income` and `Credit Score`. 
+### Mathematical Formulation
 
-```
-               [ Income: $80k ] ---------> (Dial w1: 0.5) \
-                                                            +---> [ Add together ] + (Base Bias b: -40) ---> [ Is total > 0 ? ] ---> YES (Approve)
-               [ Credit: 720  ] ---------> (Dial w2: 0.1) /                                                                   ---> NO  (Reject)
-```
+Given a training dataset $\mathcal{D} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ where $\mathbf{x}_i \in \mathbb{R}^d$ and $y_i \in \{0, 1\}$:
 
-### The Plain-English Glossary of Terms
+1. **Affine Activation Function:**
+   $$z = \mathbf{w}^\top \mathbf{x} + b = \sum_{j=1}^d w_j x_j + b$$
 
-| Term | Symbol | What it actually means in simple terms | Real-world Analogy |
+2. **Heaviside Step Decision Rule:**
+   $$\hat{y} = f(z) = \begin{cases} 1 & \text{if } z > 0 \\ 0 & \text{if } z \le 0 \end{cases}$$
+
+3. **Mistake-Driven Parameter Update Rule:**
+   For a sample $(\mathbf{x}_i, y_i)$, let error $e_i = y_i - \hat{y}_i \in \{-1, 0, +1\}$. When $e_i \neq 0$, parameters are updated with learning rate $\eta > 0$:
+   $$\mathbf{w}^{(t+1)} = \mathbf{w}^{(t)} + \eta (y_i - \hat{y}_i) \mathbf{x}_i$$
+   $$b^{(t+1)} = b^{(t)} + \eta (y_i - \hat{y}_i)$$
+
+4. **Separating Hyperplane & Geometric Margin:**
+   The decision boundary is defined by the affine hyperplane:
+   $$\mathcal{H} = \{\mathbf{x} \in \mathbb{R}^d \mid \mathbf{w}^\top \mathbf{x} + b = 0\}$$
+   When the training set is linearly separable and the algorithm converges, the geometric margin $\gamma$ is:
+   $$\gamma = \min_{i \in \{1, \dots, N\}} \frac{(2y_i - 1)(\mathbf{w}^\top \mathbf{x}_i + b)}{\|\mathbf{w}\|_2}$$
+
+### Formal Definitions
+
+| Concept | Mathematical Symbol | Formal Definition | Operational Role |
 |---|---|---|---|
-| **Features / Inputs** | $\mathbf{x} = [x_1, x_2]$ | The raw facts or measurements about an item. | A person's `[Age, Income, Credit Score]`. |
-| **Weights** | $\mathbf{w} = [w_1, w_2]$ | "Importance knobs". How strongly each feature influences the final decision. | If income is twice as important as age, its knob is set twice as high. |
-| **Bias** | $b$ | A baseline threshold or natural inclination before looking at any evidence. | A strict bank has a negative bias (starts at "No" by default until proven worthy). |
-| **Dot Product** | $\mathbf{w} \cdot \mathbf{x}$ | Simply: multiply each input by its importance and add them up: $(w_1 x_1 + w_2 x_2)$. | Calculating a weighted test score: $(0.4 \times \text{Exam}) + (0.6 \times \text{Project})$. |
-| **Total Activation** | $z = \mathbf{w} \cdot \mathbf{x} + b$ | The overall score. | The final score on the scoreboard. |
-| **Decision Rule** | $f(\mathbf{x})$ | If total score $z > 0$, output `1` (Yes); if $z \le 0$, output `0` (No). | Passing (score $\ge 50$) vs Failing (score $< 50$). |
-| **Decision Line / Hyperplane** | $\mathbf{w} \cdot \mathbf{x} + b = 0$ | A straight line drawn on a graph that splits "Yes" points from "No" points. | A fence built across a field separating sheep from wolves. |
-| **Learning Rate** | $\eta$ (eta) | How drastically the algorithm changes its mind after making a mistake. | Big leap (fast but reckless) vs small careful adjustments. |
-| **Epoch** | $E$ | One full pass going through all your flashcards / training samples once. | Reviewing an entire study deck from card 1 to card $N$. |
+| **Input Feature Vector** | $\mathbf{x} \in \mathbb{R}^d$ | Ordered $d$-dimensional coordinate vector in Euclidean space. | Encodes numerical sample attributes. |
+| **Weight Vector** | $\mathbf{w} \in \mathbb{R}^d$ | Normal vector defining the orientation of the separating hyperplane. | Determines relative feature influence. |
+| **Bias Term** | $b \in \mathbb{R}$ | Scalar intercept translating the hyperplane relative to the origin. | Sets the unconditioned activation threshold. |
+| **Linear Activation** | $z \in \mathbb{R}$ | Inner product $z = \langle \mathbf{w}, \mathbf{x} \rangle + b$. | Continuous signed distance metric to boundary. |
+| **Prediction Error** | $e_i \in \{-1, 0, +1\}$ | Algebraic difference $e_i = y_i - \hat{y}_i$. | Direct gradient surrogate triggering parameter updates. |
+| **Learning Rate** | $\eta \in \mathbb{R}_{>0}$ | Scalar multiplier scaling each parameter adjustment step. | Controls mistake step magnitude. |
+| **Epoch** | $E \in \mathbb{N}_{\ge 1}$ | Complete sequential traversal over all $N$ training instances. | Outer iteration unit of the optimization loop. |
+| **Linear Separability** | — | Existence of $(\mathbf{w}^*, b^*)$ such that $(2y_i - 1)(\mathbf{w}^{*\top} \mathbf{x}_i + b^*) > 0 \;\forall i$. | Necessary condition for guaranteed convergence. |
 
 ---
 
-## 2. How the Perceptron Replicates Human & Biological Learning
-
-The Perceptron was directly designed in 1958 by Frank Rosenblatt to mimic a biological brain cell (**Neuron**).
-
-```
-  BIOLOGICAL BRAIN NEURON                        ARTIFICIAL PERCEPTRON
-  =======================                        =====================
-  
-       Dendrites                                       Inputs (x1, x2)
-    (Receive signals)                                (Incoming data facts)
-           \                                                  \
-            \  Synaptic Gaps                                   \  Weights (w1, w2)
-             O (Chemical strengths)                             * (Multiplication dials)
-              \                                                  \
-               v                                                  v
-         +------------+                                     +------------+
-         | Cell Body  |                                     | Summation  |
-         |   (Soma)   |                                     |    (Σ)     |
-         | Accumulates|                                     | Total score|
-         | electrical |                                     | w1*x1+w2*x2|
-         |   charge   |                                     |    + b     |
-         +------------+                                     +------------+
-               |                                                  |
-               v Axon Hillock                                     v Threshold Step
-         +------------+                                     +------------+
-         | Threshold: |                                     | Check:     |
-         | Enough     |                                     | Is sum > 0?|
-         | charge to  |                                     | Yes = 1    |
-         | fire?      |                                     | No  = 0    |
-         +------------+                                     +------------+
-               |                                                  |
-               v Axon Terminal                                    v Output
-          [ FIRES SPIKE ]                                    [ PREDICTION ]
-```
-
-### How Humans Learn: The "Trial & Error" Mistake Rule
-Think of how a child learns what is safe to touch:
-1. **Initial state:** The child has no pre-formed opinion ($w = 0, b = 0$).
-2. **Action (Prediction):** Child reaches toward a hot candle flame (predicts "Safe to touch").
-3. **Feedback (Mistake):** Flame hurts (Label = "Danger! Mistake detected!").
-4. **Correction:** The child immediately updates their internal weight dial with a massive negative penalty against touching flames.
-5. **If no mistake:** If the child touches a harmless toy, nothing went wrong, so no internal beliefs need to be modified.
-
-**The Perceptron does the exact same thing:**
-- **If prediction is correct:** Do **NOTHING** ($\Delta w = 0$).
-- **If it mistakenly said NO (0) to a YES (1):** Add the input vector to the weights: $w \leftarrow w + x$.
-- **If it mistakenly said YES (1) to a NO (0):** Subtract the input vector from the weights: $w \leftarrow w - x$.
-
----
-
-## 3. Visualizing How the Boundary Physically Shifts (Step-by-Step)
-
-Here is what is physically happening on a 2D graph during training. We have two features ($x_1, x_2$) and we want to separate `[0]` (Red O) from `[1]` (Green X).
-
-### Step 1: Initial State (Weights are 0, Line is Undefined)
-The model knows nothing. It makes a mistake by predicting `0` for a Green X at coordinate `(1, 1)`.
-
-```
-     x2 ^
-        |       (0,1) [O]          (1,1) [X]  <--- Model predicted 0 (MISTAKE!)
-        |
-        |
-        |       (0,0) [O]          (1,0) [O]
-        +-----------------------------------> x1
-```
-*Correction applied:* $w \leftarrow w + [1, 1] = [1, 1]$, $b \leftarrow b + 1 = 1$.
-
----
-
-### Step 2: Line Shift After Mistake 1 (Line is in the wrong place)
-The decision line is $1 \cdot x_1 + 1 \cdot x_2 + 1 = 0$. Now it predicts `1` for all samples, making mistakes on the Red O points!
-
-```
-     x2 ^                         \  Boundary Line: x1 + x2 + 1 = 0
-        |       (0,1) [O]          \         (1,1) [X]
-        |        (Mistake!)         \
-        |                            \
-        |       (0,0) [O]             \      (1,0) [O]
-        +------------------------------\-----> x1
-```
-*Correction applied:* When it sees Red O at `(0, 1)`, it subtracts: $w \leftarrow w - [0, 1] = [1, 0]$, $b \leftarrow b - 1 = 0$.
-
----
-
-### Step 3: Progressive Tilting and Shifting Across Epochs
-Each mistake physically **tilts (rotates)** the slope of the line and **slides (translates)** its position across the grid:
-
-```
-     x2 ^
-        |       (0,1) [O]                    (1,1) [X]
-        |                         . '
-        |                     . '       <--- Line rotates clockwise
-        |                 . '
-        |       (0,0) [O]                    (1,0) [O]
-        +-----------------------------------> x1
-```
-
----
-
-### Step 4: Final Converged State (Perfect Separation)
-The line settles at $2 x_1 + 1 x_2 - 2 = 0$. All `[O]` points are strictly below the line (Score $\le 0$) and the `[X]` point is strictly above the line (Score $> 0$). **Zero mistakes!**
-
-```
-     x2 ^                                   
-        |       (0,1) [O]             /      (1,1) [X]  (Score = +1 > 0 -> PASS)
-        |       (Score = -1 <= 0)    /
-        |                           /  FINAL DECISION BOUNDARY
-        |                          /   2*x1 + 1*x2 - 2 = 0
-        |       (0,0) [O]         /          (1,0) [O]
-        |       (Score = -2 <=0) /           (Score = 0 <= 0)
-        +-----------------------/-----------> x1
-```
-
----
-
-## 4. Why This Algorithm Even Exists & Where It Is Used in Real Life
-
-### Why It Exists in Computer Science History
-1. **The First Learning Machine:** Before 1958, computers had to be manually programmed with hardcoded `if/else` conditions for every rule. The Perceptron proved a machine could discover its own rules from raw data.
-2. **Building Block of Modern AI:** Every multi-billion-parameter LLM (like GPT-4, Claude, Gemini) and vision model is composed of millions of these artificial neurons stacked in layers with non-linear activation functions.
-
-### Real-World Use Cases Today
-* **Spam vs. Ham Email Filtering:** 
-  - $x_1 =$ occurrences of word "FREE", $x_2 =$ occurrences of word "VIAGRA", $x_3 =$ count of all-caps words.
-  - If $w_1 x_1 + w_2 x_2 + w_3 x_3 + b > 0$, send email to Spam folder.
-* **Credit Card Fraud Detection:**
-  - $x_1 =$ transaction amount, $x_2 =$ distance from cardholder's home address, $x_3 =$ transaction frequency in last 10 minutes.
-  - Real-time instant decision to block or allow transaction in sub-millisecond time.
-* **Network Firewall Packet Dropping:**
-  - $x_1 =$ SYN packet rate, $x_2 =$ source port entropy.
-  - Hardwired on edge routers in standard CPU/FPGA instructions for wire-speed threat blocking.
-* **Policy Invariant Gates (This Repository):**
-  - Instant classification of code telemetry metrics into `Compliant (1)` vs `Violation (0)`.
-
----
-
-## 5. When to Use & When NOT to Use
-
-### When to Use
-- **Linearly Separable Binary Classification:** When data classes can be completely separated by a straight flat line or flat boundary.
-- **Ultra-Low Memory Embedded & Edge Environments:** Runs in microscopic memory ($O(d)$ space) with basic scalar additions and multiplications.
-- **Online Streaming Learning:** Learns sample-by-sample on live incoming streams without saving old data.
-- **Fast Baseline:** Takes 1 millisecond to train; perfect as a sanity-check baseline.
-
-### When NOT to Use
-- **Non-Linearly Separable Data (The Famous XOR Problem):** If the data points form a criss-cross pattern (e.g. diagonal corners are class 1, opposite diagonal is class 0), no single straight line can separate them. The Perceptron will cycle forever. (Solution: Use Multilayer Perceptron MLP / ALGO-NN-02).
-- **Probabilities Needed:** The Perceptron gives a hard binary `0` or `1` with no confidence percentage (e.g. "87% chance of rain"). (Solution: Use Logistic Regression / ALGO-CLASSICAL-ML-01).
-- **Heavy Noise or Overlapping Data:** If positive and negative points overlap, mistake updates will oscillate endlessly. (Solution: Soft-Margin Support Vector Machine).
-
-### When to Use
-- **Linearly Separable Binary Classification:** When data classes can be completely separated by a flat linear boundary.
-- **Ultra-Low Memory Embedded and Edge Environments:** When model parameters must fit in minimal memory footprints with O(d) compute per sample.
-- **Online and Streaming Mistake-Driven Learning:** When sample-by-sample corrections are desired without storing historical batches or computing second-order matrices.
-- **Fast Baseline Generation:** As a minimal-complexity baseline before evaluating deep neural architectures or kernel machines.
-
-### When NOT to Use
-- **Non-Linearly Separable Data (such as XOR):** The Perceptron will never converge and will cycle perpetually. Use a Multilayer Perceptron (MLP) (ALGO-NN-02) or Support Vector Machine with RBF Kernel (ALGO-CLASSICAL-ML-02).
-- **Probabilistic Calibration Required:** The Perceptron outputs hard step decisions (0 or 1) without posterior class probabilities. Use Logistic Regression (ALGO-CLASSICAL-ML-01).
-- **Noisy Labels / Overlapping Distributions:** Mistakes caused by noise cause persistent weight oscillation. Use Soft-Margin SVM or regularized gradient descent.
-
----
-
-## 5. Step-by-Step Execution Procedure
-
-1. **Initialize Parameters:** Set the initial weight vector to all zeros (length d) and bias to 0.0 (or use user-supplied initial parameters).
-2. **Iterate Across Epochs:** For each epoch up to max_epochs, reset the epoch mistake counter to 0.
-3. **Compute Linear Activation:** For each training sample, calculate the dot product of weights and input features, then add the bias term: $z = \sum_{j=1}^d w_j x_{ij} + b$.
-4. **Evaluate Decision Threshold:** If the activation $z > 0$, predict 1; otherwise, predict 0.
-5. **Calculate Mistake Error:** Compute the error as $(y_i - \hat{y}_i)$, yielding $-1$, $0$, or $+1$.
-6. **Apply Mistake Update:** If the error is not zero:
-   - Update each weight coordinate: $w_j \leftarrow w_j + \eta \cdot (y_i - \hat{y}_i) \cdot x_{ij}$.
-   - Update bias: $b \leftarrow b + \eta \cdot (y_i - \hat{y}_i)$.
-   - Increment total updates and the epoch error counter.
-7. **Check Epoch Convergence:** If an epoch completes with 0 mistakes, mark converged as True and exit early.
-8. **Compute Verification Margin:** If converged and the Euclidean norm of the weight vector is positive, calculate the minimum signed distance from the samples to the decision boundary.
-
----
-
-## 6. Diagram 1 — Control Flow
-
-```mermaid
-flowchart TD
-    Start(["Start train()"]) --> Validate["Validate Preconditions<br/>(Shapes, Finite Numbers, Types)"]
-    Validate --> Init["Initialize w = initial_weights, b = initial_bias<br/>epoch = 1, total_updates = 0"]
-    Init --> EpochLoop{"epoch <= max_epochs?"}
-    
-    EpochLoop -- Yes --> ResetEpoch["epoch_errors = 0<br/>sample_idx = 0"]
-    ResetEpoch --> SampleLoop{"sample_idx < N?"}
-    
-    SampleLoop -- Yes --> Forward["Compute activation = dot(w, x) + b<br/>prediction = (activation > 0 ? 1 : 0)"]
-    Forward --> CheckErr{"target == prediction?"}
-    CheckErr -- Yes (Correct) --> NextSample["sample_idx += 1"]
-    CheckErr -- No (Mistake) --> Update["w = w + learning_rate * error * x<br/>b = b + learning_rate * error<br/>epoch_errors += 1<br/>total_updates += 1"]
-    Update --> NextSample
-    NextSample --> SampleLoop
-    
-    SampleLoop -- No --> CheckConv{"epoch_errors == 0?"}
-    CheckConv -- Yes --> SetConv["converged = true<br/>Compute geometric margin"]
-    CheckConv -- No --> NextEpoch["epoch += 1"]
-    NextEpoch --> EpochLoop
-    
-    EpochLoop -- No --> Unconverged["converged = false<br/>margin = null"]
-    SetConv --> ReturnOutput(["Return Result Dict"])
-    Unconverged --> ReturnOutput
-```
-*Figure 1: Control flow of the mistake-driven Perceptron training loop detailing epoch and sample iterations.*
-
----
-
-## 7. Diagram 2 — State Over Worked Example
-
-```mermaid
-stateDiagram-v2
-    [*] --> Epoch1_Start: Init w=[0,0], b=0
-    Epoch1_Start --> Epoch1_End: Sample 4 mistake (+1) -> w=[1,1], b=1
-    Epoch1_End --> Epoch2_End: Mistakes on S1(-1), S2(-1), S4(+1) -> w=[2,1], b=0
-    Epoch2_End --> Epoch3_End: Mistakes on S2(-1), S3(-1), S4(+1) -> w=[2,1], b=-1
-    Epoch3_End --> Epoch4_End: Mistakes on S3(-1), S4(+1) -> w=[2,2], b=-1
-    Epoch4_End --> Epoch5_End: Mistake on S2(-1) -> w=[2,1], b=-2
-    Epoch5_End --> Epoch6_End: 0 mistakes across all 4 samples!
-    Epoch6_End --> ConvergedState: Final w=[2.0, 1.0], b=-2.0, Converged=True
-    ConvergedState --> [*]
-```
-*Figure 2: Trajectory of weights and bias across training epochs on the Logical AND dataset.*
-
----
-
-## 8. Diagram 3 — Composition in Pipeline
+## 2. Biological Neuron vs. Artificial Perceptron Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Upstream ["Upstream Producers"]
-        Telemetry["Feature Extractor<br/>(Metrics / AST Nodes)"]
-        Labels["Label Producer<br/>(Policy / Ground Truth)"]
+    subgraph Bio ["Biological Neuron Model"]
+        direction TB
+        Dendrites["Dendrites<br/>(Input Signal Reception)"]
+        Synapses["Synaptic Strengths<br/>(Chemical Potentiation)"]
+        Soma["Cell Body / Soma<br/>(Membrane Voltage Integration)"]
+        AxonHillock["Axon Hillock<br/>(Action Potential Threshold)"]
+        AxonTerminal["Axon Terminal<br/>(All-or-None Spike Output)"]
+
+        Dendrites --> Synapses --> Soma --> AxonHillock --> AxonTerminal
     end
 
-    subgraph Adapters ["Adapters"]
-        A1["ADAPTER-VECTOR-FEATURE-MATRIX"]
+    subgraph Artificial ["Artificial Perceptron (ALGO-NN-01)"]
+        direction TB
+        Inputs["Input Features: x₁, x₂, ..., x_d"]
+        Weights["Synaptic Weights: w₁, w₂, ..., w_d"]
+        Summation["Accumulator: z = Σ (w_j * x_j) + b"]
+        Threshold["Heaviside Step: z > 0 ? 1 : 0"]
+        Output["Binary Output: ŷ ∈ {0, 1}"]
+
+        Inputs --> Weights --> Summation --> Threshold --> Output
     end
 
-    subgraph Algo ["Perceptron Learning Engine"]
-        Perceptron["ALGO-NN-01<br/>(NnAlgoPerceptronLearning)"]
-    end
-
-    subgraph Downstream ["Downstream Consumers"]
-        Classifier["ADAPTER-BINARY-CLASSIFIER<br/>(Real-Time Gate / Decision)"]
-        Auditor["Policy Auditor / Monitor"]
-    end
-
-    Telemetry --> A1
-    Labels --> A1
-    A1 --> Perceptron
-    Perceptron --> Classifier
-    Perceptron --> Auditor
+    Dendrites -. Maps to .-> Inputs
+    Synapses -. Maps to .-> Weights
+    Soma -. Maps to .-> Summation
+    AxonHillock -. Maps to .-> Threshold
+    AxonTerminal -. Maps to .-> Output
 ```
-*Figure 3: System integration pipeline showing upstream feature producers, adapter contracts, and downstream decision gates.*
+
+*Figure 1: Architectural equivalence between biological neuron components and the artificial perceptron formulation.*
 
 ---
 
-## 9. Worked Example (Test Vector)
+## 3. When to Use / When NOT to Use
+
+### When to Use
+- **Linearly Separable Binary Classification:** When data classes can be strictly partitioned by a linear hyperplane.
+- **Ultra-Low Latency Edge Inference:** Executable with minimal CPU scalar instructions (inner products and branch checks).
+- **Online and Streaming Mistake-Driven Learning:** Operates in $O(d)$ auxiliary memory without storing historical minibatches or computing Hessian/covariance matrices.
+- **Deterministic Baseline Generation:** Fast $O(E \cdot N \cdot d)$ sanity check before deploying deep neural networks or kernel methods.
+
+### When NOT to Use
+- **Non-Linearly Separable Topologies (e.g., XOR Problem):** The perceptron will not converge and will cycle indefinitely unless bounded by `max_epochs`. Use Multilayer Perceptron (ALGO-NN-02) or kernelized classifiers.
+- **Probabilistic Calibration Required:** Outputs discrete step predictions $\{0, 1\}$ without posterior probability estimates. Use Logistic Regression.
+- **Noisy Labels / Overlapping Class Distributions:** Stochastic label noise causes continuous hyperplane oscillations. Use Soft-Margin SVM or cross-entropy gradient descent.
+
+---
+
+## 4. Step-by-Step Execution Procedure
+
+1. **Parameter Initialization:** Initialize weight vector $\mathbf{w} \leftarrow \mathbf{w}_0$ (default $\mathbf{0} \in \mathbb{R}^d$) and bias $b \leftarrow b_0$ (default $0.0$).
+2. **Epoch Traversal:** For each epoch $e \in \{1, \dots, E_{\text{max}}\}$:
+   - Reset epoch error counter: $\text{epoch\_errors} \leftarrow 0$.
+   - For each training instance $(\mathbf{x}_i, y_i) \in \mathcal{D}$:
+     1. Compute linear activation: $z_i = \mathbf{w}^\top \mathbf{x}_i + b$.
+     2. Evaluate step threshold: $\hat{y}_i = \mathbb{I}(z_i > 0)$.
+     3. Compute error residual: $e_i = y_i - \hat{y}_i$.
+     4. If $e_i \neq 0$:
+        - Update weights: $\mathbf{w} \leftarrow \mathbf{w} + \eta \cdot e_i \cdot \mathbf{x}_i$.
+        - Update bias: $b \leftarrow b + \eta \cdot e_i$.
+        - Increment $\text{total\_updates} \leftarrow \text{total\_updates} + 1$ and $\text{epoch\_errors} \leftarrow \text{epoch\_errors} + 1$.
+   - **Convergence Check:** If $\text{epoch\_errors} = 0$, set $\text{converged} \leftarrow \textbf{true}$ and terminate epoch loop.
+3. **Margin Certification:** If converged and $\|\mathbf{w}\|_2 > 0$, compute signed geometric margin $\gamma = \min_i \frac{(2y_i - 1)(\mathbf{w}^\top \mathbf{x}_i + b)}{\|\mathbf{w}\|_2}$.
+4. **Result Packaging:** Return learned parameters $(\mathbf{w}, b)$, convergence boolean, update counters, and certificate margin.
+
+---
+
+## 5. Control Flow Diagram
+
+```mermaid
+flowchart TD
+    Start(["Start: train(features, labels, η, E_max)"]) --> Validate["Validate Preconditions<br/>• Shapes: N > 0, d > 0<br/>• Types: finite floats, binary labels {0, 1}"]
+    Validate --> InitParams["Initialize Parameters:<br/>w = initial_weights || zeros(d)<br/>b = initial_bias || 0.0<br/>epoch = 1, total_updates = 0"]
+
+    InitParams --> CheckEpoch{"epoch <= E_max?"}
+    
+    CheckEpoch -- Yes --> InitEpoch["epoch_errors = 0<br/>sample_idx = 0"]
+    InitEpoch --> CheckSample{"sample_idx < N?"}
+
+    CheckSample -- Yes --> Forward["Fetch (x_i, y_i)<br/>Compute z = dot(w, x_i) + b<br/>Predict ŷ = (z > 0 ? 1 : 0)"]
+    Forward --> CheckMistake{"y_i == ŷ_i ?"}
+
+    CheckMistake -- "Yes (No Error)" --> IncrSample["sample_idx += 1"]
+    CheckMistake -- "No (Mistake)" --> ApplyUpdate["e = y_i - ŷ_i<br/>w = w + η * e * x_i<br/>b = b + η * e<br/>epoch_errors += 1<br/>total_updates += 1"]
+    ApplyUpdate --> IncrSample
+    IncrSample --> CheckSample
+
+    CheckSample -- No --> CheckConvergence{"epoch_errors == 0?"}
+    CheckConvergence -- "Yes (Zero Errors)" --> MarkConverged["converged = true<br/>Compute geometric margin γ"]
+    CheckConvergence -- "No (Errors > 0)" --> IncrEpoch["epoch += 1"]
+    IncrEpoch --> CheckEpoch
+
+    CheckEpoch -- No --> MarkUnconverged["converged = false<br/>margin = null"]
+    
+    MarkConverged --> ReturnPayload(["Return Result Certificate Payload"])
+    MarkUnconverged --> ReturnPayload
+```
+
+*Figure 2: Complete control flow of the mistake-driven Perceptron training and certification lifecycle.*
+
+---
+
+## 6. State Over Worked Example (Logical AND)
+
+```mermaid
+stateDiagram-v2
+    direction TB
+
+    state "State 0: Initialization\nw = [0.0, 0.0], b = 0.0\nStatus: Unconverged" as S0
+    state "Epoch 1 (1 Mistake)\nMistake on Sample 4 (1,1): target=1, pred=0\nw = [1.0, 1.0], b = 1.0" as S1
+    state "Epoch 2 (3 Mistakes)\nMistakes on S1(0,0), S2(0,1), S4(1,1)\nw = [2.0, 1.0], b = 0.0" as S2
+    state "Epoch 3 (3 Mistakes)\nMistakes on S2(0,1), S3(1,0), S4(1,1)\nw = [2.0, 1.0], b = -1.0" as S3
+    state "Epoch 4 (2 Mistakes)\nMistakes on S3(1,0), S4(1,1)\nw = [2.0, 2.0], b = -1.0" as S4
+    state "Epoch 5 (1 Mistake)\nMistake on S2(0,1): target=0, pred=1\nw = [2.0, 1.0], b = -2.0" as S5
+    state "Epoch 6: Convergence Reached\n0 Mistakes across all 4 samples\nFinal w = [2.0, 1.0], b = -2.0, Converged = True" as S6
+
+    [*] --> S0
+    S0 --> S1: Process Epoch 1
+    S1 --> S2: Process Epoch 2
+    S2 --> S3: Process Epoch 3
+    S3 --> S4: Process Epoch 4
+    S4 --> S5: Process Epoch 5
+    S5 --> S6: Process Epoch 6 (All Correct)
+    S6 --> [*]
+```
+
+*Figure 3: Numerical parameter trajectory across 6 training epochs on the canonical Logical AND dataset.*
+
+---
+
+## 7. Architecture & System Composition
+
+```mermaid
+flowchart LR
+    subgraph DataSources ["Data Sources & Ingestion"]
+        Metrics["Telemetry Stream<br/>(Resource AST / Logs)"]
+        Labels["Ground Truth Oracle<br/>(Policy Constraints)"]
+    end
+
+    subgraph FeatureAdapter ["Feature Processing Layer"]
+        Extractor["Feature Matrix Builder<br/>ADAPTER-VECTOR-FEATURE-MATRIX"]
+    end
+
+    subgraph Engine ["Core Algorithmic Engine"]
+        PerceptronEngine["ALGO-NN-01<br/>(NnAlgoPerceptronLearning)"]
+        Certifier["Hyperplane Verifier<br/>(Margin & Invariant Check)"]
+    end
+
+    subgraph RuntimeConsumers ["Downstream Execution & Invariant Gates"]
+        Gate["ADAPTER-BINARY-CLASSIFIER<br/>(Real-Time Invariant Gate)"]
+        AuditLog["Audit & Observability Store<br/>(Model Registry / Tracing)"]
+    end
+
+    Metrics --> Extractor
+    Labels --> Extractor
+    Extractor --> PerceptronEngine
+    PerceptronEngine --> Certifier
+    Certifier --> Gate
+    Certifier --> AuditLog
+```
+
+*Figure 4: End-to-end architectural pipeline integrating the Perceptron engine into system observability and verification workflows.*
+
+---
+
+## 8. Worked Example (Test Vector)
 
 Canonical 2D Logical AND dataset with 4 samples:
-- Sample 1: features [0.0, 0.0] with label 0
-- Sample 2: features [0.0, 1.0] with label 0
-- Sample 3: features [1.0, 0.0] with label 0
-- Sample 4: features [1.0, 1.0] with label 1
+- Sample 1: features `[0.0, 0.0]` with label `0`
+- Sample 2: features `[0.0, 1.0]` with label `0`
+- Sample 3: features `[1.0, 0.0]` with label `0`
+- Sample 4: features `[1.0, 1.0]` with label `1`
 
 ### Input JSON
 ```json
@@ -332,7 +254,7 @@ Canonical 2D Logical AND dataset with 4 samples:
 
 ---
 
-## 10. Edge-Case Test Vectors
+## 9. Edge-Case Test Vectors
 
 ### Vector 1: Empty Features (Precondition Violation)
 - **Input:** `{"features": [], "labels": []}`
@@ -390,17 +312,17 @@ Canonical 2D Logical AND dataset with 4 samples:
 
 ---
 
-## 11. Complexity Table
+## 10. Complexity Table
 
 | Metric | Complexity | Description / Variables |
 |---|---|---|
-| **Time (Worst Case)** | O(E * N * d) | N samples, d dimensions, E maximum epochs |
-| **Time (Typical Case)**| O(E * N * d) | E epochs until convergence |
-| **Space (Auxiliary)** | O(d) | Stores weight vector of size d and scalar bias |
+| **Time (Worst Case)** | $O(E_{\text{max}} \cdot N \cdot d)$ | $N$ samples, $d$ dimensions, $E_{\text{max}}$ maximum epochs |
+| **Time (Typical Case)**| $O(E^* \cdot N \cdot d)$ | $E^* \le E_{\text{max}}$ epochs until convergence |
+| **Space (Auxiliary)** | $O(d)$ | Stores weight vector of size $d$ and scalar bias |
 
 ---
 
-## 12. Contract Summary
+## 11. Contract Summary
 
 | Contract Field | Value | Rationale |
 |---|---|---|
@@ -416,27 +338,27 @@ Canonical 2D Logical AND dataset with 4 samples:
 
 ---
 
-## 13. Failure Modes and Guardrails
+## 12. Failure Modes and Guardrails
 
-1. **Non-Separable Infinite Loops:** Non-separable datasets cause cycling. **Guardrail:** The max_epochs parameter strictly terminates training, returning converged = False.
+1. **Non-Separable Infinite Loops:** Non-separable datasets cause cycling. **Guardrail:** The `max_epochs` parameter strictly terminates training, returning `converged = False`.
 2. **Floating-Point Overflow / Underflow:** Feature vectors with extreme coordinate magnitudes can trigger numerical overflow during dot product summation. **Guardrail:** Validate finite numeric types and scale feature matrices prior to training.
 3. **Zero Margin on Decision Boundary:** Samples that fall precisely on the zero activation threshold are assigned label 0 by convention. **Guardrail:** The certificate verifier checks signed margins explicitly.
 
 ---
 
-## 14. Verification & Certificate
+## 13. Verification & Certificate
 
-To independently certify the output when converged is True:
-1. Verify that the length of the weights array equals the feature dimension d and the bias is a finite number.
-2. For each sample index i from 0 to N - 1:
-   - Compute the activation: dot_product(weights, features[i]) + bias.
-   - If target label is 1, verify activation is strictly greater than 0.
-   - If target label is 0, verify activation is less than or equal to 0.
-3. If all N samples satisfy this condition, the parameters represent a valid separating hyperplane and the certificate is verified.
+To independently certify the output when `converged` is True:
+1. Verify that the length of the weights array equals the feature dimension $d$ and the bias is a finite number.
+2. For each sample index $i$ from $0$ to $N - 1$:
+   - Compute the activation: $\text{dot\_product}(\mathbf{w}, \mathbf{x}_i) + b$.
+   - If target label is $1$, verify activation is strictly greater than $0$.
+   - If target label is $0$, verify activation is less than or equal to $0$.
+3. If all $N$ samples satisfy this condition, the parameters represent a valid separating hyperplane and the certificate is verified.
 
 ---
 
-## 15. References
+## 14. References
 
 - **Rosenblatt (1958):** F. Rosenblatt, "The Perceptron: A probabilistic model for information storage and organization in the brain," Psychological Review, 65(6):386-408, 1958. DOI: 10.1037/h0042519.
 - **Novikoff (1962):** A. B. J. Novikoff, "On convergence proofs on perceptrons," Proceedings of the Symposium on the Mathematical Theory of Automata, 12:615-622, 1962.
