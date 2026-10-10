@@ -161,31 +161,6 @@ class NnAlgoPerceptronLearning:
         initial_weights: Optional[List[float]] = None,
         initial_bias: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """
-        Train a binary perceptron using Rosenblatt's mistake-driven learning rule.
-
-        Parameters
-        ----------
-        features : List[List[float]]
-            Training feature matrix of shape (N, d).
-        labels : List[int]
-            Binary ground-truth labels in {0, 1} of length N.
-        learning_rate : float, default=1.0
-            Gradient step multiplier eta > 0.
-        max_epochs : int, default=100
-            Maximum number of complete dataset passes E >= 1.
-        initial_weights : Optional[List[float]], default=None
-            Initial weight vector of dimension d. Defaults to all zeros.
-        initial_bias : Optional[float], default=None
-            Initial scalar bias. Defaults to 0.0.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary containing learned weights, bias, convergence status,
-            training metrics, and geometric margin.
-        """
-        # --- Precondition Validation ---
         if not features or len(features) == 0:
             raise ValueError("Precondition failed: len(input.features) > 0")
 
@@ -244,7 +219,6 @@ class NnAlgoPerceptronLearning:
         epochs_trained = 0
         final_error_count = 0
 
-        # --- Training Loop ---
         for epoch in range(1, max_epochs + 1):
             epochs_trained = epoch
             epoch_errors = 0
@@ -253,7 +227,6 @@ class NnAlgoPerceptronLearning:
                 x = features[i]
                 target = labels[i]
 
-                # Activation: z = w . x + b
                 z = sum(w_j * float(x_j) for w_j, x_j in zip(weights, x)) + bias
                 y_hat = 1 if z > 0.0 else 0
 
@@ -261,9 +234,6 @@ class NnAlgoPerceptronLearning:
                 if error != 0:
                     epoch_errors += 1
                     total_updates += 1
-                    # Perceptron update rule:
-                    # w <- w + eta * (target - y_hat) * x
-                    # b <- b + eta * (target - y_hat)
                     step = float(learning_rate) * float(error)
                     weights = [w_j + step * float(x_j) for w_j, x_j in zip(weights, x)]
                     bias = bias + step
@@ -273,7 +243,6 @@ class NnAlgoPerceptronLearning:
                 converged = True
                 break
 
-        # --- Margin Calculation ---
         margin: Optional[float] = None
         if converged:
             norm_sq = sum(w_j * w_j for w_j in weights)
@@ -297,3 +266,4 @@ class NnAlgoPerceptronLearning:
             "final_error_count": final_error_count,
             "margin": margin,
         }
+

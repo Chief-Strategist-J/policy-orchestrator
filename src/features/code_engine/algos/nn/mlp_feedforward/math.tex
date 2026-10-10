@@ -1,0 +1,235 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{property}{Property}
+
+\title{Mathematical Foundation and Universal Approximation Theory of Multilayer Perceptrons (ALGO-NN-02)}
+\author{Algorithms Engineering Group}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document establishes the rigorous mathematical foundation, topological formulation, algebraic properties, and complexity analysis for feedforward Multilayer Perceptrons (MLPs). The layer-wise composition of affine maps and non-linear scalar activations is defined. We state and analyze the Universal Approximation Theorem for continuous function spaces, derive computational complexity bounds, and provide an exact, step-by-step worked trace that strictly matches the production implementation contract.
+\end{abstract}
+
+\section{Notation}
+\label{sec:notation}
+
+Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{W}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{z}, \mathbf{h}, \mathbf{b}$), and scalar indices by standard italic characters.
+
+\begin{itemize}
+    \item $L \in \mathbb{N}$: Number of parameterized affine layers in the network.
+    \item $d_0 \in \mathbb{N}$: Input space dimension ($d_0 = d_{\text{in}}$).
+    \item $d_l \in \mathbb{N}$: Output dimension (width) of layer $l \in \{1, \dots, L\}$.
+    \item $\mathbf{x} = \mathbf{h}^{(0)} \in \mathbb{R}^{d_0}$: Input feature vector.
+    \item $\mathbf{W}^{(l)} \in \mathbb{R}^{d_l \times d_{l-1}}$: Weight matrix of layer $l$, where $W_{ij}^{(l)}$ connects unit $j$ of layer $l-1$ to unit $i$ of layer $l$.
+    \item $\mathbf{b}^{(l)} \in \mathbb{R}^{d_l}$: Bias vector of layer $l$.
+    \item $\mathbf{z}^{(l)} \in \mathbb{R}^{d_l}$: Pre-activation vector at layer $l$.
+    \item $\mathbf{h}^{(l)} \in \mathbb{R}^{d_l}$: Post-activation hidden state vector at layer $l$.
+    \item $\sigma: \mathbb{R} \to \mathbb{R}$: Hidden layer non-linear activation function.
+    \item $\sigma_{\text{out}}: \mathbb{R} \to \mathbb{R}$: Output layer activation function.
+    \item $C(K, \mathbb{R}^m)$: The Banach space of continuous functions from compact set $K \subset \mathbb{R}^n$ to $\mathbb{R}^m$ equipped with the supremum norm $\|f\|_\infty = \sup_{\mathbf{x} \in K} \|f(\mathbf{x})\|$.
+\end{itemize}
+
+\section{Problem Definition}
+\label{sec:problem_definition}
+
+\begin{definition}[Feedforward Multilayer Perceptron]
+Given input dimension $d_0$, depth $L \ge 1$, layer dimensions $(d_1, \dots, d_L)$, weight matrices $\mathcal{W} = \{\mathbf{W}^{(l)}\}_{l=1}^L$, bias vectors $\mathcal{B} = \{\mathbf{b}^{(l)}\}_{l=1}^L$, and activations $(\sigma, \sigma_{\text{out}})$, a Multilayer Perceptron is an operator $\mathcal{F}: \mathbb{R}^{d_0} \to \mathbb{R}^{d_L}$ defined by the recursive composition:
+\begin{align}
+\mathbf{h}^{(0)} &= \mathbf{x}, \\
+\mathbf{z}^{(l)} &= \mathbf{W}^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}, \quad l \in \{1, \dots, L\}, \label{eq:affine_step} \\
+\mathbf{h}^{(l)} &= \begin{cases}
+\sigma(\mathbf{z}^{(l)}) & \text{for } 1 \le l < L, \\
+\sigma_{\text{out}}(\mathbf{z}^{(L)}) & \text{for } l = L.
+\end{cases} \label{eq:activation_step}
+\end{align}
+where scalar functions apply component-wise: $\sigma(\mathbf{z})_i = \sigma(z_i)$.
+\end{definition}
+
+\begin{definition}[Function Approximation Problem]
+Let $K \subset \mathbb{R}^{d_0}$ be a compact subset and $f^* \in C(K, \mathbb{R}^{d_L})$ be a target continuous function. For any precision $\varepsilon > 0$, determine an architecture $(L, d_1, \dots, d_L)$ and parameters $(\mathcal{W}, \mathcal{B})$ such that:
+\begin{equation}
+\sup_{\mathbf{x} \in K} \|\mathcal{F}(\mathbf{x}) - f^*(\mathbf{x})\|_\infty < \varepsilon.
+\end{equation}
+\end{definition}
+
+\section{Algorithm}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:mlp_feedforward} presents the exact layer-wise deterministic feedforward evaluation implemented in \texttt{impl.py}.
+
+\begin{algorithm}[H]
+\caption{Deterministic MLP Feedforward Evaluation}
+\label{alg:mlp_feedforward}
+\begin{algorithmic}[1]
+\Require Input vector $\mathbf{x} \in \mathbb{R}^{d_0}$, weights $\{\mathbf{W}^{(l)}\}_{l=1}^L$, biases $\{\mathbf{b}^{(l)}\}_{l=1}^L$, activations $(\sigma, \sigma_{\text{out}})$.
+\Ensure Output vector $\mathbf{h}^{(L)}$, pre-activations $\{\mathbf{z}^{(l)}\}_{l=1}^L$, layer activations $\{\mathbf{h}^{(l)}\}_{l=1}^L$.
+\State $\mathbf{h}^{(0)} \gets \mathbf{x}$
+\State $\mathcal{Z} \gets [\,]$
+\State $\mathcal{H} \gets [\,]$
+\For{$l = 1 \textbf{ to } L$}
+    \State $\psi \gets \begin{cases} \sigma_{\text{out}} & \text{if } l = L \\ \sigma & \text{if } l < L \end{cases}$
+    \State $\mathbf{z}^{(l)} \gets \mathbf{0}_{d_l}$
+    \State $\mathbf{h}^{(l)} \gets \mathbf{0}_{d_l}$
+    \For{$i = 1 \textbf{ to } d_l$}
+        \State $\text{dot} \gets 0.0$
+        \For{$j = 1 \textbf{ to } d_{l-1}$}
+            \State $\text{dot} \gets \text{dot} + W_{ij}^{(l)} \cdot h_j^{(l-1)}$
+        \EndFor
+        \State $z_i^{(l)} \gets \text{dot} + b_i^{(l)}$
+        \State $h_i^{(l)} \gets \psi(z_i^{(l)})$
+    \EndFor
+    \State Append $\mathbf{z}^{(l)}$ to $\mathcal{Z}$
+    \State Append $\mathbf{h}^{(l)}$ to $\mathcal{H}$
+\EndFor
+\State \Return $(\mathbf{h}^{(L)}, \mathcal{Z}, \mathcal{H}, L, [d_0, d_1, \dots, d_L])$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Universal Approximation Theorem}
+\label{sec:correctness}
+
+The theoretical cornerstone of MLPs is the Universal Approximation Theorem formulated by Cybenko (1989) and Hornik (1991).
+
+\begin{definition}[Sigmoidal and Discriminatory Functions]
+A function $\sigma: \mathbb{R} \to \mathbb{R}$ is \emph{sigmoidal} if:
+\begin{equation}
+\lim_{t \to -\infty} \sigma(t) = 0 \quad \text{and} \quad \lim_{t \to +\infty} \sigma(t) = 1.
+\end{equation}
+A continuous function $\sigma$ is \emph{discriminatory} with respect to finite signed regular Borel measures $\mu$ on compact $K \subset \mathbb{R}^n$ if:
+\begin{equation}
+\int_K \sigma(\mathbf{w}^\top \mathbf{x} + b) \, d\mu(\mathbf{x}) = 0 \quad \forall \mathbf{w} \in \mathbb{R}^n, b \in \mathbb{R} \implies \mu = 0.
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Cybenko's Universal Approximation Theorem (1989)]
+\label{thm:cybenko}
+Let $\sigma$ be any continuous sigmoidal function. Let $I_n = [0, 1]^n$ be the unit hypercube in $\mathbb{R}^n$. Then the set of single-hidden-layer neural network functions:
+\begin{equation}
+\mathcal{M}(\sigma) = \left\{ g(\mathbf{x}) = \sum_{i=1}^m \alpha_i \sigma(\mathbf{w}_i^\top \mathbf{x} + b_i) \;\middle|\; m \in \mathbb{N}, \alpha_i \in \mathbb{R}, \mathbf{w}_i \in \mathbb{R}^n, b_i \in \mathbb{R} \right\}
+\end{equation}
+is dense in $C(I_n, \mathbb{R})$ under the uniform supremum norm. That is, for any $f \in C(I_n, \mathbb{R})$ and $\varepsilon > 0$, there exists $g \in \mathcal{M}(\sigma)$ such that:
+\begin{equation}
+\sup_{\mathbf{x} \in I_n} |g(\mathbf{x}) - f(\mathbf{x})| < \varepsilon.
+\end{equation}
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+By the Hahn-Banach Theorem and Riesz Representation Theorem, $\mathcal{M}(\sigma)$ is dense in $C(I_n)$ if and only if the only bounded linear functional vanishing on $\mathcal{M}(\sigma)$ is the zero functional. Any bounded linear functional corresponds to a finite signed measure $\mu$ on $I_n$.
+If $\int_{I_n} \sigma(\mathbf{w}^\top \mathbf{x} + b) \, d\mu(\mathbf{x}) = 0$ for all $\mathbf{w}, b$, bounded convergence shows that indicator functions of half-spaces integrate to zero, proving the Fourier transform $\hat{\mu} = 0$. Hence $\mu = 0$, establishing density.
+\end{proof}
+
+\begin{theorem}[Hornik's General Approximation Theorem (1991)]
+\label{thm:hornik}
+Let $\sigma$ be any non-constant, bounded, continuous activation function. Then multilayer feedforward architectures with activation $\sigma$ are universal approximators in $C(K)$ for any compact $K \subset \mathbb{R}^n$.
+\end{theorem}
+
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{itemize}
+    \item \textbf{Layer $l$ Affine Transformation:} Matrix-vector product $\mathbf{W}^{(l)} \mathbf{h}^{(l-1)}$ requires $d_l \times d_{l-1}$ multiplications and $d_l \times (d_{l-1} - 1)$ additions. Adding bias $\mathbf{b}^{(l)}$ requires $d_l$ additions. Total elementary arithmetic operations: $2 d_l d_{l-1}$.
+    \item \textbf{Layer $l$ Non-linear Activation:} Applying $\sigma$ to vector $\mathbf{z}^{(l)}$ requires $d_l$ scalar evaluations. For standard activations (ReLU, Sigmoid, Tanh), each evaluation is $\mathcal{O}(1)$.
+    \item \textbf{Total Forward Pass Time Complexity:}
+    \begin{equation}
+    T(L, \{d_l\}_{l=0}^L) = \sum_{l=1}^L \left( 2 d_l d_{l-1} + d_l \right) = \mathcal{O}\left( \sum_{l=1}^L d_l d_{l-1} \right).
+    \end{equation}
+\end{itemize}
+
+\subsection{Space Complexity}
+\begin{itemize}
+    \item \textbf{State Storage:} Storing pre-activations $\{\mathbf{z}^{(l)}\}_{l=1}^L$ and activations $\{\mathbf{h}^{(l)}\}_{l=0}^L$ requires $\sum_{l=0}^L d_l$ floating-point words.
+    \item \textbf{Auxiliary Memory:} $\mathcal{O}(1)$ dynamic working memory. Total space is strictly:
+    \begin{equation}
+    S(L, \{d_l\}_{l=0}^L) = \mathcal{O}\left( \sum_{l=0}^L d_l \right).
+    \end{equation}
+\end{itemize}
+
+\section{Worked Example}
+\label{sec:worked_example}
+
+Consider a 2-layer MLP ($L=2$) mapping $\mathbb{R}^2 \to \mathbb{R}^1$ with $d_0 = 2, d_1 = 3, d_2 = 1$.
+Activations are $\sigma = \text{ReLU}$ (hidden) and $\sigma_{\text{out}} = \text{Identity}$ (output).
+
+\paragraph{Network Parameters:}
+\begin{align}
+\mathbf{W}^{(1)} &= \begin{bmatrix} 1.0 & -2.0 \\ 0.5 & 1.5 \\ -1.0 & 0.0 \end{bmatrix}, \quad \mathbf{b}^{(1)} = \begin{bmatrix} 0.1 \\ -0.5 \\ 1.0 \end{bmatrix}, \\
+\mathbf{W}^{(2)} &= \begin{bmatrix} 2.0 & -1.0 & 0.5 \end{bmatrix}, \quad \mathbf{b}^{(2)} = \begin{bmatrix} -0.2 \end{bmatrix}.
+\end{align}
+
+\paragraph{Input Vector:} $\mathbf{x} = \mathbf{h}^{(0)} = [0.5, -1.2]^\top$.
+
+\paragraph{Layer 1 Evaluation:}
+\begin{align}
+z_1^{(1)} &= (1.0)(0.5) + (-2.0)(-1.2) + 0.1 = 0.5 + 2.4 + 0.1 = 3.0 \implies h_1^{(1)} = \max(0, 3.0) = 3.0, \\
+z_2^{(1)} &= (0.5)(0.5) + (1.5)(-1.2) - 0.5 = 0.25 - 1.80 - 0.5 = -2.05 \implies h_2^{(1)} = \max(0, -2.05) = 0.0, \\
+z_3^{(1)} &= (-1.0)(0.5) + (0.0)(-1.2) + 1.0 = -0.5 + 0.0 + 1.0 = 0.5 \implies h_3^{(1)} = \max(0, 0.5) = 0.5.
+\end{align}
+Thus $\mathbf{z}^{(1)} = [3.0, -2.05, 0.5]^\top$, $\mathbf{h}^{(1)} = [3.0, 0.0, 0.5]^\top$.
+
+\paragraph{Layer 2 Evaluation:}
+\begin{align}
+z_1^{(2)} &= (2.0)(3.0) + (-1.0)(0.0) + (0.5)(0.5) - 0.2 = 6.0 + 0.0 + 0.25 - 0.2 = 6.05, \\
+h_1^{(2)} &= \text{identity}(6.05) = 6.05.
+\end{align}
+
+\begin{table}[H]
+\centering
+\caption{Layer-by-Layer Forward Pass Trace}
+\label{tab:worked_example}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Layer $l$} & \textbf{Shape} & \textbf{Pre-activation $\mathbf{z}^{(l)}$} & \textbf{Activation} & \textbf{State $\mathbf{h}^{(l)}$} \\
+\midrule
+0 (Input) & $2$ & --- & --- & $[0.5, -1.2]$ \\
+1 (Hidden) & $3$ & $[3.0, -2.05, 0.5]$ & ReLU & $[3.0, 0.0, 0.5]$ \\
+2 (Output) & $1$ & $[6.05]$ & Identity & $[6.05]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Numerical Considerations}
+\label{sec:numerical}
+
+\begin{enumerate}
+    \item \textbf{Exponent Clamping in Sigmoidal Activations:} For numerical stability in logistic sigmoid $\sigma(z) = (1 + e^{-z})^{-1}$, values $|z| \ge 40$ are clamped to prevent floating-point underflow/overflow.
+    \item \textbf{Strict Precondition Checks:} Layer dimension transitions $\text{cols}(\mathbf{W}^{(l)}) = \text{len}(\mathbf{h}^{(l-1)})$ and $\text{rows}(\mathbf{W}^{(l)}) = \text{len}(\mathbf{b}^{(l)})$ are validated prior to execution.
+    \item \textbf{Deterministic Arithmetic:} Inner products execute in canonical sequential order to guarantee reproducible floating-point rounding.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{cybenko1989approximation}
+G.~Cybenko.
+\newblock Approximation by superpositions of a sigmoidal function.
+\newblock {\em Mathematics of Control, Signals, and Systems}, 2(4):303--314, 1989.
+\newblock DOI: \href{https://doi.org/10.1007/BF02551274}{10.1007/BF02551274}.
+
+\bibitem{hornik1991approximation}
+K.~Hornik.
+\newblock Approximation capabilities of multilayer feedforward networks.
+\newblock {\em Neural Networks}, 4(2):251--257, 1991.
+\newblock DOI: \href{https://doi.org/10.1016/0893-6080(91)90009-T}{10.1016/0893-6080(91)90009-T}.
+
+\bibitem{rumelhart1986learning}
+D.~E.~Rumelhart, G.~E.~Hinton, and R.~J.~Williams.
+\newblock Learning representations by back-propagating errors.
+\newblock {\em Nature}, 323(6088):533--536, 1986.
+\newblock DOI: \href{https://doi.org/10.1038/323533a0}{10.1038/323533a0}.
+
+\end{thebibliography}
+
+\end{document}

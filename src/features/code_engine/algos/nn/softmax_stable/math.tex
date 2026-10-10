@@ -1,0 +1,222 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{property}{Property}
+
+\title{Mathematical Foundation, Translation Invariance, and Online Streaming Algorithms for Numerically Stable Softmax (ALGO-NN-07)}
+\author{Algorithms Engineering Group}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document establishes the formal mathematical principles, thermodynamic foundations, translation-invariance properties, and numerical stabilization techniques for the Softmax and Log-Softmax probability operators. We derive the Log-Sum-Exp (LSE) subtraction invariant, prove the exact algebraic equivalence of the one-pass Online Softmax algorithm utilized in FlashAttention, analyze Jacobian derivatives and Shannon entropy, and provide an exact worked trace matching the production implementation contract.
+\end{abstract}
+
+\section{Notation}
+\label{sec:notation}
+
+Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{Z}, \mathbf{P}$), vectors by lowercase bold letters ($\mathbf{z}, \mathbf{p}$), and scalars by standard italics.
+
+\begin{itemize}
+    \item $B \in \mathbb{N}$: Batch size (number of independent distributions).
+    \item $K \in \mathbb{N}$: Number of categorical classes (dimension of logit space).
+    \item $\mathbf{z} = [z_1, \dots, z_K]^\top \in \mathbb{R}^K$: Unnormalized log-probability vector (logits).
+    \item $\mathbf{p} = [p_1, \dots, p_K]^\top \in \Delta^{K-1}$: Normalized categorical probability simplex vector satisfying $p_i \ge 0$ and $\sum_{i=1}^K p_i = 1$.
+    \item $T \in \mathbb{R}_{>0}$: Temperature parameter ($T = 1.0$ standard).
+    \item $\text{LSE}(\mathbf{z}) = \ln\left( \sum_{j=1}^K e^{z_j} \right)$: Log-Sum-Exp smooth maximum function.
+    \item $H(\mathbf{p}) = -\sum_{i=1}^K p_i \ln(p_i)$: Shannon information entropy in nats.
+    \item $\mathbf{J} \in \mathbb{R}^{K \times K}$: Softmax Jacobian matrix $J_{ij} = \frac{\partial p_i}{\partial z_j}$.
+\end{itemize}
+
+\section{Problem Definition}
+\label{sec:problem_definition}
+
+\begin{definition}[Softmax and Log-Softmax Operators]
+Given logits $\mathbf{z} \in \mathbb{R}^K$ and temperature $T > 0$, the Softmax operator $\mathcal{S}_T: \mathbb{R}^K \to \Delta^{K-1}$ and Log-Softmax operator $\mathcal{LS}_T: \mathbb{R}^K \to \mathbb{R}_{<0}^K$ are defined by:
+\begin{align}
+p_i &= \mathcal{S}_T(\mathbf{z})_i = \frac{\exp(z_i / T)}{\sum_{j=1}^K \exp(z_j / T)}, \quad \forall i \in \{1, \dots, K\}, \label{eq:softmax} \\
+\ln(p_i) &= \mathcal{LS}_T(\mathbf{z})_i = \frac{z_i}{T} - \ln\left( \sum_{j=1}^K \exp\left( \frac{z_j}{T} \right) \right) = \frac{z_i}{T} - \text{LSE}\left( \frac{\mathbf{z}}{T} \right). \label{eq:log_softmax}
+\end{align}
+\end{definition}
+
+\begin{definition}[Softmax Jacobian Derivative]
+The partial derivative of output probability $p_i$ with respect to logit $z_j$ is given by:
+\begin{equation}
+\label{eq:jacobian}
+J_{ij} = \frac{\partial p_i}{\partial z_j} = \frac{1}{T} p_i (\delta_{ij} - p_j),
+\end{equation}
+where $\delta_{ij}$ is the Kronecker delta ($\delta_{ij} = 1$ if $i = j$ else $0$).
+\end{definition}
+
+\section{Algorithm}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:softmax_stable} details both the standard two-pass max-subtracted evaluation and the one-pass online streaming algorithm.
+
+\begin{algorithm}[H]
+\caption{Numerically Stable Softmax and Online Streaming Evaluation}
+\label{alg:softmax_stable}
+\begin{algorithmic}[1]
+\Require Logits matrix $\mathbf{Z} \in \mathbb{R}^{B \times K}$, temperature $T > 0$, mode $\in \{\text{standard}, \text{log\_softmax}, \text{online}\}$.
+\Ensure Probability matrix $\mathbf{P} \in \mathbb{R}^{B \times K}$, LSE vector $\boldsymbol{\ell} \in \mathbb{R}^B$, entropy vector $\mathbf{h} \in \mathbb{R}^B$.
+\For{$b = 1 \textbf{ to } B$}
+    \State Scale row: $\mathbf{u} \gets \frac{1}{T} \mathbf{Z}_{b, :}$
+    \If{$\text{mode} = \text{online}$}
+        \State $m \gets -\infty$, $s \gets 0.0$
+        \For{$j = 1 \textbf{ to } K$}
+            \State $z \gets u_j$
+            \If{$z > m$}
+                \State $s \gets s \cdot e^{m - z} + 1.0$, $m \gets z$
+            \Else
+                \State $s \gets s + e^{z - m}$
+            \EndIf
+        \EndFor
+        \State $\ell_b \gets m + \ln(s)$
+    \Else
+        \State $m \gets \max_{j=1}^K u_j$
+        \State $s \gets \sum_{j=1}^K e^{u_j - m}$
+        \State $\ell_b \gets m + \ln(s)$
+    \EndIf
+    \For{$j = 1 \textbf{ to } K$}
+        \State $p_{bj} \gets \exp(u_j - \ell_b)$
+    \EndFor
+    \State $h_b \gets -\sum_{j=1}^K p_{bj} \ln(p_{bj})$
+\EndFor
+\State \Return $(\mathbf{P}, \boldsymbol{\ell}, \mathbf{h})$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Correctness and Invariance Theorems}
+\label{sec:correctness}
+
+\begin{theorem}[Translation Invariance of Softmax and LSE]
+\label{thm:translation_invariance}
+For any logit vector $\mathbf{z} \in \mathbb{R}^K$ and any scalar shift $c \in \mathbb{R}$:
+\begin{align}
+\mathcal{S}(\mathbf{z} - c \mathbf{1}_K) &= \mathcal{S}(\mathbf{z}), \label{eq:shift_invariance} \\
+\text{LSE}(\mathbf{z} - c \mathbf{1}_K) &= \text{LSE}(\mathbf{z}) - c. \label{eq:lse_shift}
+\end{align}
+\end{theorem}
+
+\begin{proof}
+Substituting $z_i' = z_i - c$ into Equation~\eqref{eq:softmax}:
+\begin{equation}
+\mathcal{S}(\mathbf{z}')_i = \frac{e^{z_i - c}}{\sum_{j=1}^K e^{z_j - c}} = \frac{e^{-c} e^{z_i}}{e^{-c} \sum_{j=1}^K e^{z_j}} = \frac{e^{z_i}}{\sum_{j=1}^K e^{z_j}} = \mathcal{S}(\mathbf{z})_i.
+\end{equation}
+Setting $c = m = \max_{j} z_j$ guarantees that all exponents satisfy $z_j - m \le 0$. Consequently, $e^{z_j - m} \in (0, 1]$, completely eliminating IEEE 754 floating-point overflow ($e^{z} = \infty$ for $z > 709.78$ in double precision).
+\end{proof}
+
+\begin{theorem}[Exactness of One-Pass Online Softmax]
+\label{thm:online_softmax}
+Let $(m_k, s_k)$ denote the running maximum and rescaled running sum after observing prefix $(z_1, \dots, z_k)$, updated recursively by:
+\begin{align}
+m_k &= \max(m_{k-1}, z_k), \\
+s_k &= s_{k-1} e^{m_{k-1} - m_k} + e^{z_k - m_k}, \quad \text{with } m_0 = -\infty, s_0 = 0.
+\end{align}
+Then at termination $k = K$, $s_K = \sum_{j=1}^K e^{z_j - m_K}$ identically matches the two-pass sum.
+\end{theorem}
+
+\begin{proof}
+By induction on $k$. For $k=1$, $m_1 = z_1$, $s_1 = e^{z_1 - z_1} = 1 = \sum_{j=1}^1 e^{z_j - m_1}$.
+Assume true for $k-1$: $s_{k-1} = \sum_{j=1}^{k-1} e^{z_j - m_{k-1}}$. Then:
+\begin{align}
+s_k &= \left( \sum_{j=1}^{k-1} e^{z_j - m_{k-1}} \right) e^{m_{k-1} - m_k} + e^{z_k - m_k} \\
+&= \sum_{j=1}^{k-1} e^{z_j - m_{k-1} + m_{k-1} - m_k} + e^{z_k - m_k} = \sum_{j=1}^k e^{z_j - m_k}.
+\end{align}
+\end{proof}
+
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{itemize}
+    \item For a batch of $B$ rows of width $K$, the max-reduction, exponent summation, and normalization require strictly $3 K$ operations per row.
+    \item Total time complexity is strictly:
+    \begin{equation}
+    T(B, K) = \mathcal{O}(B \cdot K).
+    \end{equation}
+\end{itemize}
+
+\subsection{Space Complexity}
+\begin{itemize}
+    \item Allocating probability matrix $\mathbf{P} \in \mathbb{R}^{B \times K}$, LSE vector $\mathbb{R}^B$, and entropy vector $\mathbb{R}^B$ requires $\mathcal{O}(B \cdot K)$ space.
+\end{itemize}
+
+\section{Worked Example}
+\label{sec:worked_example}
+
+Consider a sample with extreme logits that would overflow a naive implementation without stabilization ($B=1, K=3, T=1.0$):
+\begin{equation}
+\mathbf{z} = [1000.0, 1001.0, 1002.0]^\top.
+\end{equation}
+
+\paragraph{1. Maximum Reduction:} $m = \max(1000, 1001, 1002) = 1002.0$.
+
+\paragraph{2. Shifted Exponentiation:}
+\begin{align}
+e^{1000 - 1002} &= e^{-2} \approx 0.13533528, \\
+e^{1001 - 1002} &= e^{-1} \approx 0.36787944, \\
+e^{1002 - 1002} &= e^{0} = 1.00000000.
+\end{align}
+Sum of shifted exponents: $s = 0.13533528 + 0.36787944 + 1.0 = 1.50321472$.
+
+\paragraph{3. Log-Sum-Exp:}
+\begin{equation}
+\text{LSE}(\mathbf{z}) = 1002.0 + \ln(1.50321472) = 1002.0 + 0.40760596 = 1002.40760596.
+\end{equation}
+
+\paragraph{4. Output Probabilities:}
+\begin{align}
+p_1 &= \frac{e^{-2}}{1.50321472} = \frac{0.13533528}{1.50321472} \approx 0.09003057, \\
+p_2 &= \frac{e^{-1}}{1.50321472} = \frac{0.36787944}{1.50321472} \approx 0.24472847, \\
+p_3 &= \frac{1.0}{1.50321472} \approx 0.66524096.
+\end{align}
+$\sum_{i=1}^3 p_i = 0.09003057 + 0.24472847 + 0.66524096 = 1.00000000$.
+
+\paragraph{5. Shannon Entropy:}
+\begin{align}
+H(\mathbf{p}) &= -(0.09003 \ln(0.09003) + 0.24473 \ln(0.24473) + 0.66524 \ln(0.66524)) \\
+&= -(0.09003 \times (-2.40761) + 0.24473 \times (-1.40761) + 0.66524 \times (-0.40761)) \\
+&= 0.21676 + 0.34448 + 0.27116 = 0.83240 \text{ nats}.
+\end{align}
+
+\section{Numerical Considerations}
+\label{sec:numerical}
+
+\begin{enumerate}
+    \item \textbf{Underflow in Cross-Entropy Loss:} In cross-entropy loss $\mathcal{L} = -\sum y_i \ln(p_i)$, using $\ln(\mathcal{S}(z))$ directly can produce $-\infty$ if $p_i \to 0$. The implementation calculates $\mathcal{LS}(z) = z_i - \text{LSE}(z)$ directly, ensuring finite log-probabilities down to machine minimum ($10^{-308}$).
+    \item \textbf{Temperature Scaling Order:} The division by $T$ must occur \emph{before} calculating maximum $m$, ensuring $z_i / T - m_T \le 0$.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{bridle1990probabilistic}
+J.~S.~Bridle.
+\newblock Probabilistic interpretation of feedforward classification network outputs, with relationships to statistical pattern recognition.
+\newblock In {\em Neurocomputing}, pages 227--236. Springer, 1990.
+\newblock DOI: \href{https://doi.org/10.1007/978-3-642-76153-9_28}{10.1007/978-3-642-76153-9\_28}.
+
+\bibitem{milakov2018online}
+M.~Milakov and N.~Gimelshein.
+\newblock Online normalizer calculation for softmax.
+\newblock {\em arXiv preprint arXiv:1805.02867}, 2018.
+
+\bibitem{dao2022flashattention}
+T.~Dao, D.~Fu, S.~Ermon, A.~Rudra, and C.~R{\'e}.
+\newblock FlashAttention: Fast and memory-efficient exact attention with IO-awareness.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, volume~35, pages 16344--16359, 2022.
+
+\end{thebibliography}
+
+\end{document}

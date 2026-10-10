@@ -99,6 +99,18 @@ services:
       timeout: 10s
       retries: 5
 
+  latex:
+    image: blang/latex:latest
+    volumes:
+      - .:/workdir
+    working_dir: /workdir/src/features/code_engine/algos/nn/perceptron_learning
+    command: >
+      bash -c "
+        pdflatex -interaction=nonstopmode math.tex &&
+        pdflatex -interaction=nonstopmode math.tex &&
+        echo '✅ PDF compiled: math.pdf'
+      "
+
 volumes:
   alloydb_data:
   qdrant_data:

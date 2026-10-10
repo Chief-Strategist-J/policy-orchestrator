@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{property}{Property}
+
+\title{Mathematical Formulations, Bilinear Gating Dynamics, and Parameter Parity Theory of Gated Linear Units (ALGO-NN-08)}
+\author{Algorithms Engineering Group}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document establishes the mathematical foundations, bilinear algebraic structures, parameter parity derivations, and computational complexity for Gated Linear Units (GLU, SwiGLU, GeGLU, and ReGLU). We analyze the component-wise Hadamard gating mechanism, derive the exact $2/3$ hidden width scaling relation necessary to preserve parameter parity against standard two-matrix MLPs in modern Large Language Models (LLMs), and provide an exact worked trace matching the production implementation contract.
+\end{abstract}
+
+\section{Notation}
+\label{sec:notation}
+
+Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{W}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{y}$), and scalar dimensions by standard italics.
+
+\begin{itemize}
+    \item $B \in \mathbb{N}$: Batch size.
+    \item $d_{\text{in}} \in \mathbb{N}$: Input feature dimension (e.g., $d_{\text{model}}$ in transformers).
+    \item $d_{\text{ff}} = d_h \in \mathbb{N}$: Intermediate hidden expansion width.
+    \item $d_{\text{out}} \in \mathbb{N}$: Final projection dimension.
+    \item $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$: Input batch matrix.
+    \item $\mathbf{W}_{\text{gate}} \in \mathbb{R}^{d_h \times d_{\text{in}}}$: Gate projection weight matrix.
+    \item $\mathbf{W}_{\text{up}} \in \mathbb{R}^{d_h \times d_{\text{in}}}$: Up projection weight matrix.
+    \item $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_h}$: Down projection weight matrix.
+    \item $\odot$: Hadamard component-wise tensor product: $(\mathbf{A} \odot \mathbf{B})_{ij} = A_{ij} B_{ij}$.
+    \item $\sigma(z) = (1 + e^{-z})^{-1}$: Standard logistic sigmoid.
+    \item $\text{SiLU}(z) = z \sigma(z)$: Sigmoid linear unit.
+    \item $\text{GELU}(z) = z \Phi(z)$: Gaussian error linear unit.
+\end{itemize}
+
+\section{Problem Definition}
+\label{sec:problem_definition}
+
+\begin{definition}[Gated Linear Unit Variants (Dauphin et al., 2017; Shazeer, 2020)]
+For an input vector $\mathbf{x} \in \mathbb{R}^{d_{\text{in}}}$ and projection weight matrices $\mathbf{W}_{\text{up}}, \mathbf{W}_{\text{gate}} \in \mathbb{R}^{d_h \times d_{\text{in}}}$, the gated linear intermediate representation $\mathbf{h} \in \mathbb{R}^{d_h}$ is defined by:
+\begin{equation}
+\label{eq:glu_general}
+\mathbf{h} = \text{GLU}_{\phi}(\mathbf{x}; \mathbf{W}_{\text{up}}, \mathbf{W}_{\text{gate}}) = (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \phi(\mathbf{W}_{\text{gate}} \mathbf{x}),
+\end{equation}
+where $\phi: \mathbb{R} \to \mathbb{R}$ is a scalar non-linear activation operator:
+\begin{enumerate}
+    \item \textbf{Canonical GLU:} $\phi(z) = \sigma(z) \implies \text{GLU}(\mathbf{x}) = (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \sigma(\mathbf{W}_{\text{gate}} \mathbf{x})$.
+    \item \textbf{SwiGLU:} $\phi(z) = \text{SiLU}(z) \implies \text{SwiGLU}(\mathbf{x}) = (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \text{SiLU}(\mathbf{W}_{\text{gate}} \mathbf{x})$.
+    \item \textbf{GeGLU:} $\phi(z) = \text{GELU}(z) \implies \text{GeGLU}(\mathbf{x}) = (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \text{GELU}(\mathbf{W}_{\text{gate}} \mathbf{x})$.
+    \item \textbf{ReGLU:} $\phi(z) = \text{ReLU}(z) \implies \text{ReGLU}(\mathbf{x}) = (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \max(0, \mathbf{W}_{\text{gate}} \mathbf{x})$.
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Complete Transformer FFN Block]
+The full feedforward sublayer with down-projection matrix $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_h}$ computes:
+\begin{equation}
+\label{eq:ffn_swiglu}
+\text{FFN}_{\text{SwiGLU}}(\mathbf{x}) = \mathbf{W}_{\text{down}} \left[ (\mathbf{W}_{\text{up}} \mathbf{x}) \odot \text{SiLU}(\mathbf{W}_{\text{gate}} \mathbf{x}) \right].
+\end{equation}
+\end{definition}
+
+\section{Algorithm}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:gated_linear_units} details the batched forward execution implemented in \texttt{impl.py}.
+
+\begin{algorithm}[H]
+\caption{Gated Linear Unit Forward Propagation}
+\label{alg:gated_linear_units}
+\begin{algorithmic}[1]
+\Require Input $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, $\mathbf{W}_{\text{gate}}, \mathbf{W}_{\text{up}} \in \mathbb{R}^{d_h \times d_{\text{in}}}$, optional $\mathbf{W}_{\text{down}} \in \mathbb{R}^{d_{\text{out}} \times d_h}$, variant $\phi$.
+\Ensure Output matrix $\mathbf{Y}$, gate activations $\mathbf{A}_{\text{gate}}$, intermediate matrix $\mathbf{H}$.
+\State Compute gate linear map: $\mathbf{Z}_{\text{gate}} \gets \mathbf{X} \mathbf{W}_{\text{gate}}^\top \in \mathbb{R}^{B \times d_h}$
+\State Compute up linear map: $\mathbf{Z}_{\text{up}} \gets \mathbf{X} \mathbf{W}_{\text{up}}^\top \in \mathbb{R}^{B \times d_h}$
+\State Apply gate activation: $\mathbf{A}_{\text{gate}} \gets \phi(\mathbf{Z}_{\text{gate}})$
+\State Compute Hadamard product: $\mathbf{H} \gets \mathbf{Z}_{\text{up}} \odot \mathbf{A}_{\text{gate}}$
+\If{$\mathbf{W}_{\text{down}}$ is provided}
+    \State $\mathbf{Y} \gets \mathbf{H} \mathbf{W}_{\text{down}}^\top \in \mathbb{R}^{B \times d_{\text{out}}}$
+\Else
+    \State $\mathbf{Y} \gets \mathbf{H}$
+\EndIf
+\State \Return $(\mathbf{Y}, \mathbf{A}_{\text{gate}}, \mathbf{H})$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Parameter Parity and Width Scaling}
+\label{sec:correctness}
+
+\begin{theorem}[Parameter Parity Scaling Relation (Shazeer, 2020)]
+\label{thm:parameter_parity}
+Let a baseline two-layer Transformer feedforward block have input dimension $d$, output dimension $d$, and standard intermediate width $d_{\text{std}} = 4d$. The baseline parameter count is:
+\begin{equation}
+P_{\text{std}} = 2 \cdot (d \cdot 4d) = 8 d^2.
+\end{equation}
+A three-matrix Gated Linear Unit block ($\mathbf{W}_{\text{gate}}, \mathbf{W}_{\text{up}}, \mathbf{W}_{\text{down}}$) with intermediate width $d_{\text{glu}}$ has total parameter count:
+\begin{equation}
+P_{\text{glu}} = 3 \cdot (d \cdot d_{\text{glu}}).
+\end{equation}
+To achieve exact parameter parity $P_{\text{glu}} = P_{\text{std}}$, the intermediate hidden dimension must be scaled by:
+\begin{equation}
+d_{\text{glu}} = \frac{2}{3} d_{\text{std}} = \frac{8}{3} d \approx 2.667 d.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Equating total parameter allocations:
+\begin{equation}
+3 d d_{\text{glu}} = 8 d^2 \implies d_{\text{glu}} = \frac{8}{3} d = \frac{2}{3} (4d) = \frac{2}{3} d_{\text{std}}.
+\end{equation}
+In production architectures (e.g., LLaMA, Touvron et al., 2023), $d_{\text{glu}}$ is rounded to the nearest multiple of 256 or 64 to optimize GPU tensor core GEMM efficiency.
+\end{proof}
+
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{itemize}
+    \item \textbf{Gate and Up Projections:} $2 \times \mathcal{O}(B \cdot d_{\text{in}} \cdot d_h)$.
+    \item \textbf{Non-linear Gating and Hadamard Multiply:} $\mathcal{O}(B \cdot d_h)$.
+    \item \textbf{Down Projection:} $\mathcal{O}(B \cdot d_h \cdot d_{\text{out}})$.
+    \item Total time complexity is strictly:
+    \begin{equation}
+    T(B, d_{\text{in}}, d_h, d_{\text{out}}) = \mathcal{O}\left( B \cdot d_h (2 d_{\text{in}} + d_{\text{out}}) \right).
+    \end{equation}
+\end{itemize}
+
+\subsection{Space Complexity}
+\begin{itemize}
+    \item Allocating intermediate gate activations and down-projected activations requires $\mathcal{O}(B(d_h + d_{\text{out}}))$ space.
+\end{itemize}
+
+\section{Worked Example}
+\label{sec:worked_example}
+
+Consider $B=1, d_{\text{in}}=2, d_h=2, d_{\text{out}}=2$ with variant = \texttt{swiglu}:
+\begin{align}
+\mathbf{x} &= [1.0, 2.0], \\
+\mathbf{W}_{\text{gate}} &= \begin{bmatrix} 0.5 & 0.0 \\ -1.0 & 1.0 \end{bmatrix}, \quad
+\mathbf{W}_{\text{up}} = \begin{bmatrix} 1.0 & -0.5 \\ 2.0 & 0.5 \end{bmatrix}, \quad
+\mathbf{W}_{\text{down}} = \begin{bmatrix} 1.0 & 0.5 \\ 0.0 & 2.0 \end{bmatrix}.
+\end{align}
+
+\paragraph{1. Linear Projections:}
+\begin{align}
+\mathbf{z}_{\text{gate}} &= [(1.0)(0.5) + (2.0)(0.0), \; (1.0)(-1.0) + (2.0)(1.0)] = [0.5, 1.0], \\
+\mathbf{z}_{\text{up}} &= [(1.0)(1.0) + (2.0)(-0.5), \; (1.0)(2.0) + (2.0)(0.5)] = [0.0, 3.0].
+\end{align}
+
+\paragraph{2. Gate Activation ($\text{SiLU}(z) = z / (1 + e^{-z})$):}
+\begin{align}
+\text{SiLU}(0.5) &= \frac{0.5}{1 + e^{-0.5}} \approx \frac{0.5}{1.60653066} \approx 0.31122967, \\
+\text{SiLU}(1.0) &= \frac{1.0}{1 + e^{-1.0}} \approx \frac{1.0}{1.36787944} \approx 0.73105858.
+\end{align}
+$\mathbf{a}_{\text{gate}} = [0.31122967, 0.73105858]$.
+
+\paragraph{3. Gated Intermediate ($\mathbf{h} = \mathbf{z}_{\text{up}} \odot \mathbf{a}_{\text{gate}}$):}
+\begin{align}
+h_1 &= 0.0 \times 0.31122967 = 0.0, \\
+h_2 &= 3.0 \times 0.73105858 = 2.19317574.
+\end{align}
+$\mathbf{h} = [0.0, 2.19317574]$.
+
+\paragraph{4. Down Projection ($\mathbf{y} = \mathbf{W}_{\text{down}} \mathbf{h}$):}
+\begin{align}
+y_1 &= (1.0)(0.0) + (0.5)(2.19317574) = 1.09658787, \\
+y_2 &= (0.0)(0.0) + (2.0)(2.19317574) = 4.38635148.
+\end{align}
+$\mathbf{y} = [1.09658787, 4.38635148]$.
+
+\section{Numerical Considerations}
+\label{sec:numerical}
+
+\begin{enumerate}
+    \item \textbf{Bilinear Dynamic Range:} Because up and gate projections are multiplied together, activations scale quadratically with input magnitude ($\mathcal{O}(\|\mathbf{x}\|^2)$). Modern LLMs apply RMSNorm or LayerNorm immediately prior to GLU layers.
+    \item \textbf{Fused Kernel Execution:} In production inference, $\mathbf{W}_{\text{gate}}$ and $\mathbf{W}_{\text{up}}$ are concatenated into a single fused GEMM matrix $\mathbf{W}_{\text{gate\_up}} \in \mathbb{R}^{2d_h \times d_{\text{in}}}$ to double GPU memory bandwidth efficiency.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{dauphin2017language}
+Y.~N.~Dauphin, A.~Fan, M.~Auli, and D.~Grangier.
+\newblock Language modeling with gated convolutional networks.
+\newblock In {\em Proceedings of the 34th International Conference on Machine Learning (ICML)}, pages 933--941, 2017.
+
+\bibitem{shazeer2020glu}
+N.~Shazeer.
+\newblock GLU variants improve transformer.
+\newblock {\em arXiv preprint arXiv:2002.05202}, 2020.
+
+\bibitem{touvron2023llama}
+H.~Touvron, T.~Lavril, G.~Izacard, X.~Martinet, M.-A.~Lachaux, T.~Lacroix, B.~Rozi{\`e}re, N.~Goyal, E.~Hambro, F.~Azhar, et~al.
+\newblock LLaMA: Open and efficient foundation language models.
+\newblock {\em arXiv preprint arXiv:2302.13971}, 2023.
+
+\end{thebibliography}
+
+\end{document}

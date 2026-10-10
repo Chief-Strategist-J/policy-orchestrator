@@ -1,0 +1,205 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{property}{Property}
+
+\title{Mathematical Formulations, Stochastic Gating Theory, and Differential Properties of Smooth Non-Monotonic Activations (ALGO-NN-05)}
+\author{Algorithms Engineering Group}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document establishes the mathematical foundations, probabilistic formulations, differential calculus, and numerical properties of modern smooth, non-monotonic neural activation functions. We formulate the Gaussian Error Linear Unit (GELU, exact and fast tanh approximations), Sigmoid Linear Unit (SiLU / Swish), and Mish. We derive the stochastic regularization expectation underpinning GELU, calculate analytic gradients and curvature bounds, and provide an exact worked trace matching the production implementation contract.
+\end{abstract}
+
+\section{Notation}
+\label{sec:notation}
+
+Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{Y}, \mathbf{G}$), and scalar indices by standard italics.
+
+\begin{itemize}
+    \item $N \in \mathbb{N}$: Batch size (number of tensor rows).
+    \item $D \in \mathbb{N}$: Feature dimensionality (number of tensor columns).
+    \item $\mathbf{X} \in \mathbb{R}^{N \times D}$: Input pre-activation tensor.
+    \item $\mathbf{Y} \in \mathbb{R}^{N \times D}$: Post-activation tensor.
+    \item $\mathbf{G} \in \mathbb{R}^{N \times D}$: Exact analytic first derivative tensor.
+    \item $\Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-t^2/2} \, dt = \frac{1}{2} \left[ 1 + \text{erf}\left( \frac{x}{\sqrt{2}} \right) \right]$: Standard Gaussian cumulative distribution function (CDF).
+    \item $\phi(x) = \Phi'(x) = \frac{1}{\sqrt{2\pi}} e^{-x^2/2}$: Standard Gaussian probability density function (PDF).
+    \item $\sigma(x) = \frac{1}{1 + e^{-x}}$: Standard logistic sigmoid function.
+    \item $\zeta(x) = \ln(1 + e^x)$: Softplus function.
+\end{itemize}
+
+\section{Problem Definition}
+\label{sec:problem_definition}
+
+\begin{definition}[Smooth Activation Functions]
+For a scalar input $x \in \mathbb{R}$, the component-wise activation functions and their exact first derivatives are defined as follows:
+
+\begin{enumerate}
+    \item \textbf{Exact GELU (Hendrycks \& Gimpel, 2016):}
+    \begin{align}
+    \text{GELU}(x) &= x \Phi(x) = \frac{x}{2} \left[ 1 + \text{erf}\left( \frac{x}{\sqrt{2}} \right) \right], \label{eq:gelu_exact} \\
+    \frac{d}{dx}\text{GELU}(x) &= \Phi(x) + x \phi(x) = \frac{1}{2} \left[ 1 + \text{erf}\left( \frac{x}{\sqrt{2}} \right) \right] + \frac{x}{\sqrt{2\pi}} e^{-x^2/2}. \label{eq:gelu_grad}
+    \end{align}
+
+    \item \textbf{Tanh Approximation of GELU:}
+    \begin{align}
+    \text{GELU}_{\text{tanh}}(x) &= \frac{1}{2} x \left[ 1 + \tanh\left( \sqrt{\frac{2}{\pi}} \left( x + 0.044715 x^3 \right) \right) \right], \label{eq:gelu_tanh} \\
+    u(x) &= \sqrt{\frac{2}{\pi}} \left( x + 0.044715 x^3 \right), \quad u'(x) = \sqrt{\frac{2}{\pi}} \left( 1 + 3(0.044715) x^2 \right), \\
+    \frac{d}{dx}\text{GELU}_{\text{tanh}}(x) &= \frac{1}{2} (1 + \tanh(u)) + \frac{1}{2} x (1 - \tanh^2(u)) u'(x).
+    \end{align}
+
+    \item \textbf{SiLU / Swish (Elfwing et al., 2018; Ramachandran et al., 2017):}
+    \begin{align}
+    \text{SiLU}(x) &= x \sigma(x) = \frac{x}{1 + e^{-x}}, \label{eq:silu} \\
+    \frac{d}{dx}\text{SiLU}(x) &= \sigma(x) + x \sigma(x) (1 - \sigma(x)) = \sigma(x) [1 + x(1 - \sigma(x))]. \label{eq:silu_grad}
+    \end{align}
+
+    \item \textbf{Mish (Misra, 2019):}
+    \begin{align}
+    \text{Mish}(x) &= x \tanh(\zeta(x)) = x \tanh(\ln(1 + e^x)), \label{eq:mish} \\
+    \frac{d}{dx}\text{Mish}(x) &= \tanh(\zeta(x)) + x (1 - \tanh^2(\zeta(x))) \sigma(x). \label{eq:mish_grad}
+    \end{align}
+\end{enumerate}
+\end{definition}
+
+\begin{property}[Non-Monotonicity and Global Minimums]
+Unlike monotonic ReLU, smooth activations possess a small negative well that preserves negative information and prevents dead neuron gradient collapse:
+\begin{align}
+\min_{x \in \mathbb{R}} \text{GELU}(x) &\approx -0.169971 \quad \text{at } x \approx -0.751791, \\
+\min_{x \in \mathbb{R}} \text{SiLU}(x) &\approx -0.278465 \quad \text{at } x \approx -1.278465, \\
+\min_{x \in \mathbb{R}} \text{Mish}(x) &\approx -0.30884 \quad \text{at } x \approx -1.1924.
+\end{align}
+\end{property}
+
+\section{Algorithm}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:smooth_activations} summarizes the deterministic tensor evaluation and gradient calculation.
+
+\begin{algorithm}[H]
+\caption{Smooth Non-Monotonic Activation and Derivative Evaluation}
+\label{alg:smooth_activations}
+\begin{algorithmic}[1]
+\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant $\in \{\text{gelu\_exact}, \text{gelu\_tanh}, \text{silu}, \text{mish}\}$.
+\Ensure Activated tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$, derivative tensor $\mathbf{G} \in \mathbb{R}^{N \times D}$, global minimum $\mu_{\min}$.
+\State $N \gets \text{rows}(\mathbf{X})$, $D \gets \text{cols}(\mathbf{X})$
+\State Initialize $\mathbf{Y}, \mathbf{G} \in \mathbb{R}^{N \times D}$
+\State $\mu_{\min} \gets +\infty$
+\For{$i = 1 \textbf{ to } N$}
+    \For{$j = 1 \textbf{ to } D$}
+        \State $x \gets X_{ij}$
+        \State $(y, g) \gets \text{EvaluateSmooth}(x, \text{variant})$
+        \State $Y_{ij} \gets y$, $G_{ij} \gets g$
+        \If{$y < \mu_{\min}$}
+            \State $\mu_{\min} \gets y$
+        \EndIf
+    \EndFor
+\EndFor
+\State \Return $(\mathbf{Y}, \mathbf{G}, \mu_{\min}, [N, D])$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Stochastic Gating Derivation of GELU}
+\label{sec:correctness}
+
+\begin{theorem}[GELU as Expected Stochastic Dropout Gating]
+\label{thm:gelu_derivation}
+Let input $x \in \mathbb{R}$ be multiplied by a Bernoulli random variable $M \in \{0, 1\}$ with probability $p(x) = P(M = 1)$. If the gate is activated whenever $x$ exceeds a standard Gaussian perturbation $Z \sim \mathcal{N}(0, 1)$, i.e., $M = \mathbf{1}_{\{Z \le x\}}$, then the deterministic expected activation $\mathbb{E}[M x]$ is identically the Gaussian Error Linear Unit:
+\begin{equation}
+\mathbb{E}[M x] = x P(Z \le x) = x \Phi(x) = \text{GELU}(x).
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+By definition of the indicator variable $M$:
+\begin{equation}
+\mathbb{E}[M \mid x] = 1 \cdot P(Z \le x) + 0 \cdot P(Z > x) = \Phi(x).
+\end{equation}
+Taking expectation over the gated output:
+\begin{equation}
+\mathbb{E}[M x] = x \mathbb{E}[M] = x \Phi(x).
+\end{equation}
+\end{proof}
+
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{itemize}
+    \item For each tensor entry $(i, j)$, evaluating the transcendental functions ($\text{erf}$, $\exp$, $\tanh$, $\ln$) executes in $\mathcal{O}(1)$ floating-point operations.
+    \item Total time complexity for tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$:
+    \begin{equation}
+    T(N, D) = \mathcal{O}(N \cdot D).
+    \end{equation}
+\end{itemize}
+
+\subsection{Space Complexity}
+\begin{itemize}
+    \item Storing output activations $\mathbf{Y}$ and analytical gradients $\mathbf{G}$ requires $2 \cdot N \cdot D$ floating-point entries.
+    \begin{equation}
+    S(N, D) = \mathcal{O}(N \cdot D).
+    \end{equation}
+\end{itemize}
+
+\section{Worked Example}
+\label{sec:worked_example}
+
+Consider input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 2}$:
+\begin{equation}
+\mathbf{X} = \begin{bmatrix} 1.0 & -1.0 \\ 0.0 & 2.0 \end{bmatrix}.
+\end{equation}
+
+\paragraph{1. Exact GELU ($\phi(x) = x \Phi(x)$):}
+\begin{align}
+x = 1.0: & \quad \Phi(1.0) \approx 0.8413447, \; \phi(1.0) \approx 0.2419707 \implies y = 0.8413447, \; g = 1.0833154, \\
+x = -1.0: & \quad \Phi(-1.0) \approx 0.1586553, \; \phi(-1.0) \approx 0.2419707 \implies y = -0.1586553, \; g = -0.0833154, \\
+x = 0.0: & \quad \Phi(0.0) = 0.5, \; \phi(0.0) \approx 0.3989423 \implies y = 0.0, \; g = 0.5, \\
+x = 2.0: & \quad \Phi(2.0) \approx 0.9772499, \; \phi(2.0) \approx 0.0539910 \implies y = 1.9544997, \; g = 1.0852319.
+\end{align}
+
+\begin{equation}
+\mathbf{Y}_{\text{GELU}} = \begin{bmatrix} 0.841345 & -0.158655 \\ 0.000000 & 1.954500 \end{bmatrix}, \quad
+\mathbf{G}_{\text{GELU}} = \begin{bmatrix} 1.083315 & -0.083315 \\ 0.500000 & 1.085232 \end{bmatrix}.
+\end{equation}
+
+\section{Numerical Considerations}
+\label{sec:numerical}
+
+\begin{enumerate}
+    \item \textbf{Softplus Stability in Mish:} Computing $\ln(1 + e^x)$ directly overflows for $x > 30.0$. The implementation uses $\zeta(x) \approx x$ for $x > 30.0$, and $e^x$ for $x < -30.0$.
+    \item \textbf{Sigmoid Domain Boundaries:} To avoid exponential underflow in SiLU, the logistic sigmoid clamps $|x| \ge 40.0$.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{hendrycks2016gaussian}
+D.~Hendrycks and K.~Gimpel.
+\newblock Gaussian error linear units (GELUs).
+\newblock {\em arXiv preprint arXiv:1606.08415}, 2016.
+
+\bibitem{elfwing2018sigmoid}
+S.~Elfwing, E.~Uchibe, and K.~Doya.
+\newblock Sigmoid-weighted linear units for neural network function approximation in reinforcement learning.
+\newblock {\em Neural Networks}, 107:3--11, 2018.
+\newblock DOI: \href{https://doi.org/10.1016/j.neunet.2018.07.019}{10.1016/j.neunet.2018.07.019}.
+
+\bibitem{misra2019mish}
+D.~Misra.
+\newblock Mish: A self regularized non-monotonic neural activation function.
+\newblock {\em arXiv preprint arXiv:1908.08681}, 2019.
+
+\end{thebibliography}
+
+\end{document}
