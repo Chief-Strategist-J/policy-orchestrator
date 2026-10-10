@@ -11,7 +11,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{property}{Property}
 
-\title{Mathematical Foundations, Subgradient Formulations, and Self-Normalizing Dynamics of the Rectified Linear Unit (ReLU) Family (ALGO-NN-04)}
+\title{Mathematical Formulations, Subgradient Calculus, and Self-Normalizing Properties of the ReLU Family (ALGO-NN-04)}
 \author{Algorithms Engineering Group}
 \date{\today}
 
@@ -20,206 +20,246 @@
 \maketitle
 
 \begin{abstract}
-This document provides the mathematical formalization, differential subgradient calculus, fixed-point mapping theorems, and computational complexity derivations for the Rectified Linear Unit (ReLU) family of non-linear activations. We analyze standard ReLU, Leaky ReLU, Parametric ReLU (PReLU), Exponential Linear Unit (ELU), and Scaled Exponential Linear Unit (SELU), proving the Banach fixed-point self-normalizing convergence theorem of Klambauer et al. and presenting an exact step-by-step worked trace.
+This document establishes the mathematical foundations, subdifferential formulations, and stability characteristics of the Rectified Linear Unit (ReLU) family of activation functions. We formulate the piecewise linear mappings (Standard ReLU, Leaky ReLU, Parametric ReLU) and exponential smooth variations (ELU, Self-Normalizing SELU). Every formula is explained at three levels: intuitive meaning, formal formulation, and practical application. We analyze the ``dying ReLU'' failure mode, state the SELU Fixed-Point Normalization Theorem with explicit assumptions, guarantees, and limitations, and provide an exact numerical trace matching the production implementation contract.
 \end{abstract}
 
-\section{Notation}
+\section{Notation and Mathematical Preliminaries}
 \label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices and 2D tensors are denoted in bold uppercase ($\mathbf{X}, \mathbf{Y}, \mathbf{G}$), and scalar indices by standard italics.
+Let $\mathbb{R}$ denote the set of real numbers, $\mathbb{R}^D$ the $D$-dimensional Euclidean space, and $\mathbb{R}^{N \times D}$ the space of real matrices of shape $(N, D)$. Scalars are denoted in lowercase standard type ($x, z, \alpha, \lambda$), vectors in lowercase bold ($\mathbf{x}, \mathbf{z}, \mathbf{a}$), and matrices in uppercase bold ($\mathbf{X}, \mathbf{Y}$).
 
+\subsection{Piecewise and Non-Linear Activation Operators}
+\paragraph{Intuition:} Activation functions apply a non-linear threshold or curvature to each scalar coordinate of a pre-activation tensor. The ReLU family operates by passing positive inputs linearly while attenuating, zeroing, or softly compressing negative inputs to enable non-linear representation without saturating on positive signals.
+
+\paragraph{Mathematical Formulation:}
+For a tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, an element-wise activation $\psi: \mathbb{R} \to \mathbb{R}$ produces transformed tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$ where:
+\begin{equation}
+Y_{ij} = \psi(X_{ij}), \quad \forall i \in \{1, \dots, N\}, \; j \in \{1, \dots, D\}.
+\end{equation}
+
+\paragraph{Worked Numerical Example:}
+Let $x_1 = 3.0$ and $x_2 = -2.0$:
+\begin{align}
+\text{ReLU}(3.0) &= \max(0, 3.0) = 3.0, \quad \text{ReLU}(-2.0) = \max(0, -2.0) = 0.0, \\
+\text{LeakyReLU}(3.0; \alpha=0.01) &= 3.0, \quad \text{LeakyReLU}(-2.0; \alpha=0.01) = 0.01(-2.0) = -0.02.
+\end{align}
+
+\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $N \in \mathbb{N}$: Batch dimension (number of independent rows).
-    \item $D \in \mathbb{N}$: Feature dimension (number of columns / channels).
+    \item $N \in \mathbb{N}$: Batch dimension (number of independent samples).
+    \item $D \in \mathbb{N}$: Feature / channel dimension.
     \item $\mathbf{X} \in \mathbb{R}^{N \times D}$: Input pre-activation tensor.
-    \item $\mathbf{Y} = \phi(\mathbf{X}) \in \mathbb{R}^{N \times D}$: Output activated tensor.
-    \item $\mathbf{G} = \phi'(\mathbf{X}) \in \mathbb{R}^{N \times D}$: Local Jacobian diagonal gradient tensor.
-    \item $\alpha \in \mathbb{R}_{\ge 0}$: Slope / scale hyperparameter for negative domains.
-    \item $\mathbf{a} \in \mathbb{R}^D$: Channel-wise learned slope parameters for PReLU.
-    \item $\lambda \approx 1.050700987, \; \alpha_{\text{selu}} \approx 1.673263242$: Fixed SELU scale parameters.
-    \item $\partial f(x)$: Clarke generalized subdifferential set of function $f$ at point $x$.
+    \item $\mathbf{Y} \in \mathbb{R}^{N \times D}$: Output activated tensor.
+    \item $\alpha \in \mathbb{R}_{>0}$: Slope or scaling coefficient for negative inputs.
+    \item $\mathbf{a} \in \mathbb{R}^D$: Channel-wise learned slope parameter vector in PReLU.
+    \item $\lambda_{\text{SELU}} \approx 1.050700987$: Fixed SELU scale constant.
+    \item $\alpha_{\text{SELU}} \approx 1.673263242$: Fixed SELU exponential saturation constant.
+    \item $\partial \psi(x)$: Clarke subdifferential / generalized gradient at point $x$.
 \end{itemize}
 
-\section{Problem Definition}
+\section{Problem Definition and Core Variants}
 \label{sec:problem_definition}
 
-\begin{definition}[ReLU Family Activation Operators]
-For a scalar pre-activation $x \in \mathbb{R}$, the component-wise activation functions $\phi: \mathbb{R} \to \mathbb{R}$ and their corresponding subgradients $\phi': \mathbb{R} \to \mathbb{R}$ are defined as follows:
-
-\begin{enumerate}
-    \item \textbf{Standard ReLU (Nair \& Hinton, 2010):}
-    \begin{equation}
-    \label{eq:relu}
-    \phi_{\text{ReLU}}(x) = \max(0, x), \quad \phi_{\text{ReLU}}'(x) = \begin{cases} 1 & \text{if } x > 0, \\ 0 & \text{if } x \le 0. \end{cases}
-    \end{equation}
-
-    \item \textbf{Leaky ReLU (Maas et al., 2013):}
-    \begin{equation}
-    \label{eq:leaky_relu}
-    \phi_{\text{LReLU}}(x; \alpha) = \max(\alpha x, x) = \begin{cases} x & \text{if } x > 0, \\ \alpha x & \text{if } x \le 0, \end{cases} \quad
-    \phi_{\text{LReLU}}'(x; \alpha) = \begin{cases} 1 & \text{if } x > 0, \\ \alpha & \text{if } x \le 0. \end{cases}
-    \end{equation}
-
-    \item \textbf{Parametric ReLU (PReLU, He et al., 2015):}
-    For channel coordinate $j \in \{1, \dots, D\}$ with learnable parameter $a_j \in \mathbb{R}$:
-    \begin{equation}
-    \label{eq:prelu}
-    \phi_{\text{PReLU}}(x; a_j) = \begin{cases} x & \text{if } x > 0, \\ a_j x & \text{if } x \le 0, \end{cases} \quad
-    \phi_{\text{PReLU}}'(x; a_j) = \begin{cases} 1 & \text{if } x > 0, \\ a_j & \text{if } x \le 0. \end{cases}
-    \end{equation}
-
-    \item \textbf{Exponential Linear Unit (ELU, Clevert et al., 2015):}
-    \begin{equation}
-    \label{eq:elu}
-    \phi_{\text{ELU}}(x; \alpha) = \begin{cases} x & \text{if } x > 0, \\ \alpha (e^x - 1) & \text{if } x \le 0, \end{cases} \quad
-    \phi_{\text{ELU}}'(x; \alpha) = \begin{cases} 1 & \text{if } x > 0, \\ \alpha e^x & \text{if } x \le 0. \end{cases}
-    \end{equation}
-
-    \item \textbf{Scaled Exponential Linear Unit (SELU, Klambauer et al., 2017):}
-    \begin{equation}
-    \label{eq:selu}
-    \phi_{\text{SELU}}(x) = \lambda \begin{cases} x & \text{if } x > 0, \\ \alpha_{\text{selu}} (e^x - 1) & \text{if } x \le 0, \end{cases} \quad
-    \phi_{\text{SELU}}'(x) = \lambda \begin{cases} 1 & \text{if } x > 0, \\ \alpha_{\text{selu}} e^x & \text{if } x \le 0. \end{cases}
-    \end{equation}
-\end{enumerate}
+\begin{definition}[Standard Rectified Linear Unit (ReLU)]
+The standard ReLU function is defined as:
+\begin{equation}
+\label{eq:relu}
+\text{ReLU}(x) = \max(0, x) = \begin{cases} x & \text{if } x > 0, \\ 0 & \text{if } x \le 0. \end{cases}
+\end{equation}
+Its subgradient is:
+\begin{equation}
+\partial \text{ReLU}(x) = \begin{cases} \{1\} & \text{if } x > 0, \\ [0, 1] & \text{if } x = 0, \\ \{0\} & \text{if } x < 0. \end{cases}
+\end{equation}
 \end{definition}
 
-\section{Algorithm}
+\begin{definition}[Leaky ReLU]
+For a fixed slope parameter $\alpha > 0$ (typically $\alpha = 0.01$):
+\begin{equation}
+\label{eq:leaky_relu}
+\text{LeakyReLU}(x; \alpha) = \max(\alpha x, x) = \begin{cases} x & \text{if } x > 0, \\ \alpha x & \text{if } x \le 0. \end{cases}
+\end{equation}
+\end{definition}
+
+\begin{definition}[Parametric ReLU (PReLU)]
+For a channel coordinate $j \in \{1, \dots, D\}$ with learned parameter $a_j$:
+\begin{equation}
+\label{eq:prelu}
+\text{PReLU}(x_j; a_j) = \begin{cases} x_j & \text{if } x_j > 0, \\ a_j x_j & \text{if } x_j \le 0. \end{cases}
+\end{equation}
+\end{definition}
+
+\begin{definition}[Exponential Linear Unit (ELU)]
+For scale parameter $\alpha > 0$ (typically $\alpha = 1.0$):
+\begin{equation}
+\label{eq:elu}
+\text{ELU}(x; \alpha) = \begin{cases} x & \text{if } x > 0, \\ \alpha (e^x - 1) & \text{if } x \le 0. \end{cases}
+\end{equation}
+ELU is continuously differentiable everywhere when $\alpha = 1.0$, since $\lim_{x \to 0^-} \frac{d}{dx}[\alpha (e^x - 1)] = \alpha = 1 = \lim_{x \to 0^+} \frac{d}{dx}[x]$.
+\end{definition}
+
+\begin{definition}[Scaled Exponential Linear Unit (SELU)]
+Using specific mathematical constants $\lambda \approx 1.0507$ and $\alpha \approx 1.6733$:
+\begin{equation}
+\label{eq:selu}
+\text{SELU}(x) = \lambda \begin{cases} x & \text{if } x > 0, \\ \alpha (e^x - 1) & \text{if } x \le 0. \end{cases}
+\end{equation}
+\end{definition}
+
+\section{Algorithmic Specification}
 \label{sec:algorithm}
 
-Algorithm~\ref{alg:relu_family} details the component-wise tensor evaluation and sparsity metric calculations implemented in \texttt{impl.py}.
+Algorithm~\ref{alg:relu_family} defines the complete deterministic element-wise execution across all five variants.
 
 \begin{algorithm}[H]
-\caption{ReLU Family Activation Evaluation and Metric Extraction}
+\caption{Deterministic ReLU Family Tensor Activation}
 \label{alg:relu_family}
 \begin{algorithmic}[1]
-\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant $\in \{\text{relu}, \text{leaky\_relu}, \text{prelu}, \text{elu}, \text{selu}\}$, parameter $\alpha$, channel weights $\mathbf{a} \in \mathbb{R}^D$.
-\Ensure Output tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$, gradient tensor $\mathbf{G} \in \mathbb{R}^{N \times D}$, active fraction, dead fraction.
-\State $N \gets \text{rows}(\mathbf{X})$, $D \gets \text{cols}(\mathbf{X})$
-\State Initialize $\mathbf{Y}, \mathbf{G} \in \mathbb{R}^{N \times D}$ to zeros
-\State $\text{active\_count} \gets 0$
+\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant identifier $\in \{\text{relu}, \text{leaky\_relu}, \text{prelu}, \text{elu}, \text{selu}\}$, parameter $\alpha$, channel weights $\mathbf{a} \in \mathbb{R}^D$.
+\Ensure Output tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$, dead neuron fraction $\rho_{\text{dead}}$, mean activation $\mu$, variance $\sigma^2$.
+\State $N \gets \text{rows}(\mathbf{X}), \quad D \gets \text{cols}(\mathbf{X})$
+\State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{N \times D}, \quad \text{zero\_count} \gets 0$
 \For{$i = 1 \textbf{ to } N$}
     \For{$j = 1 \textbf{ to } D$}
         \State $x \gets X_{ij}$
-        \If{$x > 0$}
-            \State $\text{active\_count} \gets \text{active\_count} + 1$
+        \If{$\text{variant} = \text{relu}$}
+            \State $y \gets \max(0.0, x)$
+            \If{$y = 0.0$} $\text{zero\_count} \gets \text{zero\_count} + 1$ \EndIf
+        \ElsIf{$\text{variant} = \text{leaky\_relu}$}
+            \State $y \gets x \textbf{ if } x > 0.0 \textbf{ else } \alpha \cdot x$
+        \ElsIf{$\text{variant} = \text{prelu}$}
+            \State $y \gets x \textbf{ if } x > 0.0 \textbf{ else } a_j \cdot x$
+        \ElsIf{$\text{variant} = \text{elu}$}
+            \State $y \gets x \textbf{ if } x > 0.0 \textbf{ else } \alpha \cdot (e^x - 1.0)$
+        \ElsIf{$\text{variant} = \text{selu}$}
+            \State $\lambda \gets 1.0507009873554805, \quad \alpha_s \gets 1.6732632423543772$
+            \State $y \gets \lambda \cdot (x \textbf{ if } x > 0.0 \textbf{ else } \alpha_s \cdot (e^x - 1.0))$
         \EndIf
-        \State $(Y_{ij}, G_{ij}) \gets \text{EvaluateVariant}(x, \text{variant}, \alpha, a_j)$
+        \State $Y_{ij} \gets y$
     \EndFor
 \EndFor
-\State $\text{active\_fraction} \gets \frac{\text{active\_count}}{N \cdot D}$
-\State $\text{dead\_fraction} \gets 1.0 - \text{active\_fraction}$
-\State \Return $(\mathbf{Y}, \mathbf{G}, \text{active\_fraction}, \text{dead\_fraction}, [N, D])$
+\State $\rho_{\text{dead}} \gets \frac{\text{zero\_count}}{N \cdot D}$
+\State Compute tensor mean $\mu = \frac{1}{ND}\sum Y_{ij}$ and variance $\sigma^2 = \frac{1}{ND}\sum (Y_{ij} - \mu)^2$
+\State \Return $(\mathbf{Y}, \rho_{\text{dead}}, \mu, \sigma^2)$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Correctness and Self-Normalizing Properties}
+\section{Theoretical Guarantees: Dying ReLU and Self-Normalization}
 \label{sec:correctness}
 
-\begin{theorem}[Banach Fixed-Point Self-Normalization of SELU]
-\label{thm:selu_norm}
-Let pre-activations $z = \sum_{k=1}^m w_k y_k$ have mean $\mu$ and variance $\nu$, where inputs $y_k$ are independent with mean $\tilde{\mu}$ and variance $\tilde{\nu}$, and weights $w_k$ satisfy normalized variance $\sum_k w_k = 0$ and $\sum_k w_k^2 = 1$. The transformation mapping input distribution moments $(\tilde{\mu}, \tilde{\nu})$ to post-activation moments $(\mu_{\text{act}}, \nu_{\text{act}})$ via:
+\subsection{The Dying ReLU Phenomenon}
+\begin{property}[Zero Gradient Trap]
+For standard ReLU, if a neuron's weights evolve such that for all training samples $\mathbf{x} \in \mathcal{S}$, the pre-activation $z = \mathbf{w}^\top \mathbf{x} + b \le 0$, then $\partial \text{ReLU}(z) = 0$. In gradient descent:
 \begin{equation}
-g(\mu, \nu) = (\mathbb{E}[\phi_{\text{SELU}}(z)], \text{Var}(\phi_{\text{SELU}}(z)))
+\nabla_{\mathbf{w}} \mathcal{L} = \frac{\partial \mathcal{L}}{\partial y} \frac{\partial y}{\partial z} \mathbf{x} = \frac{\partial \mathcal{L}}{\partial y} \cdot 0 \cdot \mathbf{x} = \mathbf{0}.
 \end{equation}
-possesses a unique stable fixed point at $(\mu^*, \nu^*) = (0, 1)$ if and only if:
-\begin{align}
-\lambda &= 1.050700987355480493\dots \\
-\alpha_{\text{selu}} &= 1.673263242354377284\dots
-\end{align}
+The neuron receives zero gradient and will never update or recover (permanently dead unit).
+\end{property}
+
+\subsection{SELU Fixed-Point Normalization Theorem}
+\begin{theorem}[Klambauer et al. 2017: Self-Normalizing Neural Networks]
+\label{thm:selu}
+\textbf{Assumptions:}
+\begin{enumerate}
+    \item Input activations follow a distribution with mean $\mu = 0$ and variance $\sigma^2 = 1$.
+    \item Weights are initialized with zero mean and variance $\text{Var}(W) = 1/d_{\text{in}}$ (LeCun initialization).
+    \item Activation is SELU with fixed constants $\lambda \approx 1.0507$ and $\alpha \approx 1.6733$.
+\end{enumerate}
+
+\textbf{Guarantee:}
+The transformation mapping layer mean and variance $(\mu, \sigma^2) \to (\tilde{\mu}, \tilde{\sigma}^2)$ has a stable fixed point at $(\mu^* = 0, (\sigma^2)^* = 1)$. Activations and gradients remain self-normalized across hundreds of layers without explicit batch normalization.
+
+\textbf{Limitations:}
+\begin{enumerate}
+    \item The fixed point is strictly stable only under LeCun variance scaling; using standard Glorot or He scaling breaks the self-normalizing property.
+    \item Dropout or standard batch normalization disrupt the theoretical fixed-point dynamics.
+\end{enumerate}
 \end{theorem}
 
-\begin{proof}[Proof Sketch]
-Under standard normal input $z \sim \mathcal{N}(0, 1)$, we require $\mathbb{E}[\phi_{\text{SELU}}(z)] = 0$ and $\mathbb{E}[\phi_{\text{SELU}}(z)^2] = 1$.
-Evaluating the Gaussian integrals:
-\begin{align}
-\mathbb{E}[\phi(z)] &= \frac{\lambda}{\sqrt{2\pi}} \left( 1 - \alpha_{\text{selu}} \sqrt{e} \, \text{erfc}(1/\sqrt{2}) \right) = 0, \\
-\mathbb{E}[\phi(z)^2] &= \frac{\lambda^2}{2} \left( 1 + \alpha_{\text{selu}}^2 (e^2 \text{erfc}(\sqrt{2}) - 2e^{1/2} \text{erfc}(1/\sqrt{2}) + 1) \right) = 1.
-\end{align}
-Simultaneously solving these two non-linear algebraic equations yields the unique constants $\lambda$ and $\alpha_{\text{selu}}$. The Jacobian of the mapping $g$ at $(0, 1)$ has spectral radius strictly less than 1, establishing contraction mapping convergence by the Banach Fixed-Point Theorem.
-\end{proof}
-
-\section{Complexity Analysis}
+\section{Complexity Derivation}
 \label{sec:complexity}
 
 \subsection{Time Complexity}
-\begin{itemize}
-    \item \textbf{Element-wise Evaluation:} For each element $(i, j)$, evaluating piecewise branching and floating-point arithmetic requires $\mathcal{O}(1)$ operations.
-    \item \textbf{Total Time Complexity:}
+\begin{enumerate}
+    \item For a tensor of shape $(N, D)$, the nested loops execute exactly $N \cdot D$ times.
+    \item For ReLU, Leaky ReLU, and PReLU, each element requires $\mathcal{O}(1)$ basic scalar comparison and multiplication.
+    \item For ELU and SELU, each negative element requires $\mathcal{O}(1)$ transcendental exponential evaluation ($e^x$).
+    \item Total time complexity is strictly linear in the total number of tensor elements:
     \begin{equation}
     T(N, D) = \mathcal{O}(N \cdot D).
     \end{equation}
-\end{itemize}
+\end{enumerate}
 
 \subsection{Space Complexity}
-\begin{itemize}
-    \item Storing the transformed output $\mathbf{Y}$ and gradient matrix $\mathbf{G}$ requires $2 \cdot N \cdot D$ floating-point entries.
-    \item Space complexity is strictly $\mathcal{O}(N \cdot D)$.
-\end{itemize}
+\begin{enumerate}
+    \item Output tensor $\mathbf{Y}$ allocates $N \cdot D$ floating-point scalars.
+    \item Space complexity is strictly:
+    \begin{equation}
+    S(N, D) = \mathcal{O}(N \cdot D).
+    \end{equation}
+\end{enumerate}
 
-\section{Worked Example}
+\section{Worked Example and Numerical Trace}
 \label{sec:worked_example}
 
-Consider input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 2}$ with $\alpha = 0.1$:
+Consider an input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 3}$:
 \begin{equation}
-\mathbf{X} = \begin{bmatrix} 2.0 & -1.0 \\ 0.0 & -0.5 \end{bmatrix}.
+\mathbf{X} = \begin{bmatrix} 2.0 & -1.0 & 0.0 \\ -3.0 & 1.5 & -0.5 \end{bmatrix}.
 \end{equation}
 
-\paragraph{1. Standard ReLU:}
+\subsection{Element-Wise Calculations Across Variants}
+\paragraph{1. Standard ReLU ($\mathbf{Y} = \max(0, \mathbf{X})$):}
 \begin{equation}
-\mathbf{Y}_{\text{ReLU}} = \begin{bmatrix} 2.0 & 0.0 \\ 0.0 & 0.0 \end{bmatrix}, \quad
-\mathbf{G}_{\text{ReLU}} = \begin{bmatrix} 1.0 & 0.0 \\ 0.0 & 0.0 \end{bmatrix}.
+\mathbf{Y}_{\text{relu}} = \begin{bmatrix} \max(0, 2.0) & \max(0, -1.0) & \max(0, 0.0) \\ \max(0, -3.0) & \max(0, 1.5) & \max(0, -0.5) \end{bmatrix} = \begin{bmatrix} 2.0 & 0.0 & 0.0 \\ 0.0 & 1.5 & 0.0 \end{bmatrix}.
 \end{equation}
-$\text{active\_fraction} = 1/4 = 0.25$, $\text{dead\_fraction} = 0.75$.
+Dead neuron count: $4$ out of $6 \implies \rho_{\text{dead}} = 4/6 \approx 0.6667$.
 
-\paragraph{2. Leaky ReLU ($\alpha = 0.1$):}
-\begin{align}
-Y_{1, 1} &= 2.0, \quad G_{1, 1} = 1.0, \\
-Y_{1, 2} &= (0.1)(-1.0) = -0.10, \quad G_{1, 2} = 0.10, \\
-Y_{2, 1} &= (0.1)(0.0) = 0.0, \quad G_{2, 1} = 0.10, \\
-Y_{2, 2} &= (0.1)(-0.5) = -0.05, \quad G_{2, 2} = 0.10.
-\end{align}
+\paragraph{2. Leaky ReLU ($\alpha = 0.01$):}
 \begin{equation}
-\mathbf{Y}_{\text{LReLU}} = \begin{bmatrix} 2.0 & -0.10 \\ 0.0 & -0.05 \end{bmatrix}, \quad
-\mathbf{G}_{\text{LReLU}} = \begin{bmatrix} 1.0 & 0.10 \\ 0.10 & 0.10 \end{bmatrix}.
+\mathbf{Y}_{\text{leaky}} = \begin{bmatrix} 2.0 & 0.01(-1.0) & 0.01(0.0) \\ 0.01(-3.0) & 1.5 & 0.01(-0.5) \end{bmatrix} = \begin{bmatrix} 2.0 & -0.01 & 0.0 \\ -0.03 & 1.5 & -0.005 \end{bmatrix}.
 \end{equation}
 
-\section{Numerical Considerations}
+\paragraph{3. ELU ($\alpha = 1.0$):}
+For negative entries: $e^{-1.0} - 1 \approx 0.367879 - 1 = -0.632121$, $e^{-3.0} - 1 \approx 0.049787 - 1 = -0.950213$, $e^{-0.5} - 1 \approx 0.606531 - 1 = -0.393469$.
+\begin{equation}
+\mathbf{Y}_{\text{elu}} \approx \begin{bmatrix} 2.0 & -0.6321 & 0.0 \\ -0.9502 & 1.5 & -0.3935 \end{bmatrix}.
+\end{equation}
+
+\section{Numerical Considerations and Stability}
 \label{sec:numerical}
 
 \begin{enumerate}
-    \item \textbf{Negative Exponential Underflow in ELU/SELU:} For extreme negative inputs ($x < -50.0$), $e^x$ approaches zero. The implementation clamps $x \ge -50.0$ to eliminate underflow anomalies.
-    \item \textbf{Subgradient at Discontinuity Point $x = 0$:} At exact zero, standard implementations define $\phi'(0) = 0$ (for ReLU) or $\phi'(0) = \alpha$ (for Leaky ReLU), forming a valid Clarke subgradient.
+    \item \textbf{Underflow in Exponentials:} For ELU and SELU, when $x < -50.0$, $e^x \to 0$ in IEEE 754 float64 arithmetic, correctly saturating to $-\alpha$ or $-\lambda \alpha$ without underflow exceptions.
+    \item \textbf{Channel Dimension Matching for PReLU:} The implementation enforces $\text{len}(\mathbf{a}) = D$, ensuring 1-to-1 channel slope assignment.
 \end{enumerate}
 
+\section{References}
+\label{sec:references}
+
 \begin{thebibliography}{9}
-
-\bibitem{nair2010rectified}
-V.~Nair and G.~E.~Hinton.
+\bibitem{nair2010}
+V.~Nair and G.~E. Hinton.
 \newblock Rectified linear units improve restricted boltzmann machines.
-\newblock In {\em Proceedings of the 27th International Conference on Machine Learning (ICML)}, pages 807--814, 2010.
+\newblock In \emph{Proceedings of the 27th International Conference on Machine Learning (ICML)}, pages 807--814, 2010.
 
-\bibitem{maas2013rectifier}
-A.~L.~Maas, A.~Y.~Hannun, and A.~Y.~Ng.
+\bibitem{maas2013}
+A.~L. Maas, A.~Y. Hannun, and A.~Y. Ng.
 \newblock Rectifier nonlinearities improve neural network acoustic models.
-\newblock In {\em Proceedings of the 30th International Conference on Machine Learning (ICML)}, volume~30, page~3, 2013.
+\newblock In \emph{Proc. icml}, volume~30, page~3, 2013.
 
-\bibitem{he2015delving}
+\bibitem{he2015prelu}
 K.~He, X.~Zhang, S.~Ren, and J.~Sun.
 \newblock Delving deep into rectifiers: Surpassing human-level performance on ImageNet classification.
-\newblock In {\em Proceedings of the IEEE International Conference on Computer Vision (ICCV)}, pages 1026--1034, 2015.
-\newblock DOI: \href{https://doi.org/10.1109/ICCV.2015.123}{10.1109/ICCV.2015.123}.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer Vision}, pages 1026--1034, 2015.
 
-\bibitem{clevert2015fast}
-D.-A.~Clevert, T.~Unterthiner, and S.~Hochreiter.
+\bibitem{clevert2015}
+D.-A. Clevert, T.~Unterthiner, and S.~Hochreiter.
 \newblock Fast and accurate deep network learning by exponential linear units (ELUs).
-\newblock In {\em 4th International Conference on Learning Representations (ICLR)}, 2016.
+\newblock \emph{arXiv preprint arXiv:1511.07289}, 2015.
 
-\bibitem{klambauer2017self}
+\bibitem{klambauer2017}
 G.~Klambauer, T.~Unterthiner, A.~Mayr, and S.~Hochreiter.
 \newblock Self-normalizing neural networks.
-\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, volume~30, pages 971--980, 2017.
-
+\newblock \emph{Advances in Neural Information Processing Systems}, 30:971--980, 2017.
 \end{thebibliography}
 
 \end{document}

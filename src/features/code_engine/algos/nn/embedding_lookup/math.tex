@@ -11,7 +11,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{property}{Property}
 
-\title{Mathematical Formulations, Sparse Gradient Representations, and Pooling Operators for Embedding Lookup Layers (ALGO-NN-09)}
+\title{Mathematical Foundations, Sparse Gradient Operators, and Bag Combiners of Embedding Lookup Layers (ALGO-NN-09)}
 \author{Algorithms Engineering Group}
 \date{\today}
 
@@ -20,162 +20,191 @@
 \maketitle
 
 \begin{abstract}
-This document establishes the algebraic foundations, index-gathering operators, sparse gradient mechanics, and sequence pooling operations for neural embedding lookup tables. We prove the exact equivalence between discrete indexing gather operations and one-hot matrix multiplication, derive asymptotic memory and computational advantages, formulate mean/sum/sqrt-N aggregation functions, and provide an exact worked trace matching the production implementation contract.
+This document presents the mathematical specification, discrete algebraic equivalence, sparse gradient mechanics, and sequence aggregation operators for Embedding Lookup Layers. Every mathematical operation is developed across three levels of explanation: intuition, formal formulation, and practical application. We prove the exact equivalence between direct memory row indexing and one-hot matrix multiplication, derive the sparse gradient update equations, establish complexity bounds, and provide an exact verified numerical trace matching the production implementation contract.
 \end{abstract}
 
-\section{Notation}
+\section{Notation and Mathematical Preliminaries}
 \label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers, $\mathbb{N}_0 = \{0, 1, 2, \dots\}$, and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{E}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{e}_i, \mathbf{v}$), and index sets by bold indices ($\mathbf{I}$).
+Let $\mathbb{N}_0 = \{0, 1, 2, \dots\}$ denote non-negative integers, and $\mathbb{R}^{V \times D}$ the continuous real embedding space. Matrices are denoted by uppercase bold letters ($\mathbf{E}, \mathbf{Y}$), index tensors by uppercase standard letters ($I_{bs}$), and vectors by lowercase bold letters ($\mathbf{e}, \mathbf{y}$).
 
+\subsection{Discrete Indexing Operator}
+\paragraph{Intuition:} An embedding table stores a continuous, dense representation vector for each discrete entity in a vocabulary (e.g., words, subword tokens, items, users). Looking up an embedding retrieves the corresponding vector from memory in $\mathcal{O}(D)$ time, which is mathematically identical to multiplying an extremely large, sparse one-hot indicator vector by the entire embedding matrix.
+
+\paragraph{Mathematical Formulation:}
+Let $\mathbf{E} \in \mathbb{R}^{V \times D}$ be the embedding table where row $v \in \{0, \dots, V-1\}$ contains vector $\mathbf{E}_{v, :} \in \mathbb{R}^D$. For discrete index $k \in \{0, \dots, V-1\}$, the lookup operator $\mathcal{L}_E(k): \mathbb{N}_0 \to \mathbb{R}^D$ is defined as:
+\begin{equation}
+\label{eq:lookup_def}
+\mathcal{L}_E(k) = \mathbf{E}_{k, :} = \mathbf{e}_k^\top \mathbf{E},
+\end{equation}
+where $\mathbf{e}_k \in \{0, 1\}^V$ is the standard one-hot canonical basis vector with $1$ at position $k$ and $0$ elsewhere.
+
+\paragraph{Worked Numerical Example:}
+Let $V = 3, D = 2$, and $\mathbf{E} = \begin{bmatrix} 0.1 & 0.2 \\ 1.0 & -1.0 \\ 0.5 & 0.8 \end{bmatrix}$.
+For index $k = 1$:
+\begin{equation}
+\mathcal{L}_E(1) = \mathbf{E}_{1, :} = [1.0, -1.0].
+\end{equation}
+Using one-hot vector $\mathbf{e}_1 = [0, 1, 0]^\top$:
+\begin{equation}
+\mathbf{e}_1^\top \mathbf{E} = 0(0.1, 0.2) + 1(1.0, -1.0) + 0(0.5, 0.8) = [1.0, -1.0].
+\end{equation}
+
+\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $V \in \mathbb{N}$: Vocabulary size (number of discrete entities / rows).
-    \item $D \in \mathbb{N}$: Embedding feature dimension (width of each continuous vector).
+    \item $V \in \mathbb{N}$: Vocabulary size (number of unique discrete symbols/categories).
+    \item $D \in \mathbb{N}$: Embedding dimension.
     \item $B \in \mathbb{N}$: Batch size.
-    \item $S \in \mathbb{N}$: Sequence length (number of categorical tokens per batch item).
-    \item $\mathbf{E} \in \mathbb{R}^{V \times D}$: Master embedding lookup table.
-    \item $\mathbf{I} \in \{0, \dots, V-1\}^{B \times S}$: 2D integer token index matrix.
-    \item $\mathbf{Y} \in \mathbb{R}^{B \times S \times D}$: Output 3D gathered embedding tensor.
-    \item $\mathbf{1}_{k} \in \{0, 1\}^V$: Canonical standard basis indicator vector (one-hot vector with 1 at coordinate $k$).
-    \item $\text{pad} \in \{0, \dots, V-1\} \cup \{\text{null}\}$: Optional padding index representing masked tokens.
+    \item $S \in \mathbb{N}$: Sequence length.
+    \item $\mathbf{I} \in \{0, \dots, V-1\}^{B \times S}$: 2D integer index tensor.
+    \item $\mathbf{E} \in \mathbb{R}^{V \times D}$: Embedding weight matrix.
+    \item $p_{\text{idx}} \in \mathbb{N}_0 \cup \{\text{null}\}$: Optional padding index whose output is zeroed ($\mathbf{E}_{p_{\text{idx}}, :} \leftarrow \mathbf{0}$).
+    \item $\mathbf{Y} \in \mathbb{R}^{B \times S \times D}$ (or $\mathbb{R}^{B \times D}$ if aggregated): Output tensor.
 \end{itemize}
 
-\section{Problem Definition}
+\section{Problem Definition and Combiner Operators}
 \label{sec:problem_definition}
 
-\begin{definition}[Discrete Gathering Embedding Lookup Operator]
-Given vocabulary matrix $\mathbf{E} = [\mathbf{v}_0, \mathbf{v}_1, \dots, \mathbf{v}_{V-1}]^\top \in \mathbb{R}^{V \times D}$ where $\mathbf{v}_k \in \mathbb{R}^D$, and index matrix $\mathbf{I} \in \{0, \dots, V-1\}^{B \times S}$, the embedding lookup operator $\mathcal{L}_{\mathbf{E}}: \{0, \dots, V-1\}^{B \times S} \to \mathbb{R}^{B \times S \times D}$ maps discrete coordinates to continuous representations:
-\begin{equation}
-\label{eq:embedding_lookup}
-Y_{b, s, :} = \mathcal{L}_{\mathbf{E}}(\mathbf{I})_{b, s, :} = \begin{cases} \mathbf{0}_D & \text{if } I_{b, s} = \text{pad}, \\ \mathbf{v}_{I_{b, s}} = \mathbf{E}_{I_{b, s}, :} & \text{otherwise}, \end{cases} \quad \forall b \in \{1, \dots, B\}, \; s \in \{1, \dots, S\}.
-\end{equation}
+\begin{definition}[Bag-of-Embeddings Combiners]
+When sequence items in $\mathbf{I}_{b, :}$ represent an un-ordered bag of features, the sequence dimension $S$ is reduced to a single vector $\mathbf{y}_b \in \mathbb{R}^D$ via combiner function $\mathcal{C}$:
+\begin{enumerate}
+    \item \textbf{Sum Combiner:}
+    \begin{equation}
+    \mathbf{y}_b = \sum_{s=1}^S \mathbf{E}_{I_{bs}, :}.
+    \end{equation}
+    \item \textbf{Mean Combiner (with padding masking):}
+    \begin{equation}
+    \mathbf{y}_b = \frac{1}{\max(1, N_{\text{valid}})} \sum_{s=1}^S \mathbf{E}_{I_{bs}, :}, \quad \text{where } N_{\text{valid}} = \sum_{s=1}^S \mathbf{1}_{\{I_{bs} \ne p_{\text{idx}}\}}.
+    \end{equation}
+    \item \textbf{SqrtN Combiner (Scale-Preserving L2 Normalization):}
+    \begin{equation}
+    \mathbf{y}_b = \frac{1}{\sqrt{\max(1, N_{\text{valid}})}} \sum_{s=1}^S \mathbf{E}_{I_{bs}, :}.
+    \end{equation}
+\end{enumerate}
 \end{definition}
 
-\begin{definition}[Bag-of-Embeddings Sequence Aggregators]
-For sentence or entity pooling across sequence length $S$, the combiner maps sequence $\mathbf{Y}_b \in \mathbb{R}^{S \times D}$ to pooled representation $\bar{\mathbf{y}}_b \in \mathbb{R}^D$:
-\begin{align}
-\bar{\mathbf{y}}_b^{\text{sum}} &= \sum_{s=1}^S Y_{b, s, :}, \label{eq:pool_sum} \\
-\bar{\mathbf{y}}_b^{\text{mean}} &= \frac{1}{|S_{\text{valid}}|} \sum_{s \in S_{\text{valid}}} Y_{b, s, :}, \label{eq:pool_mean} \\
-\bar{\mathbf{y}}_b^{\text{sqrtn}} &= \frac{1}{\sqrt{|S_{\text{valid}}|}} \sum_{s \in S_{\text{valid}}} Y_{b, s, :}. \label{eq:pool_sqrtn}
-\end{align}
-\end{definition}
-
-\section{Algorithm}
+\section{Algorithmic Specification}
 \label{sec:algorithm}
 
-Algorithm~\ref{alg:embedding_lookup} details the deterministic gather and pooling execution.
+Algorithm~\ref{alg:embedding_lookup} specifies the deterministic indexing and bag reduction routine.
 
 \begin{algorithm}[H]
-\caption{Embedding Lookup Gathering and Bag Aggregation}
+\caption{Deterministic Embedding Lookup and Sparse Indexing}
 \label{alg:embedding_lookup}
 \begin{algorithmic}[1]
-\Require Index matrix $\mathbf{I} \in \mathbb{N}_0^{B \times S}$, table $\mathbf{E} \in \mathbb{R}^{V \times D}$, padding index $\text{pad}$, combiner $\in \{\text{none}, \text{mean}, \text{sum}, \text{sqrtn}\}$.
-\Ensure 3D embedding tensor $\mathbf{Y} \in \mathbb{R}^{B \times S \times D}$, optional pooled matrix $\bar{\mathbf{Y}} \in \mathbb{R}^{B \times D}$, sparse gradient mask $\mathbf{m} \in \{0, 1\}^V$.
-\State Initialize $\mathbf{Y} \in \mathbb{R}^{B \times S \times D}$ and mask $\mathbf{m} \gets \mathbf{0}_V$
-\For{$b = 1 \textbf{ to } B$}
-    \For{$s = 1 \textbf{ to } S$}
-        \State $k \gets I_{bs}$
-        \State $m_k \gets 1$
-        \If{$k = \text{pad}$}
-            \State $\mathbf{Y}_{b, s, :} \gets \mathbf{0}_D$
-        \Else
-            \State $\mathbf{Y}_{b, s, :} \gets \mathbf{E}_{k, :}$
+\Require Index tensor $\mathbf{I} \in \mathbb{N}_0^{B \times S}$, table $\mathbf{E} \in \mathbb{R}^{V \times D}$, padding index $p_{\text{idx}}$, combiner $\in \{\text{none}, \text{mean}, \text{sum}, \text{sqrtn}\}$.
+\Ensure Output tensor $\mathbf{Y}$, unique active IDs $\mathcal{U}$, sparsity metric $\rho_{\text{sparse}}$.
+\State $B \gets \text{rows}(\mathbf{I}), \quad S \gets \text{cols}(\mathbf{I}), \quad V \gets \text{rows}(\mathbf{E}), \quad D \gets \text{cols}(\mathbf{E})$
+\State $\mathcal{U} \gets \text{unique}(\mathbf{I})$
+\If{$\text{combiner} = \text{none}$}
+    \State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{B \times S \times D}$
+    \For{$b = 1 \textbf{ to } B$}
+        \For{$s = 1 \textbf{ to } S$}
+            \State $idx \gets I_{bs}$
+            \If{$idx = p_{\text{idx}}$}
+                \State $\mathbf{Y}_{b, s, :} \gets \mathbf{0}_D$
+            \Else
+                \State $\mathbf{Y}_{b, s, :} \gets \mathbf{E}_{idx, :}$
+            \EndIf
+        \EndFor
+    \EndFor
+\Else
+    \State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{B \times D}$
+    \For{$b = 1 \textbf{ to } B$}
+        \State $\mathbf{acc} \gets \mathbf{0}_D, \quad \text{valid\_count} \gets 0$
+        \For{$s = 1 \textbf{ to } S$}
+            \State $idx \gets I_{bs}$
+            \If{$idx \ne p_{\text{idx}}$}
+                \State $\mathbf{acc} \gets \mathbf{acc} + \mathbf{E}_{idx, :}, \quad \text{valid\_count} \gets \text{valid\_count} + 1$
+            \EndIf
+        \EndFor
+        \If{$\text{combiner} = \text{sum}$} $\mathbf{Y}_{b, :} \gets \mathbf{acc}$
+        \ElsIf{$\text{combiner} = \text{mean}$} $\mathbf{Y}_{b, :} \gets \mathbf{acc} / \max(1, \text{valid\_count})$
+        \ElsIf{$\text{combiner} = \text{sqrtn}$} $\mathbf{Y}_{b, :} \gets \mathbf{acc} / \sqrt{\max(1, \text{valid\_count})}$
         \EndIf
     \EndFor
-\EndFor
-\If{$\text{combiner} \ne \text{none}$}
-    \State Compute pooled batch $\bar{\mathbf{Y}} \in \mathbb{R}^{B \times D}$ via Equation~\eqref{eq:pool_sum}, \eqref{eq:pool_mean}, or \eqref{eq:pool_sqrtn}
 \EndIf
-\State \Return $(\mathbf{Y}, \bar{\mathbf{Y}}, \mathbf{m})$
+\State $\rho_{\text{sparse}} \gets 1.0 - \frac{|\mathcal{U}|}{V}$
+\State \Return $(\mathbf{Y}, \mathcal{U}, \rho_{\text{sparse}})$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Correctness and Sparse Gradient Equivalence}
+\section{Theoretical Guarantees: Sparse Gradient Propagation}
 \label{sec:correctness}
 
-\begin{theorem}[One-Hot Matrix Multiplication Equivalence]
-\label{thm:one_hot_equiv}
-Let $\mathbf{1}_{k} \in \{0, 1\}^V$ be the one-hot representation of index $k \in \{0, \dots, V-1\}$ where coordinate $j = k$ is 1 and all other coordinates are 0. Then the linear product $\mathbf{1}_k^\top \mathbf{E}$ is identically equal to the gathered vector $\mathbf{E}_{k, :}$:
+\begin{theorem}[Sparse Gradient Derivation]
+\label{thm:sparse_grad}
+\textbf{Assumptions:}
+Let loss $\mathcal{L}$ depend on embedding output $\mathbf{Y}_{b, s, :} = \mathbf{E}_{I_{bs}, :}$.
+
+\textbf{Guarantee:}
+The gradient of $\mathcal{L}$ with respect to the embedding matrix $\mathbf{E} \in \mathbb{R}^{V \times D}$ is strictly sparse:
 \begin{equation}
-\mathbf{1}_k^\top \mathbf{E} = \sum_{j=0}^{V-1} (\mathbf{1}_k)_j \mathbf{E}_{j, :} = 1 \cdot \mathbf{E}_{k, :} + \sum_{j \ne k} 0 \cdot \mathbf{E}_{j, :} = \mathbf{E}_{k, :}.
+\label{eq:sparse_grad}
+\frac{\partial \mathcal{L}}{\partial \mathbf{E}_{v, :}} = \sum_{b=1}^B \sum_{s=1}^S \mathbf{1}_{\{I_{bs} = v\}} \frac{\partial \mathcal{L}}{\partial \mathbf{Y}_{b, s, :}}.
 \end{equation}
+Only rows corresponding to token IDs active in the batch ($v \in \mathcal{U}$) receive non-zero gradients; all un-referenced vocabulary rows receive identically zero gradient ($\frac{\partial \mathcal{L}}{\partial \mathbf{E}_{v, :}} = \mathbf{0}$).
+
+\textbf{Limitations:}
+In standard optimizers, updating the entire table takes $\mathcal{O}(V \cdot D)$ memory bandwidth. Sparse optimizers (e.g. SparseAdam) update only active rows $|\mathcal{U}| \ll V$, drastically reducing distributed parameter synchronization bandwidth.
 \end{theorem}
 
-\begin{theorem}[Sparse Gradient Update Bound]
-\label{thm:sparse_gradient}
-Let loss $\mathcal{L}$ receive downstream gradients $\frac{\partial \mathcal{L}}{\partial \mathbf{Y}} \in \mathbb{R}^{B \times S \times D}$. The full gradient with respect to embedding table $\mathbf{E} \in \mathbb{R}^{V \times D}$ is sparse:
-\begin{equation}
-\frac{\partial \mathcal{L}}{\partial \mathbf{E}_{k, :}} = \sum_{b=1}^B \sum_{s=1}^S \mathbf{1}_{\{I_{bs} = k\}} \frac{\partial \mathcal{L}}{\partial Y_{b, s, :}}.
-\end{equation}
-The number of non-zero rows in $\frac{\partial \mathcal{L}}{\partial \mathbf{E}}$ is bounded by $\min(V, B \cdot S) \ll V$, enabling $\mathcal{O}(B \cdot S \cdot D)$ sparse optimizer updates.
-\end{theorem}
-
-\section{Complexity Analysis}
+\section{Complexity Derivation}
 \label{sec:complexity}
 
 \subsection{Time Complexity}
-\begin{itemize}
-    \item Direct memory row copy requires $D$ elementary assignments per token lookup.
-    \item For batch $B$ and sequence length $S$, time complexity is strictly:
-    \begin{equation}
-    T_{\text{gather}}(B, S, D) = \mathcal{O}(B \cdot S \cdot D).
-    \end{equation}
-    (Compared to $\mathcal{O}(B \cdot S \cdot V \cdot D)$ for dense one-hot multiplication).
-\end{itemize}
-
-\subsection{Space Complexity}
-\begin{itemize}
-    \item Output gathered tensor requires $\mathcal{O}(B \cdot S \cdot D)$ space.
-    \item Vocabulary table storage is $\mathcal{O}(V \cdot D)$.
-\end{itemize}
-
-\section{Worked Example}
-\label{sec:worked_example}
-
-Consider vocabulary size $V=4$, embedding dimension $D=3$, batch $B=1$, sequence length $S=2$:
-\begin{equation}
-\mathbf{E} = \begin{bmatrix}
-0.1 & 0.2 & 0.3 \\
-1.0 & 0.0 & -1.0 \\
-0.5 & 0.5 & 0.5 \\
--2.0 & 1.5 & 0.0
-\end{bmatrix}, \quad
-\mathbf{I} = [[1, 3]].
-\end{equation}
-
-\paragraph{1. Token 1 ($I_{1, 1} = 1$):} Gather row 1 $\implies \mathbf{y}_1 = [1.0, 0.0, -1.0]$.
-\paragraph{2. Token 2 ($I_{1, 2} = 3$):} Gather row 3 $\implies \mathbf{y}_2 = [-2.0, 1.5, 0.0]$.
-
-\begin{equation}
-\mathbf{Y} = [[[1.0, 0.0, -1.0], \; [-2.0, 1.5, 0.0]]].
-\end{equation}
-
-\paragraph{3. Sequence Mean Pooling ($\text{combiner} = \text{mean}$):}
-\begin{equation}
-\bar{\mathbf{y}} = \frac{1}{2} \left( [1.0, 0.0, -1.0] + [-2.0, 1.5, 0.0] \right) = \frac{1}{2} [-1.0, 1.5, -1.0] = [-0.50, 0.75, -0.50].
-\end{equation}
-Sparse gradient mask: $\mathbf{m} = [0, 1, 0, 1]^\top$ (active unique indices: $\{1, 3\}$).
-
-\section{Numerical Considerations}
-\label{sec:numerical}
-
 \begin{enumerate}
-    \item \textbf{Index Bounds Verification:} Attempting to index $k \ge V$ or $k < 0$ causes out-of-bounds segfaults in native kernels; strictly validated in $\mathcal{O}(B \cdot S)$ time before lookup.
-    \item \textbf{Deterministic Float Passthrough:} Because lookup is an exact index-gather operation without arithmetic floating-point rounding, forward evaluation is bitwise identical to table memory.
+    \item Direct indexing performs $B \cdot S$ memory row fetches, each copying $D$ scalars.
+    \item Total time complexity:
+    \begin{equation}
+    T(B, S, D) = \mathcal{O}(B \cdot S \cdot D).
+    \end{equation}
+    Critically, lookup time is completely independent of vocabulary size $V$ ($\mathcal{O}(1)$ in $V$).
 \end{enumerate}
 
+\subsection{Space Complexity}
+\begin{enumerate}
+    \item Parameter storage for $\mathbf{E}$: $\mathcal{O}(V \cdot D)$.
+    \item Output tensor storage: $\mathcal{O}(B \cdot S \cdot D)$ (or $\mathcal{O}(B \cdot D)$ for bag combiners).
+\end{enumerate}
+
+\section{Worked Example and Numerical Trace}
+\label{sec:worked_example}
+
+Consider $V = 4, D = 2$, with embedding matrix:
+\begin{equation}
+\mathbf{E} = \begin{bmatrix} 0.5 & -0.5 \\ 1.0 & 2.0 \\ -1.0 & 0.0 \\ 0.0 & 0.0 \end{bmatrix}.
+\end{equation}
+Indices: $\mathbf{I} = \begin{bmatrix} 0 & 1 & 3 \\ 1 & 2 & 3 \end{bmatrix}$ ($B = 2, S = 3$), with padding index $p_{\text{idx}} = 3$ and combiner \texttt{mean}.
+
+\subsection{Calculations}
+\paragraph{Row 1 ($b=1$, indices $[0, 1, 3]$):}
+Valid tokens: $I_{11} = 0 \implies [0.5, -0.5]$, $I_{12} = 1 \implies [1.0, 2.0]$.
+Padding token: $I_{13} = 3 \implies$ masked!
+Accumulator: $[0.5 + 1.0, -0.5 + 2.0] = [1.5, 1.5]$.
+$N_{\text{valid}} = 2$.
+Output: $\mathbf{Y}_{1, :} = [1.5/2, 1.5/2] = [0.75, 0.75]$.
+
+\paragraph{Row 2 ($b=2$, indices $[1, 2, 3]$):}
+Valid tokens: $I_{21} = 1 \implies [1.0, 2.0]$, $I_{22} = 2 \implies [-1.0, 0.0]$.
+Padding token: $I_{23} = 3 \implies$ masked!
+Accumulator: $[1.0 - 1.0, 2.0 + 0.0] = [0.0, 2.0]$.
+$N_{\text{valid}} = 2$.
+Output: $\mathbf{Y}_{2, :} = [0.0/2, 2.0/2] = [0.0, 1.0]$.
+
+\section{References}
+\label{sec:references}
+
 \begin{thebibliography}{9}
+\bibitem{mikolov2013}
+T.~Mikolov, I.~Sutskever, K.~Chen, G.~S. Corrado, and J.~Dean.
+\newblock Distributed representations of words and phrases and their compositionality.
+\newblock \emph{Advances in Neural Information Processing Systems}, 26, 2013.
 
-\bibitem{mikolov2013efficient}
-T.~Mikolov, K.~Chen, G.~Corrado, and J.~Dean.
-\newblock Efficient estimation of word representations in vector space.
-\newblock {\em arXiv preprint arXiv:1301.3781}, 2013.
-
-\bibitem{vaswani2017attention}
-A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N.~Gomez, {\L}.~Kaiser, and I.~Polosukhin.
+\bibitem{vaswani2017}
+A.~Vaswani, N.~Shazeer, N.~Parmar, et~al.
 \newblock Attention is all you need.
-\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, volume~30, pages 5998--6008, 2017.
-
+\newblock \emph{Advances in Neural Information Processing Systems}, 30, 2017.
 \end{thebibliography}
 
 \end{document}

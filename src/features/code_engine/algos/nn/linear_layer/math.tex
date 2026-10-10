@@ -20,202 +20,213 @@
 \maketitle
 
 \begin{abstract}
-This document formulates the mathematical properties, algebraic representations, and variance preservation theory of linear (affine) transformations in deep neural networks. We derive the exact fan-in and fan-out variance scaling conditions under Glorot (Xavier), He (Kaiming), and LeCun initializations, prove variance conservation across forward and backward propagation steps, establish computational complexity bounds, and provide a fully computed numeric trace matching the production implementation contract.
+This document presents the mathematical foundation, matrix algebraic formulations, and statistical variance preservation theory for linear (affine) projection layers in deep neural architectures. Every mathematical operation is presented at three levels of explanation: intuition, formal formulation, and practical application. We provide a step-by-step derivation of forward and backward signal variance scaling, state the Glorot (Xavier), He (Kaiming), and LeCun theorems with explicitly separated assumptions, guarantees, and limitations, derive computational complexity bounds from primitive operations, and provide a verified numerical trace matching the production implementation contract.
 \end{abstract}
 
-\section{Notation}
+\section{Notation and Mathematical Preliminaries}
 \label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{W}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{b}, \mathbf{y}$), and scalars by standard italics.
+Let $\mathbb{R}$ denote the set of real numbers, and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{W}, \mathbf{Y}$), vectors by lowercase bold letters ($\mathbf{x}, \mathbf{b}, \mathbf{y}$), and scalar indices by standard italics.
 
-\begin{itemize}
-    \item $B \in \mathbb{N}$: Batch size (number of independent examples).
-    \item $d_{\text{in}} \in \mathbb{N}$: Fan-in dimension (input feature dimensionality).
-    \item $d_{\text{out}} \in \mathbb{N}$: Fan-out dimension (output feature dimensionality).
-    \item $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$: Input batch matrix, where row $i$ represents sample $\mathbf{x}_i \in \mathbb{R}^{d_{\text{in}}}$.
-    \item $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$: Parameterized weight matrix.
-    \item $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$: Parameterized bias vector.
-    \item $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$: Output batch matrix.
-    \item $\mathbb{E}[\cdot]$: Expectation operator.
-    \item $\text{Var}(\cdot)$: Variance operator.
-\end{itemize}
+\subsection{Matrix Multiplication with Transposed Weights}
+\paragraph{Intuition:} In a batched feedforward layer, each row of the input batch represents an independent data sample, and each row of the weight matrix represents the linear weights for one output feature channel. Multiplying the batch by the transposed weight matrix projects all samples simultaneously into the output channel space.
 
-\section{Problem Definition}
-\label{sec:problem_definition}
-
-\begin{definition}[Affine Transformation]
-Given input matrix $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, and bias vector $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$, the affine layer computes the linear operator:
+\paragraph{Mathematical Formulation:}
+Let $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$ be a batch of $B$ samples, $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ be the weight matrix, and $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$ be the bias vector. The batched affine transformation is defined as:
 \begin{equation}
-\label{eq:affine_layer}
-\mathbf{Y} = \mathbf{X} \mathbf{W}^\top + \mathbf{1}_B \mathbf{b}^\top,
+\label{eq:affine_mat}
+\mathbf{Y} = \mathbf{X} \mathbf{W}^\top + \mathbf{1}_B \mathbf{b}^\top \in \mathbb{R}^{B \times d_{\text{out}}},
 \end{equation}
-where $\mathbf{1}_B = [1, 1, \dots, 1]^\top \in \mathbb{R}^B$. For each individual element $(i, j)$:
+where $\mathbf{1}_B = [1, 1, \dots, 1]^\top \in \mathbb{R}^B$. For each entry $(i, j)$ with $i \in \{1, \dots, B\}$ and $j \in \{1, \dots, d_{\text{out}}\}$:
 \begin{equation}
-Y_{ij} = \sum_{k=1}^{d_{\text{in}}} X_{ik} W_{jk} + b_j, \quad \forall i \in \{1, \dots, B\}, \; j \in \{1, \dots, d_{\text{out}}\}.
+\label{eq:scalar_expansion}
+Y_{ij} = \sum_{k=1}^{d_{\text{in}}} X_{ik} W_{jk} + b_j.
 \end{equation}
-\end{definition}
 
-\begin{definition}[Fan-in and Fan-out]
-For a linear transformation with weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$:
-\begin{align}
-\text{fan\_in} &= d_{\text{in}} = \text{number of columns in } \mathbf{W}, \\
-\text{fan\_out} &= d_{\text{out}} = \text{number of rows in } \mathbf{W}.
-\end{align}
-\end{definition}
-
-\section{Algorithm}
-\label{sec:algorithm}
-
-Algorithm~\ref{alg:linear_layer} specifies the deterministic forward execution and variance metric calculation.
-
-\begin{algorithm}[H]
-\caption{Affine Matrix Multiplication and Variance Scaling Calculation}
-\label{alg:linear_layer}
-\begin{algorithmic}[1]
-\Require Input batch $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, weights $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, bias $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$, mode $\in \{\text{kaiming}, \text{glorot}, \text{lecun}\}$.
-\Ensure Transformed matrix $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$, fan metrics, theoretical variance $\sigma^2$, bound $r$.
-\State $B \gets \text{rows}(\mathbf{X})$, $d_{\text{in}} \gets \text{cols}(\mathbf{X})$, $d_{\text{out}} \gets \text{rows}(\mathbf{W})$
-\State Initialize $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$ to zeros
-\For{$i = 1 \textbf{ to } B$}
-    \For{$j = 1 \textbf{ to } d_{\text{out}}$}
-        \State $\text{sum} \gets 0.0$
-        \For{$k = 1 \textbf{ to } d_{\text{in}}$}
-            \State $\text{sum} \gets \text{sum} + X_{ik} \cdot W_{jk}$
-        \EndFor
-        \State $Y_{ij} \gets \text{sum} + b_j$
-    \EndFor
-\EndFor
-\If{$\text{mode} = \text{glorot\_uniform}$}
-    \State $\sigma^2 \gets \frac{2}{d_{\text{in}} + d_{\text{out}}}$, $r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}} + d_{\text{out}}}}$
-\ElsIf{$\text{mode} = \text{kaiming\_uniform}$}
-    \State $\sigma^2 \gets \frac{2}{d_{\text{in}}}$, $r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}}}}$
-\ElsIf{$\text{mode} = \text{lecun\_uniform}$}
-    \State $\sigma^2 \gets \frac{1}{d_{\text{in}}}$, $r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{3}{d_{\text{in}}}}$
-\EndIf
-\State \Return $(\mathbf{Y}, d_{\text{in}}, d_{\text{out}}, B, \sigma^2, r)$
-\end{algorithmic}
-\end{algorithm}
-
-\section{Variance Scaling and Initialization Theory}
-\label{sec:correctness}
-
-To prevent activations and backpropagated gradients from exponentially vanishing or exploding across deep networks, the variance of the signal must be preserved layer-to-layer.
-
-\begin{theorem}[Variance Preservation in Linear Maps]
-\label{thm:variance_preservation}
-Let $y_j = \sum_{k=1}^{d_{\text{in}}} W_{jk} x_k$ with bias $b_j = 0$. Assume that $x_k$ and $W_{jk}$ are independent, identically distributed random variables with zero mean ($\mathbb{E}[x_k] = 0, \mathbb{E}[W_{jk}] = 0$) and finite variances $\text{Var}(x)$ and $\text{Var}(W)$. Then:
-\begin{equation}
-\label{eq:var_forward}
-\text{Var}(y_j) = d_{\text{in}} \cdot \text{Var}(W) \cdot \text{Var}(x).
-\end{equation}
-\end{theorem}
-
-\begin{proof}
-Because $W_{jk}$ and $x_k$ are independent with zero mean:
-\begin{align}
-\mathbb{E}[y_j] &= \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[W_{jk}] \mathbb{E}[x_k] = 0, \\
-\text{Var}(y_j) &= \mathbb{E}[y_j^2] = \mathbb{E}\left[ \left(\sum_{k=1}^{d_{\text{in}}} W_{jk} x_k\right)^2 \right] = \sum_{k=1}^{d_{\text{in}}} \sum_{m=1}^{d_{\text{in}}} \mathbb{E}[W_{jk} W_{jm} x_k x_m].
-\end{align}
-Since cross terms ($k \ne m$) vanish by independence ($\mathbb{E}[W_{jk} W_{jm}] = 0$):
-\begin{equation}
-\text{Var}(y_j) = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[W_{jk}^2] \mathbb{E}[x_k^2] = d_{\text{in}} \cdot \text{Var}(W) \cdot \text{Var}(x).
-\end{equation}
-\end{proof}
-
-\subsection{Canonical Initialization Schemes}
-\begin{enumerate}
-    \item \textbf{LeCun Initialization (1998):} For linear and tanh activations near zero, setting $\text{Var}(W) = \frac{1}{d_{\text{in}}}$ enforces $\text{Var}(y) = \text{Var}(x)$.
-    \item \textbf{Glorot / Xavier Initialization (2010):} Compromising between forward signal preservation ($\text{Var}(W) = \frac{1}{d_{\text{in}}}$) and backward gradient variance preservation ($\text{Var}(W) = \frac{1}{d_{\text{out}}}$):
-    \begin{equation}
-    \text{Var}(W) = \frac{2}{d_{\text{in}} + d_{\text{out}}}.
-    \end{equation}
-    For a continuous uniform distribution $\mathcal{U}(-r, +r)$, whose variance is $\frac{r^2}{3}$, the bounding interval is $r = \sqrt{\frac{6}{d_{\text{in}} + d_{\text{out}}}}$.
-    \item \textbf{He / Kaiming Initialization (2015):} Rectified linear units (ReLU) zero out half the activations on average ($\mathbb{E}[\max(0, z)^2] = \frac{1}{2} \text{Var}(z)$). To compensate, the variance is doubled:
-    \begin{equation}
-    \text{Var}(W) = \frac{2}{d_{\text{in}}}, \quad r = \sqrt{\frac{6}{d_{\text{in}}}}.
-    \end{equation}
-\end{enumerate}
-
-\section{Complexity Analysis}
-\label{sec:complexity}
-
-\subsection{Time Complexity}
-\begin{itemize}
-    \item Matrix-Matrix Product $\mathbf{X} \mathbf{W}^\top$: Computes $B \cdot d_{\text{out}}$ inner products of dimension $d_{\text{in}}$. Total multiplications: $B \cdot d_{\text{in}} \cdot d_{\text{out}}$; additions: $B \cdot (d_{\text{in}} - 1) \cdot d_{\text{out}}$.
-    \item Bias Addition: $B \cdot d_{\text{out}}$ additions.
-    \item Total time complexity is strictly:
-    \begin{equation}
-    T(B, d_{\text{in}}, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{out}}).
-    \end{equation}
-\end{itemize}
-
-\subsection{Space Complexity}
-\begin{itemize}
-    \item The output matrix requires allocating $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$.
-    \item Working auxiliary memory is $\mathcal{O}(1)$.
-    \begin{equation}
-    S(B, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{out}}).
-    \end{equation}
-\end{itemize}
-
-\section{Worked Example}
-\label{sec:worked_example}
-
-Consider batch size $B=2$, fan-in $d_{\text{in}} = 3$, fan-out $d_{\text{out}} = 2$.
+\paragraph{Worked Numerical Example:}
+Let $B = 2, d_{\text{in}} = 3, d_{\text{out}} = 2$:
 \begin{equation}
 \mathbf{X} = \begin{bmatrix} 1.0 & 2.0 & -1.0 \\ 0.0 & -0.5 & 1.5 \end{bmatrix}, \quad
 \mathbf{W} = \begin{bmatrix} 0.5 & -1.0 & 2.0 \\ -2.0 & 0.0 & 1.0 \end{bmatrix}, \quad
 \mathbf{b} = \begin{bmatrix} 0.25 \\ -0.50 \end{bmatrix}.
 \end{equation}
-
-\paragraph{Computation for Sample 1 ($i=1$, $\mathbf{x}_1 = [1.0, 2.0, -1.0]$):}
+For sample 1 ($i=1$):
 \begin{align}
-Y_{1, 1} &= (1.0)(0.5) + (2.0)(-1.0) + (-1.0)(2.0) + 0.25 = 0.5 - 2.0 - 2.0 + 0.25 = -3.25, \\
-Y_{1, 2} &= (1.0)(-2.0) + (2.0)(0.0) + (-1.0)(1.0) - 0.50 = -2.0 + 0.0 - 1.0 - 0.50 = -3.50.
+Y_{11} &= X_{11} W_{11} + X_{12} W_{12} + X_{13} W_{13} + b_1 = 1.0(0.5) + 2.0(-1.0) + (-1.0)(2.0) + 0.25 = 0.5 - 2.0 - 2.0 + 0.25 = -3.25, \\
+Y_{12} &= X_{11} W_{21} + X_{12} W_{22} + X_{13} W_{23} + b_2 = 1.0(-2.0) + 2.0(0.0) + (-1.0)(1.0) - 0.50 = -2.0 + 0.0 - 1.0 - 0.50 = -3.50.
 \end{align}
-
-\paragraph{Computation for Sample 2 ($i=2$, $\mathbf{x}_2 = [0.0, -0.5, 1.5]$):}
+For sample 2 ($i=2$):
 \begin{align}
-Y_{2, 1} &= (0.0)(0.5) + (-0.5)(-1.0) + (1.5)(2.0) + 0.25 = 0.0 + 0.5 + 3.0 + 0.25 = 3.75, \\
-Y_{2, 2} &= (0.0)(-2.0) + (-0.5)(0.0) + (1.5)(1.0) - 0.50 = 0.0 + 0.0 + 1.5 - 0.50 = 1.00.
+Y_{21} &= 0.0(0.5) + (-0.5)(-1.0) + 1.5(2.0) + 0.25 = 0.0 + 0.5 + 3.0 + 0.25 = 3.75, \\
+Y_{22} &= 0.0(-2.0) + (-0.5)(0.0) + 1.5(1.0) - 0.50 = 0.0 + 0.0 + 1.5 - 0.50 = 1.00.
 \end{align}
-
+Output matrix:
 \begin{equation}
 \mathbf{Y} = \begin{bmatrix} -3.25 & -3.50 \\ 3.75 & 1.00 \end{bmatrix}.
 \end{equation}
 
-\paragraph{Initialization Metrics (mode = \texttt{glorot\_uniform}):}
+\subsection{Summary of Symbols}
+\begin{itemize}
+    \item $B \in \mathbb{N}$: Batch size (number of independent examples).
+    \item $d_{\text{in}} \in \mathbb{N}$: Fan-in dimension (number of input features / columns of $\mathbf{X}$ and $\mathbf{W}$).
+    \item $d_{\text{out}} \in \mathbb{N}$: Fan-out dimension (number of output neurons / rows of $\mathbf{W}$).
+    \item $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$: Input batch matrix.
+    \item $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$: Trainable weight matrix.
+    \item $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$: Trainable bias vector.
+    \item $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$: Output activation matrix.
+    \item $\sigma^2 \in \mathbb{R}_{>0}$: Theoretical weight initialization variance.
+    \item $r \in \mathbb{R}_{>0}$: Uniform initialization half-width boundary ($W_{jk} \sim \mathcal{U}[-r, r]$).
+\end{itemize}
+
+\section{Problem Definition and Core Concepts}
+\label{sec:problem_definition}
+
+\subsection{Fan-In and Fan-Out Metrics}
+\begin{definition}[Fan-in and Fan-out]
+For a linear transformation with weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$:
+\begin{align}
+\text{fan\_in} &= d_{\text{in}} = \text{number of incoming connections per neuron}, \\
+\text{fan\_out} &= d_{\text{out}} = \text{number of outgoing connections per input channel}.
+\end{align}
+\end{definition}
+
+\section{Algorithmic Specification}
+\label{sec:algorithm}
+
+Algorithm~\ref{alg:linear_layer} defines the deterministic evaluation and initialization metric derivation.
+
+\begin{algorithm}[H]
+\caption{Affine Matrix Multiplication and Variance Scaling Calculation}
+\label{alg:linear_layer}
+\begin{algorithmic}[1]
+\Require Input batch $\mathbf{X} \in \mathbb{R}^{B \times d_{\text{in}}}$, weight matrix $\mathbf{W} \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$, bias $\mathbf{b} \in \mathbb{R}^{d_{\text{out}}}$, mode $\in \{\text{kaiming\_uniform}, \text{glorot\_uniform}, \text{lecun\_uniform}\}$.
+\Ensure Transformed matrix $\mathbf{Y} \in \mathbb{R}^{B \times d_{\text{out}}}$, dimensions $(B, d_{\text{in}}, d_{\text{out}})$, variance $\sigma^2$, bound $r$.
+\State $B \gets \text{rows}(\mathbf{X}), \quad d_{\text{in}} \gets \text{cols}(\mathbf{X}), \quad d_{\text{out}} \gets \text{rows}(\mathbf{W})$
+\State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{B \times d_{\text{out}}}$
+\For{$i = 1 \textbf{ to } B$}
+    \For{$j = 1 \textbf{ to } d_{\text{out}}$}
+        \State $\text{sum} \gets b_j$
+        \For{$k = 1 \textbf{ to } d_{\text{in}}$}
+            \State $\text{sum} \gets \text{sum} + X_{ik} \cdot W_{jk}$
+        \EndFor
+        \State $Y_{ij} \gets \text{sum}$
+    \EndFor
+\EndFor
+\If{$\text{mode} = \text{glorot\_uniform}$}
+    \State $\sigma^2 \gets \frac{2}{d_{\text{in}} + d_{\text{out}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}} + d_{\text{out}}}}$
+\ElsIf{$\text{mode} = \text{kaiming\_uniform}$}
+    \State $\sigma^2 \gets \frac{2}{d_{\text{in}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{6}{d_{\text{in}}}}$
+\ElsIf{$\text{mode} = \text{lecun\_uniform}$}
+    \State $\sigma^2 \gets \frac{1}{d_{\text{in}}}, \quad r \gets \sqrt{3 \sigma^2} = \sqrt{\frac{3}{d_{\text{in}}}}$
+\EndIf
+\State \Return $(\mathbf{Y}, B, d_{\text{in}}, d_{\text{out}}, \sigma^2, r)$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Theoretical Guarantees: Variance Scaling and Initialization}
+\label{sec:correctness}
+
+\subsection{Derivation of Signal Variance Preservation}
+Consider a linear layer $y = \sum_{k=1}^{d_{\text{in}}} w_k x_k$. Assume:
+\begin{enumerate}
+    \item Input elements $x_k$ are mutually independent, identically distributed with $\mathbb{E}[x_k] = 0$ and $\text{Var}(x_k) = \text{Var}(x)$.
+    \item Weight elements $w_k$ are mutually independent, identically distributed with $\mathbb{E}[w_k] = 0$ and $\text{Var}(w_k) = \text{Var}(w)$.
+    \item Inputs and weights are mutually independent.
+\end{enumerate}
+
+\paragraph{Step-by-Step Variance Derivation:}
 \begin{equation}
-\sigma^2 = \frac{2}{3 + 2} = \frac{2}{5} = 0.40, \quad r = \sqrt{3 \times 0.40} = \sqrt{1.20} \approx 1.095445.
+\mathbb{E}[y] = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k x_k] = \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k] \mathbb{E}[x_k] = 0.
+\end{equation}
+For the variance of the sum of independent random variables:
+\begin{align}
+\text{Var}(y) &= \sum_{k=1}^{d_{\text{in}}} \text{Var}(w_k x_k) \nonumber \\
+&= \sum_{k=1}^{d_{\text{in}}} \left( \mathbb{E}[(w_k x_k)^2] - (\mathbb{E}[w_k x_k])^2 \right) \nonumber \\
+&= \sum_{k=1}^{d_{\text{in}}} \mathbb{E}[w_k^2] \mathbb{E}[x_k^2] \nonumber \\
+&= d_{\text{in}} \text{Var}(w) \text{Var}(x). \label{eq:var_forward}
+\end{align}
+To preserve signal scale across deep architectures ($\text{Var}(y) = \text{Var}(x)$), we require:
+\begin{equation}
+\text{Var}(w) = \frac{1}{d_{\text{in}}}.
 \end{equation}
 
-\section{Numerical Considerations}
+\begin{theorem}[Initialization Schemes Comparison]
+\label{thm:init_schemes}
+\textbf{Assumptions:}
+Linear layer operations with zero-mean inputs and weights, independent coordinates, and standard activation assumptions:
+\begin{enumerate}
+    \item \textbf{LeCun Scheme (Linear / Tanh):} Assumes linear activations ($\sigma(z) = z$). Enforces forward variance preservation: $\text{Var}(w) = \frac{1}{d_{\text{in}}}$.
+    \item \textbf{Glorot / Xavier Scheme (Symmetric Activations):} Balances forward signal propagation ($\text{Var}(w) = 1/d_{\text{in}}$) and backward gradient propagation ($\text{Var}(w) = 1/d_{\text{out}}$) by taking the harmonic mean:
+    \begin{equation}
+    \sigma^2 = \frac{2}{d_{\text{in}} + d_{\text{out}}}.
+    \end{equation}
+    \item \textbf{He / Kaiming Scheme (Rectified Activations):} Assumes ReLU activation ($\sigma(z) = \max(0, z)$), where exactly half of the activations are zeroed out in expectation ($\mathbb{E}[\text{ReLU}(z)^2] = \frac{1}{2} \text{Var}(z)$). To compensate for the $1/2$ variance loss:
+    \begin{equation}
+    \sigma^2 = \frac{2}{d_{\text{in}}}.
+    \end{equation}
+\end{enumerate}
+
+\textbf{Guarantee:}
+Drawing weights from distribution with variance $\sigma^2$ guarantees that forward activation variances and backward gradient variances neither explode exponentially nor vanish to zero at layer $0$.
+
+\textbf{Limitations:}
+\begin{enumerate}
+    \item Assumptions of independence and zero-mean distributions break down under correlated features and batch normalization shifts.
+    \item Residual connections introduce additive variance growth ($x + F(x)$), requiring additional branch scale adjustments ($1/\sqrt{2L}$).
+\end{enumerate}
+\end{theorem}
+
+\section{Complexity Derivation}
+\label{sec:complexity}
+
+\subsection{Time Complexity}
+\begin{enumerate}
+    \item Evaluating equation~\eqref{eq:scalar_expansion} for $B$ rows and $d_{\text{out}}$ columns:
+    \item For each $(i, j)$, the inner loop computes $d_{\text{in}}$ multiplications and $d_{\text{in}}$ additions ($2 d_{\text{in}}$ operations).
+    \item Adding bias $b_j$ takes $1$ addition.
+    \item Total elementary operations: $B \cdot d_{\text{out}} \cdot (2 d_{\text{in}} + 1) = \Theta(B \cdot d_{\text{in}} \cdot d_{\text{out}})$.
+    \begin{equation}
+    T(B, d_{\text{in}}, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{in}} \cdot d_{\text{out}}).
+    \end{equation}
+\end{enumerate}
+
+\subsection{Space Complexity}
+\begin{enumerate}
+    \item Output matrix $\mathbf{Y}$ allocates $B \cdot d_{\text{out}}$ floating-point numbers.
+    \item Auxiliary memory complexity is strictly:
+    \begin{equation}
+    S(B, d_{\text{out}}) = \mathcal{O}(B \cdot d_{\text{out}}).
+    \end{equation}
+\end{enumerate}
+
+\section{Numerical Considerations and Boundary Behaviors}
 \label{sec:numerical}
 
 \begin{enumerate}
-    \item \textbf{Accumulation Precision:} For large fan-in dimensions ($d_{\text{in}} > 10^4$), floating-point summation order can cause drift. Double-precision scalar accumulators guarantee error within $10^{-15}$.
-    \item \textbf{Cache Locality in MatMul:} While the reference CPU implementation evaluates sequentially, batched implementations transpose $\mathbf{W}$ to align with contiguous memory vectors.
+    \item \textbf{Row-Major Memory Locality:} Matrix multiplications accumulate inner products along contiguous column strides ($k = 1 \dots d_{\text{in}}$), maximizing cache hit rates.
+    \item \textbf{Null Bias Handling:} When bias vector $\mathbf{b}$ is omitted or \texttt{null}, bias addition defaults to zero with zero overhead.
+    \item \textbf{Dimensionality Constraints:} Validates that $\text{cols}(\mathbf{X}) = d_{\text{in}} = \text{cols}(\mathbf{W})$ and $\text{len}(\mathbf{b}) = d_{\text{out}}$.
 \end{enumerate}
 
-\begin{thebibliography}{9}
+\section{References}
+\label{sec:references}
 
-\bibitem{glorot2010understanding}
+\begin{thebibliography}{9}
+\bibitem{glorot2010}
 X.~Glorot and Y.~Bengio.
 \newblock Understanding the difficulty of training deep feedforward neural networks.
-\newblock In {\em Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics}, pages 249--256, 2010.
+\newblock In \emph{Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics}, pages 249--256, 2010.
 
-\bibitem{he2015delving}
+\bibitem{he2015}
 K.~He, X.~Zhang, S.~Ren, and J.~Sun.
 \newblock Delving deep into rectifiers: Surpassing human-level performance on ImageNet classification.
-\newblock In {\em Proceedings of the IEEE International Conference on Computer Vision (ICCV)}, pages 1026--1034, 2015.
-\newblock DOI: \href{https://doi.org/10.1109/ICCV.2015.123}{10.1109/ICCV.2015.123}.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer Vision}, pages 1026--1034, 2015.
+\newblock DOI: 10.1109/ICCV.2015.123.
 
-\bibitem{lecun1998efficient}
-Y.~LeCun, L.~Bottou, G.~B.~Orr, and K.-R.~M{\"u}ller.
-\newblock Efficient backprop.
-\newblock In {\em Neural Networks: Tricks of the Trade}, pages 9--50. Springer, 1998.
-\newblock DOI: \href{https://doi.org/10.1007/3-540-49430-8_2}{10.1007/3-540-49430-8\_2}.
-
+\bibitem{lecun1998}
+Y.~LeCun, L.~Bottou, G.~B. Orr, and K.-R. M{\"u}ller.
+\newblock Efficient BackProp.
+\newblock In \emph{Neural Networks: Tricks of the Trade}, pages 9--50. Springer, 1998.
 \end{thebibliography}
 
 \end{document}

@@ -11,7 +11,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{property}{Property}
 
-\title{Mathematical Formulations, Saturation Dynamics, and Vanishing Gradient Analysis of Sigmoid and Tanh Activations (ALGO-NN-06)}
+\title{Mathematical Formulations, Saturation Dynamics, and Gradient Vanishing Bounds for Sigmoid and Tanh Activations (ALGO-NN-06)}
 \author{Algorithms Engineering Group}
 \date{\today}
 
@@ -20,185 +20,211 @@
 \maketitle
 
 \begin{abstract}
-This document establishes the mathematical specifications, differential calculus, asymptotic saturation properties, and vanishing gradient dynamics of S-shaped bounded activations (Sigmoid, Tanh, Log-Sigmoid, Hard-Sigmoid, and Hard-Tanh). We derive maximum derivative bounds, prove the exponential decay of backpropagated gradients in deep architectures, formulate numerically stable log-domain evaluations, and provide a fully computed numeric trace matching the production implementation contract.
+This document formulates the mathematical properties, asymptotic bounds, analytic derivatives, and saturation dynamics of classical bounded S-shaped activation functions (Logistic Sigmoid, Hyperbolic Tangent, Log-Sigmoid, Hard-Sigmoid, and Hard-Tanh). All mathematical operations are structured across three levels of explanation: intuition, formal formulation, and practical application. We provide explicit derivative derivations, establish the Vanishing Gradient Propagation Theorem with separated assumptions, guarantees, and limitations, derive computational complexity, and provide a verified numerical trace matching the production implementation contract.
 \end{abstract}
 
-\section{Notation}
+\section{Notation and Mathematical Preliminaries}
 \label{sec:notation}
 
-Let $\mathbb{R}$ denote the set of real numbers and $\mathbb{N} = \{1, 2, \dots\}$. Matrices are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{Y}, \mathbf{G}$), and scalar values by standard italics.
+Let $\mathbb{R}$ denote the set of real numbers, and $\mathbb{R}^{N \times D}$ the matrix space. Tensors are denoted by uppercase bold letters ($\mathbf{X}, \mathbf{Y}, \mathbf{G}$), and scalar coordinates by standard italics ($x, z$).
 
+\subsection{Bounded S-Shaped Activation Operators}
+\paragraph{Intuition:} Sigmoidal and hyperbolic activations map continuous inputs from the entire real line $(-\infty, +\infty)$ into strictly bounded intervals: $(0, 1)$ for probabilities or gates, and $(-1, +1)$ for zero-centered activations. However, for inputs with large absolute magnitudes ($|x| \gg 1$), the curve becomes nearly flat, causing the derivative to decay toward zero (gradient saturation).
+
+\paragraph{Mathematical Formulation:}
+For scalar pre-activation $x \in \mathbb{R}$, the logistic sigmoid $\sigma(x)$ and hyperbolic tangent $\tanh(x)$ are defined as:
+\begin{align}
+\sigma(x) &= \frac{1}{1 + e^{-x}} = \frac{e^x}{1 + e^x} \in (0, 1), \label{eq:sigmoid_def} \\
+\tanh(x) &= \frac{e^x - e^{-x}}{e^x + e^{-x}} = 2\sigma(2x) - 1 \in (-1, 1). \label{eq:tanh_def}
+\end{align}
+
+\paragraph{Worked Numerical Example:}
+Let $x = 0.0$ and $x = 2.0$:
+\begin{align}
+\sigma(0.0) &= \frac{1}{1 + e^0} = \frac{1}{2} = 0.5, \quad \sigma'(0.0) = \sigma(0)(1 - \sigma(0)) = 0.5(0.5) = 0.25, \\
+\sigma(2.0) &= \frac{1}{1 + e^{-2.0}} \approx 0.880797, \quad \sigma'(2.0) = 0.880797(1 - 0.880797) \approx 0.104994.
+\end{align}
+
+\subsection{Summary of Symbols}
 \begin{itemize}
-    \item $N \in \mathbb{N}$: Batch size (number of tensor rows).
-    \item $D \in \mathbb{N}$: Feature dimensionality (number of tensor columns).
+    \item $N \in \mathbb{N}$: Batch size dimension.
+    \item $D \in \mathbb{N}$: Hidden feature dimension.
     \item $\mathbf{X} \in \mathbb{R}^{N \times D}$: Input pre-activation tensor.
-    \item $\mathbf{Y} \in \mathbb{R}^{N \times D}$: Activated output tensor.
-    \item $\mathbf{G} \in \mathbb{R}^{N \times D}$: Analytic first derivative tensor.
-    \item $\sigma(x) = \frac{1}{1 + e^{-x}}$: Standard logistic sigmoid function mapping $\mathbb{R} \to (0, 1)$.
-    \item $\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}} = 2\sigma(2x) - 1$: Hyperbolic tangent mapping $\mathbb{R} \to (-1, 1)$.
-    \item $\tau \in \mathbb{R}_{>0}$: Saturation derivative threshold (e.g., $\tau = 0.01$).
+    \item $\mathbf{Y} \in \mathbb{R}^{N \times D}$: Output activated tensor.
+    \item $\mathbf{G} \in \mathbb{R}^{N \times D}$: Analytic derivative tensor $\frac{\partial \mathbf{Y}}{\partial \mathbf{X}}$.
+    \item $\tau_{\text{sat}} \in \mathbb{R}_{>0}$: Saturation gradient threshold (default $\tau_{\text{sat}} = 0.01$).
+    \item $\rho_{\text{sat}} \in [0, 1]$: Fraction of tensor elements flagged as saturated ($|G_{ij}| < \tau_{\text{sat}}$).
 \end{itemize}
 
-\section{Problem Definition}
+\section{Problem Definition and Core Variants}
 \label{sec:problem_definition}
 
-\begin{definition}[S-Shaped Activation Operators]
-For a scalar input $x \in \mathbb{R}$, the component-wise activation functions and their analytic derivatives are defined as follows:
-
-\begin{enumerate}
-    \item \textbf{Logistic Sigmoid:}
-    \begin{align}
-    \sigma(x) &= \frac{1}{1 + e^{-x}}, \label{eq:sigmoid} \\
-    \sigma'(x) &= \sigma(x)(1 - \sigma(x)). \label{eq:sigmoid_grad}
-    \end{align}
-
-    \item \textbf{Hyperbolic Tangent (Tanh):}
-    \begin{align}
-    \tanh(x) &= \frac{e^x - e^{-x}}{e^x + e^{-x}}, \label{eq:tanh} \\
-    \tanh'(x) &= 1 - \tanh^2(x) = \text{sech}^2(x). \label{eq:tanh_grad}
-    \end{align}
-
-    \item \textbf{Log-Sigmoid (Numerically Stable):}
-    \begin{align}
-    \text{log\_sigmoid}(x) &= \ln(\sigma(x)) = -\ln(1 + e^{-x}) = \begin{cases} -\ln(1 + e^{-x}) & \text{if } x \ge 0, \\ x - \ln(1 + e^x) & \text{if } x < 0, \end{cases} \label{eq:log_sigmoid} \\
-    \frac{d}{dx}\text{log\_sigmoid}(x) &= 1 - \sigma(x) = \frac{1}{1 + e^x}. \label{eq:log_sigmoid_grad}
-    \end{align}
-
-    \item \textbf{Hard Sigmoid and Hard Tanh (Piecewise Linear):}
-    \begin{align}
-    \text{hard\_sigmoid}(x) &= \text{clip}(0.2x + 0.5, 0, 1), \quad \text{hard\_sigmoid}'(x) = \begin{cases} 0.2 & \text{if } -2.5 < x < 2.5, \\ 0 & \text{otherwise}. \end{cases} \\
-    \text{hard\_tanh}(x) &= \text{clip}(x, -1, 1), \quad \text{hard\_tanh}'(x) = \begin{cases} 1 & \text{if } -1 < x < 1, \\ 0 & \text{otherwise}. \end{cases}
-    \end{align}
-\end{enumerate}
+\begin{definition}[Logistic Sigmoid and Derivative]
+The logistic sigmoid $\sigma: \mathbb{R} \to (0, 1)$ satisfies:
+\begin{equation}
+\sigma'(x) = \frac{d}{dx} \left( (1 + e^{-x})^{-1} \right) = -(1 + e^{-x})^{-2} (-e^{-x}) = \frac{1}{1 + e^{-x}} \cdot \frac{e^{-x}}{1 + e^{-x}} = \sigma(x)(1 - \sigma(x)).
+\end{equation}
+The maximum derivative is achieved at $x = 0$, where $\sigma'(0) = 0.25 \le \frac{1}{4}$.
 \end{definition}
 
-\section{Algorithm}
+\begin{definition}[Hyperbolic Tangent and Derivative]
+The hyperbolic tangent $\tanh: \mathbb{R} \to (-1, 1)$ satisfies:
+\begin{equation}
+\tanh'(x) = 1 - \tanh^2(x) = \text{sech}^2(x).
+\end{equation}
+The maximum derivative is achieved at $x = 0$, where $\tanh'(0) = 1.0 \le 1$.
+\end{definition}
+
+\begin{definition}[Log-Sigmoid and Numerically Stable Formulation]
+The logarithm of the sigmoid function:
+\begin{equation}
+\text{log\_sigmoid}(x) = \ln(\sigma(x)) = \ln\left(\frac{1}{1 + e^{-x}}\right) = -\ln(1 + e^{-x}).
+\end{equation}
+To prevent overflow for $x < 0$, the numerically stable formulation is:
+\begin{equation}
+\text{log\_sigmoid}(x) = \begin{cases} -\ln(1 + e^{-x}) & \text{if } x \ge 0, \\ x - \ln(1 + e^x) & \text{if } x < 0. \end{cases}
+\end{equation}
+Its derivative is $\frac{d}{dx} \text{log\_sigmoid}(x) = 1 - \sigma(x) = \sigma(-x)$.
+\end{definition}
+
+\begin{definition}[Hard Sigmoid and Hard Tanh]
+Piecewise linear approximations designed for low-power edge computation:
+\begin{align}
+\text{hard\_sigmoid}(x) &= \text{clip}\left(\frac{x + 3}{6}, 0, 1\right) = \max\left(0, \min\left(1, \frac{x+3}{6}\right)\right), \\
+\text{hard\_tanh}(x) &= \text{clip}(x, -1, 1) = \max(-1, \min(1, x)).
+\end{align}
+\end{definition}
+
+\section{Algorithmic Specification}
 \label{sec:algorithm}
 
-Algorithm~\ref{alg:sigmoid_tanh} specifies the deterministic tensor evaluation, numerical stabilization, and saturation metric calculations.
+Algorithm~\ref{alg:sigmoid_tanh} defines the deterministic evaluation and saturation detection routine.
 
 \begin{algorithm}[H]
-\caption{Sigmoid and Tanh Evaluation with Saturation Diagnostics}
+\caption{Deterministic Sigmoid/Tanh Activation and Saturation Detection}
 \label{alg:sigmoid_tanh}
 \begin{algorithmic}[1]
-\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant $\in \{\text{sigmoid}, \text{tanh}, \text{log\_sigmoid}, \dots\}$, threshold $\tau > 0$.
-\Ensure Output tensor $\mathbf{Y} \in \mathbb{R}^{N \times D}$, gradient tensor $\mathbf{G} \in \mathbb{R}^{N \times D}$, saturated fraction $S$, mean gradient $\bar{g}$.
-\State $N \gets \text{rows}(\mathbf{X})$, $D \gets \text{cols}(\mathbf{X})$
-\State Initialize $\mathbf{Y}, \mathbf{G} \in \mathbb{R}^{N \times D}$
-\State $\text{sat\_count} \gets 0$, $\text{grad\_sum} \gets 0.0$
+\Require Input tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, variant $\in \{\text{sigmoid}, \text{tanh}, \text{log\_sigmoid}, \text{hard\_sigmoid}, \text{hard\_tanh}\}$, threshold $\tau_{\text{sat}} > 0$.
+\Ensure Output tensor $\mathbf{Y}$, derivative tensor $\mathbf{G}$, saturation ratio $\rho_{\text{sat}}$, summary stats.
+\State $N \gets \text{rows}(\mathbf{X}), \quad D \gets \text{cols}(\mathbf{X})$
+\State $\mathbf{Y} \gets \mathbf{0} \in \mathbb{R}^{N \times D}, \quad \mathbf{G} \gets \mathbf{0} \in \mathbb{R}^{N \times D}, \quad \text{sat\_count} \gets 0$
 \For{$i = 1 \textbf{ to } N$}
     \For{$j = 1 \textbf{ to } D$}
         \State $x \gets X_{ij}$
-        \State $(y, g) \gets \text{EvaluateBounded}(x, \text{variant})$
-        \State $Y_{ij} \gets y$, $G_{ij} \gets g$
-        \State $\text{grad\_sum} \gets \text{grad\_sum} + g$
-        \If{$|g| < \tau$}
-            \State $\text{sat\_count} \gets \text{sat\_count} + 1$
+        \If{$\text{variant} = \text{sigmoid}$}
+            \State $s \gets \frac{1.0}{1.0 + \exp(-x)} \textbf{ if } x \ge 0 \textbf{ else } \frac{\exp(x)}{1.0 + \exp(x)}$
+            \State $y \gets s, \quad g \gets s \cdot (1.0 - s)$
+        \ElsIf{$\text{variant} = \text{tanh}$}
+            \State $t \gets \tanh(x)$
+            \State $y \gets t, \quad g \gets 1.0 - t^2$
+        \ElsIf{$\text{variant} = \text{log\_sigmoid}$}
+            \State $y \gets -\ln(1.0 + \exp(-x)) \textbf{ if } x \ge 0 \textbf{ else } x - \ln(1.0 + \exp(x))$
+            \State $s \gets \frac{1.0}{1.0 + \exp(-x)} \textbf{ if } x \ge 0 \textbf{ else } \frac{\exp(x)}{1.0 + \exp(x)}$
+            \State $g \gets 1.0 - s$
+        \ElsIf{$\text{variant} = \text{hard\_sigmoid}$}
+            \State $y \gets \max(0.0, \min(1.0, (x + 3.0)/6.0))$
+            \State $g \gets \frac{1.0}{6.0} \textbf{ if } -3.0 < x < 3.0 \textbf{ else } 0.0$
+        \ElsIf{$\text{variant} = \text{hard\_tanh}$}
+            \State $y \gets \max(-1.0, \min(1.0, x))$
+            \State $g \gets 1.0 \textbf{ if } -1.0 < x < 1.0 \textbf{ else } 0.0$
         \EndIf
+        \State $Y_{ij} \gets y, \quad G_{ij} \gets g$
+        \If{$|g| < \tau_{\text{sat}}$} $\text{sat\_count} \gets \text{sat\_count} + 1$ \EndIf
     \EndFor
 \EndFor
-\State $S \gets \frac{\text{sat\_count}}{N \cdot D}$, $\bar{g} \gets \frac{\text{grad\_sum}}{N \cdot D}$
-\State \Return $(\mathbf{Y}, \mathbf{G}, S, \bar{g}, [N, D])$
+\State $\rho_{\text{sat}} \gets \frac{\text{sat\_count}}{N \cdot D}$
+\State \Return $(\mathbf{Y}, \mathbf{G}, \rho_{\text{sat}})$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Saturation Dynamics and Vanishing Gradients}
+\section{Theoretical Guarantees: Vanishing Gradient Propagation}
 \label{sec:correctness}
 
-\begin{theorem}[Maximum Derivative Bounds of S-Curves]
-\label{thm:derivative_bounds}
-For all $x \in \mathbb{R}$:
-\begin{align}
-\max_{x \in \mathbb{R}} \sigma'(x) &= \sigma'(0) = \frac{1}{4} = 0.25, \\
-\max_{x \in \mathbb{R}} \tanh'(x) &= \tanh'(0) = 1.00.
-\end{align}
+\begin{theorem}[Vanishing Gradient Upper Bound]
+\label{thm:vanishing_grad}
+\textbf{Assumptions:}
+Consider an $L$-layer neural network with sigmoid activations $\sigma(z)$ at each hidden layer:
+\begin{equation}
+\mathbf{h}^{(l)} = \sigma(\mathbf{W}^{(l)} \mathbf{h}^{(l-1)} + \mathbf{b}^{(l)}), \quad l \in \{1, \dots, L\}.
+\end{equation}
+Let the spectral norms of all weight matrices be bounded by $\|\mathbf{W}^{(l)}\|_2 \le C_W$.
+
+\textbf{Guarantee:}
+The gradient of loss $\mathcal{L}$ with respect to the initial input $\mathbf{h}^{(0)}$ satisfies:
+\begin{equation}
+\label{eq:vanishing_bound}
+\left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(0)}} \right\|_2 \le \left( \frac{1}{4} C_W \right)^L \left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(L)}} \right\|_2.
+\end{equation}
+In particular, if $C_W < 4$, the gradient norm decays exponentially to zero as depth $L \to \infty$.
+
+\textbf{Limitations:}
+\begin{enumerate}
+    \item If weights are initialized with large norms ($C_W > 4$) to counteract gradient vanishing, the pre-activations $|z|$ explode, forcing units into the saturated regime where $\sigma'(z) \approx 0$, which worsens gradient attenuation.
+    \item Sigmoid activations are therefore unsuitable as hidden-layer activations in deep un-gated architectures ($L \ge 5$).
+\end{enumerate}
 \end{theorem}
 
-\begin{theorem}[Vanishing Gradient Decay in Deep Sigmoid Networks]
-\label{thm:vanishing_gradient}
-Consider an $L$-layer feedforward network where each layer computes $\mathbf{h}^{(l)} = \sigma(\mathbf{W}^{(l)} \mathbf{h}^{(l-1)})$. The backpropagated gradient with respect to initial activation $\mathbf{h}^{(0)}$ is given by the Jacobian chain:
-\begin{equation}
-\frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(0)}} = \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(L)}} \prod_{l=1}^L \text{diag}(\sigma'(\mathbf{z}^{(l)})) \mathbf{W}^{(l)}.
-\end{equation}
-Assuming spectral norm $\|\mathbf{W}^{(l)}\|_2 \le 1$, the gradient magnitude satisfies the exponential upper bound:
-\begin{equation}
-\left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(0)}} \right\|_2 \le \left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(L)}} \right\|_2 \prod_{l=1}^L \left\| \text{diag}(\sigma'(\mathbf{z}^{(l)})) \right\|_2 \le \left( \frac{1}{4} \right)^L \left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(L)}} \right\|_2.
-\end{equation}
-\end{theorem}
-
-\begin{proof}
-By sub-multiplicativity of matrix operator norms:
-\begin{equation}
-\left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(0)}} \right\|_2 \le \left\| \frac{\partial \mathcal{L}}{\partial \mathbf{h}^{(L)}} \right\|_2 \prod_{l=1}^L \|\text{diag}(\sigma'(\mathbf{z}^{(l)}))\|_2 \|\mathbf{W}^{(l)}\|_2.
-\end{equation}
-Since $\max_z \sigma'(z) = 0.25$, each diagonal matrix has spectral norm bounded by $\frac{1}{4}$. With $\|\mathbf{W}^{(l)}\|_2 \le 1$, the product is bounded by $(1/4)^L$. For $L=10$, $(1/4)^{10} \approx 9.5 \times 10^{-7}$, causing total gradient vanishing in early layers.
-\end{proof}
-
-\section{Complexity Analysis}
+\section{Complexity Derivation}
 \label{sec:complexity}
 
 \subsection{Time Complexity}
-\begin{itemize}
-    \item Each element evaluates in $\mathcal{O}(1)$ elementary operations (exponential, division, subtraction).
-    \item Total time complexity for tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$ is strictly $\mathcal{O}(N \cdot D)$.
-\end{itemize}
-
-\subsection{Space Complexity}
-\begin{itemize}
-    \item Allocating output activations $\mathbf{Y}$ and local gradients $\mathbf{G}$ requires $2 \cdot N \cdot D$ floating-point entries.
-    \item Space complexity is strictly $\mathcal{O}(N \cdot D)$.
-\end{itemize}
-
-\section{Worked Example}
-\label{sec:worked_example}
-
-Consider input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 2}$ with $\tau = 0.01$:
-\begin{equation}
-\mathbf{X} = \begin{bmatrix} 0.0 & 2.0 \\ -2.0 & 5.0 \end{bmatrix}.
-\end{equation}
-
-\paragraph{1. Logistic Sigmoid ($\sigma(x) = \frac{1}{1 + e^{-x}}$, $\sigma'(x) = \sigma(1 - \sigma)$):}
-\begin{align}
-x = 0.0: & \quad \sigma(0) = 0.5, \; \sigma'(0) = 0.25, \\
-x = 2.0: & \quad \sigma(2) \approx 0.880797, \; \sigma'(2) = 0.880797 \times (1 - 0.880797) \approx 0.104994, \\
-x = -2.0: & \quad \sigma(-2) \approx 0.119203, \; \sigma'(-2) = 0.119203 \times (1 - 0.119203) \approx 0.104994, \\
-x = 5.0: & \quad \sigma(5) \approx 0.993307, \; \sigma'(5) = 0.993307 \times (1 - 0.993307) \approx 0.006648.
-\end{align}
-
-\begin{equation}
-\mathbf{Y}_{\text{sigmoid}} = \begin{bmatrix} 0.500000 & 0.880797 \\ 0.119203 & 0.993307 \end{bmatrix}, \quad
-\mathbf{G}_{\text{sigmoid}} = \begin{bmatrix} 0.250000 & 0.104994 \\ 0.104994 & 0.006648 \end{bmatrix}.
-\end{equation}
-At $x = 5.0$, $g = 0.006648 < \tau = 0.01 \implies \text{saturated}$.
-$\text{saturated\_fraction} = 1/4 = 0.25$. Mean gradient $\bar{g} = \frac{0.25 + 0.104994 + 0.104994 + 0.006648}{4} \approx 0.116659$.
-
-\section{Numerical Considerations}
-\label{sec:numerical}
-
 \begin{enumerate}
-    \item \textbf{Logistic Clamping:} To prevent float underflow/overflow in $e^{-x}$, $|x| \ge 40.0$ is mapped to $1.0$ (for $x \ge 40$) and $0.0$ (for $x \le -40$).
-    \item \textbf{Stable Log-Sigmoid Formulation:} For negative inputs $x < 0$, $\ln(1 + e^{-x})$ can overflow. Computing $x - \ln(1 + e^x)$ using $\text{log1p}(e^x)$ maintains precision to within machine epsilon ($10^{-16}$).
+    \item For tensor $\mathbf{X} \in \mathbb{R}^{N \times D}$, the loop processes $N \cdot D$ elements.
+    \item Each element evaluates $\mathcal{O}(1)$ elementary operations or single exponential evaluations.
+    \item Total time complexity:
+    \begin{equation}
+    T(N, D) = \mathcal{O}(N \cdot D).
+    \end{equation}
 \end{enumerate}
 
+\subsection{Space Complexity}
+\begin{enumerate}
+    \item Output tensor $\mathbf{Y}$ allocates $N \cdot D$ scalars.
+    \item Derivative tensor $\mathbf{G}$ allocates $N \cdot D$ scalars.
+    \item Total auxiliary storage:
+    \begin{equation}
+    S(N, D) = \mathcal{O}(N \cdot D).
+    \end{equation}
+\end{enumerate}
+
+\section{Worked Example and Numerical Verification}
+\label{sec:worked_example}
+
+Consider input tensor $\mathbf{X} \in \mathbb{R}^{2 \times 2}$:
+\begin{equation}
+\mathbf{X} = \begin{bmatrix} 0.0 & 2.0 \\ -4.0 & 6.0 \end{bmatrix}.
+\end{equation}
+
+\subsection{Exact Sigmoid Numerical Trace}
+\begin{align}
+X_{11} = 0.0: & \quad Y_{11} = \frac{1}{1 + e^0} = 0.5, \quad G_{11} = 0.5(1 - 0.5) = 0.25. \\
+X_{12} = 2.0: & \quad Y_{12} = \frac{1}{1 + e^{-2.0}} \approx 0.880797, \quad G_{12} = 0.880797(1 - 0.880797) \approx 0.104994. \\
+X_{21} = -4.0: & \quad Y_{21} = \frac{e^{-4.0}}{1 + e^{-4.0}} \approx 0.017986, \quad G_{21} = 0.017986(1 - 0.017986) \approx 0.017663. \\
+X_{22} = 6.0: & \quad Y_{22} = \frac{1}{1 + e^{-6.0}} \approx 0.997527, \quad G_{22} = 0.997527(1 - 0.997527) \approx 0.002466.
+\end{align}
+Saturation Evaluation ($\tau_{\text{sat}} = 0.01$):
+For $X_{22} = 6.0$, $G_{22} = 0.002466 < 0.01 \implies$ flagged as saturated!
+Saturation count: $1$ out of $4 \implies \rho_{\text{sat}} = 0.25$.
+
+\section{References}
+\label{sec:references}
+
 \begin{thebibliography}{9}
+\bibitem{hochreiter1991}
+S.~Hochreiter.
+\newblock Untersuchungen zu dynamischen neuronalen netzen.
+\newblock \emph{Master's thesis, Institut f{\"u}r Informatik, Technische Universit{\"a}t M{\"u}nchen}, 1991.
 
-\bibitem{hochreiter1997long}
-S.~Hochreiter and J.~Schmidhuber.
-\newblock Long short-term memory.
-\newblock {\em Neural Computation}, 9(8):1735--1780, 1997.
-\newblock DOI: \href{https://doi.org/10.1162/neco.1997.9.8.1735}{10.1162/neco.1997.9.8.1735}.
+\bibitem{bengio1994}
+Y.~Bengio, P.~Simard, and P.~Frasconi.
+\newblock Learning long-term dependencies with gradient descent is difficult.
+\newblock \emph{IEEE Transactions on Neural Networks}, 5(2):157--166, 1994.
+\newblock DOI: 10.1109/72.279181.
 
-\bibitem{lecun1998efficient}
-Y.~LeCun, L.~Bottou, G.~B.~Orr, and K.-R.~M{\"u}ller.
-\newblock Efficient backprop.
-\newblock In {\em Neural Networks: Tricks of the Trade}, pages 9--50. Springer, 1998.
-\newblock DOI: \href{https://doi.org/10.1007/3-540-49430-8_2}{10.1007/3-540-49430-8\_2}.
-
-\bibitem{glorot2010understanding}
+\bibitem{glorot2010sigmoid}
 X.~Glorot and Y.~Bengio.
 \newblock Understanding the difficulty of training deep feedforward neural networks.
-\newblock In {\em Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics}, pages 249--256, 2010.
-
+\newblock In \emph{AISTATS}, pages 249--256, 2010.
 \end{thebibliography}
 
 \end{document}
